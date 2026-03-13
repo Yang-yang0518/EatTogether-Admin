@@ -1,10 +1,12 @@
-using EatTogether.Models.Services;
+﻿using EatTogether.Models.Services;
 using EatTogether.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace EatTogether.Controllers
 {
@@ -19,7 +21,6 @@ namespace EatTogether.Controllers
             _categoryService = categoryService;
         }
 
-        // GET: /Dishes
         public async Task<IActionResult> Index()
         {
             var dtos = await _dishService.GetAllAsync();
@@ -27,21 +28,15 @@ namespace EatTogether.Controllers
             return View(vms);
         }
 
-        // GET: /Dishes/Create
         public async Task<IActionResult> Create()
         {
             var allDishes = await _dishService.GetAllAsync();
             int nextOrder = allDishes.Any() ? allDishes.Max(d => d.DisplayOrder) + 1 : 1;
-
-            var vm = new DishViewModel
-            {
-                DisplayOrder = nextOrder
-            };
+            var vm = new DishViewModel { DisplayOrder = nextOrder };
             vm.CategoryOptions = await GetCategoryOptionsAsync();
             return View(vm);
         }
 
-        // POST: /Dishes/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([FromForm] DishViewModel vm)
@@ -52,17 +47,16 @@ namespace EatTogether.Controllers
                 return View(vm);
             }
 
-            // 處理裁切後的 Base64 圖片
             if (!string.IsNullOrEmpty(vm.CroppedImageData))
             {
-                vm.ImageUrl = await SaveBase64ImageAsync(vm.CroppedImageData);
+                // 新增時，直接用餐點名稱命名
+                vm.ImageUrl = await SaveBase64ImageAsync(vm.CroppedImageData, vm.DishName);
             }
 
             await _dishService.CreateAsync(vm.ToDto());
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: /Dishes/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
             var dto = await _dishService.GetByIdAsync(id);
@@ -72,7 +66,6 @@ namespace EatTogether.Controllers
             return View(vm);
         }
 
-        // POST: /Dishes/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [FromForm] DishViewModel vm)
@@ -85,17 +78,16 @@ namespace EatTogether.Controllers
                 return View(vm);
             }
 
-            // 處理裁切後的 Base64 圖片
             if (!string.IsNullOrEmpty(vm.CroppedImageData))
             {
-                vm.ImageUrl = await SaveBase64ImageAsync(vm.CroppedImageData);
+                // 【核心修改】：編輯時，直接拿「目前的餐點名稱」去覆蓋檔案
+                vm.ImageUrl = await SaveBase64ImageAsync(vm.CroppedImageData, vm.DishName);
             }
 
             await _dishService.UpdateAsync(vm.ToDto());
             return RedirectToAction(nameof(Index));
         }
 
-        // POST: /Dishes/Disable/5
         [HttpPost]
         public async Task<IActionResult> Disable(int id)
         {
@@ -103,40 +95,37 @@ namespace EatTogether.Controllers
             return Ok();
         }
 
-        // GET: /Dishes/GetAllJson
         public async Task<IActionResult> GetAllJson()
         {
             var dtos = await _dishService.GetAllAsync();
-            return Json(dtos.Select(d => new { id = d.Id, dishName = d.DishName, price = d.Price }));
+            return Json(dtos.Select(d => new { id = d.Id, dishName = d.DishName, price = d.Price }));     
         }
 
-        // =============================================
-        // 私有輔助方法
-        // =============================================
         private async Task<List<SelectListItem>> GetCategoryOptionsAsync()
         {
             var categories = await _categoryService.GetAllAsync();
-            return categories
-                .Select(c => new SelectListItem
-                {
-                    Value = c.Id.ToString(),
-                    Text  = c.CategoryName
-                })
-                .ToList();
+            return categories.Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.CategoryName }).ToList();
         }
 
-        private async Task<string> SaveBase64ImageAsync(string base64Data)
+        /// <summary>
+        /// 儲存圖片並強制使用餐點名稱命名（達成覆蓋效果）
+        /// </summary>
+        private async Task<string> SaveBase64ImageAsync(string base64Data, string dishName)
         {
             if (string.IsNullOrEmpty(base64Data)) return null;
 
-            // 移除 data:image/xxx;base64, 前綴
-            var base64 = base64Data.Contains(",")
-                ? base64Data.Split(',')[1]
-                : base64Data;
+            var base64 = base64Data.Contains(",") ? base64Data.Split(',')[1] : base64Data;
+            var bytes = Convert.FromBase64String(base64);
 
-            var bytes    = Convert.FromBase64String(base64);
-            var fileName = $"{Guid.NewGuid()}.jpg";
+            // 【強制規範】：檔名 = 餐點名稱.jpg
+            // 這樣不論改幾次，只要餐點名稱不變，檔案就會被 WriteAllBytesAsync 強制覆蓋
+            string fileName = $"{dishName}.jpg";
             
+            // 移除檔名中可能導致報錯的特殊字元
+            foreach (char c in Path.GetInvalidFileNameChars()) {
+                fileName = fileName.Replace(c, '_');
+            }
+
             var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
             if (!Directory.Exists(folderPath))
             {
@@ -144,6 +133,8 @@ namespace EatTogether.Controllers
             }
 
             var savePath = Path.Combine(folderPath, fileName);
+            
+            // 執行寫入（若檔案已存在，System.IO 會直接覆蓋它）
             await System.IO.File.WriteAllBytesAsync(savePath, bytes);
 
             return "/images/" + fileName;
