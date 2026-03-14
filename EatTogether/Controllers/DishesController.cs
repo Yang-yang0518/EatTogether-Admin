@@ -24,7 +24,40 @@ namespace EatTogether.Controllers
         public async Task<IActionResult> Index()
         {
             var dtos = await _dishService.GetAllAsync();
-            var vms = dtos.Select(d => d.ToViewModel()).ToList();
+            var vms = dtos.Select(d => {
+                var vm = d.ToViewModel();
+                if (string.IsNullOrEmpty(vm.ImageUrl))
+                {
+                    // Sanitize dish name for filename comparison
+                    string safeDishName = vm.DishName;
+                    foreach (char c in Path.GetInvalidFileNameChars())
+                    {
+                        safeDishName = safeDishName.Replace(c, '_');
+                    }
+
+                    // Determine the base path for wwwroot/images
+                    var baseImagesFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+
+                    // Check for .jpg file
+                    string jpgFileName = $"{safeDishName}.jpg";
+                    string jpgPath = Path.Combine(baseImagesFolderPath, jpgFileName);
+                    if (System.IO.File.Exists(jpgPath))
+                    {
+                        vm.ImageUrl = "/images/" + jpgFileName;
+                    }
+                    else
+                    {
+                        // Check for .png file if .jpg is not found
+                        string pngFileName = $"{safeDishName}.png";
+                        string pngPath = Path.Combine(baseImagesFolderPath, pngFileName);
+                        if (System.IO.File.Exists(pngPath))
+                        {
+                            vm.ImageUrl = "/images/" + pngFileName;
+                        }
+                    }
+                }
+                return vm;
+            }).ToList();
             return View(vms);
         }
 

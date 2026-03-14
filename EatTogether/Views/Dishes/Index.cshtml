@@ -70,7 +70,7 @@
                                 @if (!string.IsNullOrEmpty(item.ImageUrl))
                                 {
                                     <img src="@item.ImageUrl"
-                                          style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;"
+                                          style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; object-position: center center;"
                                           alt="@item.DishName"
                                           onerror="this.src='/images/no-image.png'; this.onerror=null;" />
                                 }
