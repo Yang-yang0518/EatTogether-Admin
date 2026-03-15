@@ -73,7 +73,7 @@
 
 [V] Seed Data — RoleFunctions 各角色權限對應（依 requirements.md 第 2 節）
 
-[] Seed Data — Demo 測試帳號（6 筆）
+[V] Seed Data — Demo 測試帳號（6 筆）
 	密碼統一：Aa000000，MustChangePassword=0，配合登入頁 Demo 按鈕使用
 	manager_chen   → 店長（全部 13 項權限）
 	vicemgr_lin    → 副店長（11 項權限）
@@ -103,7 +103,7 @@
 =========
 共用基礎設施
 =========
-[V] HashUtility（Models/Infra/HashUtility.cs）
+[working] HashUtility（Models/Infra/HashUtility.cs）
 	安裝 BCrypt.Net-Next（work factor 12）
 	static string HashPassword(string password)
 	static bool VerifyPassword(string password, string hashedPassword)
@@ -114,15 +114,15 @@
 		static string HashPassword(string password)
 		static bool VerifyPassword(string password, string hashedPassword)
 
-[V] PasswordValidator（Models/Infra/PasswordValidator.cs）
+[] PasswordValidator（Models/Infra/PasswordValidator.cs）
 	static bool IsValid(string password)
 	// 規則：至少 6 碼，包含英文與數字
 
-[V] UserNumberGenerator（Models/Infra/UserNumberGenerator.cs）
+[] UserNumberGenerator（Models/Infra/UserNumberGenerator.cs）
 	// 格式：EMP + 年份(4碼) + 流水號(3碼)，如 EMP2025001
 	Task<string> GenerateAsync()
 
-[] Result class（Models/Infra/Result.cs）
+[V] Result class（Models/Infra/Result.cs）
 	bool IsSuccess
 	string ErrorMessage
 	static Result Success()
