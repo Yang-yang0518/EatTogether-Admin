@@ -103,18 +103,12 @@
 =========
 共用基礎設施
 =========
-[working] HashUtility（Models/Infra/HashUtility.cs）
+[V] add HashUtility（Models/Infra/HashUtility.cs）
 	安裝 BCrypt.Net-Next（work factor 12）
 	static string HashPassword(string password)
 	static bool VerifyPassword(string password, string hashedPassword)
 
-	------ Copilot 提示詞 ------
-	asp.net core mvc 用 BCrypt.Net-Next（work factor 12）寫雜湊密碼功能，請提供範例
-	HashUtility.cs
-		static string HashPassword(string password)
-		static bool VerifyPassword(string password, string hashedPassword)
-
-[] PasswordValidator（Models/Infra/PasswordValidator.cs）
+[working] add PasswordValidator（Models/Infra/PasswordValidator.cs）
 	static bool IsValid(string password)
 	// 規則：至少 6 碼，包含英文與數字
 
