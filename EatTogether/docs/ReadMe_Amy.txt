@@ -112,7 +112,7 @@
 	static bool IsValid(string password)
 	// 規則：至少 6 碼，包含英文與數字
 
-[working] add UserNumberGenerator（Models/Infra/UserNumberGenerator.cs）
+[V] add UserNumberGenerator（Models/Infra/UserNumberGenerator.cs）
 	// 格式：EMP + 年份(4碼) + 流水號(3碼)，如 EMP2025001
 	Task<string> GenerateAsync()
 	// 實作細節：
@@ -127,7 +127,7 @@
 	static Result Success()
 	static Result Fail(string errorMessage)
 
-[] JWT 設定（Program.cs）
+[working] JWT 設定（Program.cs）
 	Payload：員工 Id + 角色 Id 清單
 	效期：8 小時
 	儲存：httpOnly Cookie
