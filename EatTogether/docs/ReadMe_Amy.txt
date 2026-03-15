@@ -108,13 +108,18 @@
 	static string HashPassword(string password)
 	static bool VerifyPassword(string password, string hashedPassword)
 
-[working] add PasswordValidator（Models/Infra/PasswordValidator.cs）
+[V] add PasswordValidator（Models/Infra/PasswordValidator.cs）
 	static bool IsValid(string password)
 	// 規則：至少 6 碼，包含英文與數字
 
-[] UserNumberGenerator（Models/Infra/UserNumberGenerator.cs）
+[working] add UserNumberGenerator（Models/Infra/UserNumberGenerator.cs）
 	// 格式：EMP + 年份(4碼) + 流水號(3碼)，如 EMP2025001
 	Task<string> GenerateAsync()
+	// 實作細節：
+    //   - 年份取 DateTime.Now.Year（伺服器當下時間）
+    //   - SQL 使用 WITH (UPDLOCK, HOLDLOCK) 防止併發重複
+    //   - 需包在 Transaction 內鎖才會生效
+    //   - 結果格式驗證：is string && Length == 10 && TryParse
 
 [V] Result class（Models/Infra/Result.cs）
 	bool IsSuccess
@@ -423,6 +428,17 @@
 			// 比對明文密碼 == 員工編號 → MustChangePassword=1，否則=0
 			// HashUtility.HashPassword → 寫入 HashedPassword
 			// BatchInsert UserRoles
+			// 員工編號產生 UserNumberGenerator Service 層呼叫步驟
+				// 1. BeginTransactionAsync() 開啟交易
+				// 2. 呼叫 UserNumberGenerator.GenerateAsync() 產生編號
+				// 3. SaveChangesAsync() 寫入資料庫
+				// 4. CommitAsync() 提交交易
+				// 5. 捕捉 DbUpdateException（UNIQUE / duplicate）→ RollbackAsync() → 進入 RetryCreateAsync()
+				// 6. 其他例外 → RollbackAsync() → Result.Fail
+
+		Task<Result> RetryCreateAsync(UserCreateDto dto)  // private
+			// 重新開啟 Transaction，重新 GenerateAsync()，只重試一次
+			// 再次失敗 → Result.Fail("新增員工失敗，請重試")
 
 	[] ViewModel（Models/ViewModels/UserCreateViewModel.cs）
 		UserCreateViewModel
