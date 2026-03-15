@@ -24,11 +24,13 @@ namespace EatTogether
 			builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 			builder.Services.AddScoped<IDishRepository, DishRepository>();
 			builder.Services.AddScoped<ISetMealRepository, SetMealRepository>();
+            builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
-			// µù¥UService
-			builder.Services.AddScoped<CategoryService>();
+            // µù¥UService
+            builder.Services.AddScoped<CategoryService>();
 			builder.Services.AddScoped<DishService>();
 			builder.Services.AddScoped<SetMealService>();
+            builder.Services.AddScoped<ProductService>();
 
 
             builder.Services.AddScoped<ITableRepository, TableRepository>();

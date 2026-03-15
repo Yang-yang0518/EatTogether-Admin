@@ -124,8 +124,18 @@ namespace EatTogether.Controllers
         [HttpPost]
         public async Task<IActionResult> Disable(int id)
         {
-            await _dishService.DisableAsync(id);
+            await _dishService.SoftDeleteAsync(id);
             return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleActive(int id)
+        {
+            var dish = await _dishService.GetByIdAsync(id);
+            if (dish == null) return NotFound();
+            dish.IsActive = !dish.IsActive;
+            await _dishService.UpdateAsync(dish);
+            return Ok(new { isActive = dish.IsActive });
         }
 
         public async Task<IActionResult> GetAllJson()

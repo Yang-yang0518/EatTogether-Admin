@@ -44,6 +44,18 @@ namespace EatTogether.Models.ViewModels
         [Display(Name = "限定供應")]
         public bool IsLimited { get; set; }
 
+        [Display(Name = "主廚推薦")]
+        public bool IsRecommended { get; set; }
+
+        [Display(Name = "人氣必點")]
+        public bool IsPopular { get; set; }
+
+        [Display(Name = "素食")]
+        public bool IsVegetarian { get; set; }
+
+        [Display(Name = "辣度 (0-3)")]
+        public int SpicyLevel { get; set; }
+
         [Display(Name = "供應開始日")]
         public DateOnly? StartDate { get; set; }
 

@@ -83,6 +83,43 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- 特色標籤挑選 -->
+                                    <div class="row mt-3 border-top pt-3">
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input asp-for="IsRecommended" class="form-check-input" id="recommend-check" />
+                                                <label class="form-check-label fw-bold text-primary" for="recommend-check" style="cursor: pointer;">
+                                                    <i class="fas fa-thumbs-up me-1"></i>主廚推薦
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input asp-for="IsPopular" class="form-check-input" id="popular-check" />
+                                                <label class="form-check-label fw-bold text-warning" for="popular-check" style="cursor: pointer;">
+                                                    <i class="fas fa-crown me-1"></i>人氣商品
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input asp-for="IsVegetarian" class="form-check-input" id="veg-check" />
+                                                <label class="form-check-label fw-bold text-success" for="veg-check" style="cursor: pointer;">
+                                                    <i class="fas fa-leaf me-1"></i>素食可
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold">辣度等級</label>
+                                            <select asp-for="SpicyLevel" class="form-select form-select-sm">
+                                                <option value="0">不辣</option>
+                                                <option value="1">小辣</option>
+                                                <option value="2">中辣</option>
+                                                <option value="3">大辣</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

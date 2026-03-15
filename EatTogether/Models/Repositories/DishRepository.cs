@@ -24,6 +24,10 @@ namespace EatTogether.Models.Repositories
 				ImageUrl = dto.ImageUrl,
 				IsTakeOut = dto.IsTakeOut,
 				IsLimited = dto.IsLimited,
+				IsRecommended = dto.IsRecommended,
+				IsPopular = dto.IsPopular,
+				IsVegetarian = dto.IsVegetarian,
+				SpicyLevel = dto.SpicyLevel,
 				StartDate = dto.StartDate,
 				EndDate = dto.EndDate,
 				IsActive = true,
@@ -48,6 +52,10 @@ namespace EatTogether.Models.Repositories
 				   IsActive = d.IsActive,
 				   IsTakeOut = d.IsTakeOut,
 				   IsLimited = d.IsLimited,
+				   IsRecommended = d.IsRecommended,
+				   IsPopular = d.IsPopular,
+				   IsVegetarian = d.IsVegetarian,
+				   SpicyLevel = d.SpicyLevel,
 				   StartDate = d.StartDate,
 				   EndDate = d.EndDate,
 				   CreatedAt = d.CreatedAt,
@@ -106,6 +114,10 @@ namespace EatTogether.Models.Repositories
 				dish.StartDate = dto.StartDate;
 				dish.EndDate = dto.EndDate;
 				dish.IsActive = dto.IsActive;
+				dish.IsRecommended = dto.IsRecommended;
+				dish.IsPopular = dto.IsPopular;
+				dish.IsVegetarian = dto.IsVegetarian;
+				dish.SpicyLevel = dto.SpicyLevel;
 				dish.UpdatedAt = DateTime.UtcNow;
 
 				await _context.SaveChangesAsync();
