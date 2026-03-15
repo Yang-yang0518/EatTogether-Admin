@@ -5,11 +5,13 @@
 DECLARE @MainId    int = (SELECT TOP 1 Id FROM dbo.Categories WHERE CategoryName = N'主餐');
 DECLARE @DrinkId   int = (SELECT TOP 1 Id FROM dbo.Categories WHERE CategoryName = N'飲料');
 DECLARE @DessertId int = (SELECT TOP 1 Id FROM dbo.Categories WHERE CategoryName = N'甜點');
+DECLARE @SoupId    int = (SELECT TOP 1 Id FROM dbo.Categories WHERE CategoryName = N'湯品');
+DECLARE @SideId    int = (SELECT TOP 1 Id FROM dbo.Categories WHERE CategoryName = N'附餐');
 
-IF @MainId IS NULL OR @DrinkId IS NULL OR @DessertId IS NULL
+IF @MainId IS NULL OR @DrinkId IS NULL OR @DessertId IS NULL OR @SoupId IS NULL OR @SideId IS NULL
     THROW 50001, 'Seed failed: Categories not found. Please run 05_Categories.sql first.', 1;
 
--- ==================== 主餐 (30筆) ====================
+-- ==================== 主餐 (31筆) ====================
 IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'義式番茄義大利麵')
     INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
     VALUES (@MainId, N'義式番茄義大利麵', 180.00, 1, GETDATE(), N'經典義式番茄醬搭配彈牙麵條', NULL, 1, 0, NULL, NULL, NULL);
@@ -54,17 +56,19 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'墨西哥雞肉捲')
     INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
     VALUES (@MainId, N'墨西哥雞肉捲', 190.00, 1, GETDATE(), N'嫩煎雞肉搭配莎莎醬與酸奶', NULL, 1, 0, NULL, NULL, NULL);
 
+-- 泰式打拋豬飯 (已取消)
 IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'泰式打拋豬飯')
     INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
-    VALUES (@MainId, N'泰式打拋豬飯', 170.00, 1, GETDATE(), N'泰式九層塔炒豬肉搭配白飯', NULL, 1, 0, NULL, NULL, NULL);
+    VALUES (@MainId, N'泰式打拋豬飯', 170.00, 0, GETDATE(), N'泰式九層塔炒豬肉搭配白飯', NULL, 1, 0, NULL, NULL, NULL);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'日式唐揚雞定食')
     INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
     VALUES (@MainId, N'日式唐揚雞定食', 210.00, 1, GETDATE(), N'酥炸日式唐揚雞搭配味噌湯與白飯', NULL, 1, 0, NULL, NULL, NULL);
 
+-- 韓式石鍋拌飯 (已取消)
 IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'韓式石鍋拌飯')
     INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
-    VALUES (@MainId, N'韓式石鍋拌飯', 220.00, 1, GETDATE(), N'豐富蔬菜與牛肉搭配石鍋香飯', NULL, 1, 0, NULL, NULL, NULL);
+    VALUES (@MainId, N'韓式石鍋拌飯', 220.00, 0, GETDATE(), N'豐富蔬菜與牛肉搭配石鍋香飯', NULL, 1, 0, NULL, NULL, NULL);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'起司焗烤通心粉')
     INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
@@ -130,6 +134,10 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'龍蝦奶油義大利
     INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
     VALUES (@MainId, N'龍蝦奶油義大利麵', 480.00, 1, GETDATE(), N'整隻波士頓龍蝦搭配奶油寬麵', NULL, 0, 1, '2026-01-01', '2026-12-31', NULL);
 
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'香煎鱸魚排')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@MainId, N'香煎鱸魚排', 320.00, 1, GETDATE(), N'精緻海鮮料理', NULL, 1, 0, NULL, NULL, NULL);
+
 -- ==================== 飲料 (10筆) ====================
 IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'可樂')
     INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
@@ -191,5 +199,71 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'法式烤布蕾')
 IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'草莓千層蛋糕')
     INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
     VALUES (@DessertId, N'草莓千層蛋糕', 150.00, 1, GETDATE(), N'手工千層薄餅搭配新鮮草莓與奶油', NULL, 1, 0, NULL, NULL, NULL);
+
+-- ==================== 湯品 (10筆) ====================
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'義式蔬菜礦工湯')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SoupId, N'義式蔬菜礦工湯', 120.00, 1, GETDATE(), N'道地義式蔬菜湯', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'羅宋牛腩湯')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SoupId, N'羅宋牛腩湯', 150.00, 1, GETDATE(), N'慢火熬煮羅宋湯', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'巧達海鮮濃湯')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SoupId, N'巧達海鮮濃湯', 130.00, 1, GETDATE(), N'濃郁海鮮風味', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'奶油菠菜濃湯')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SoupId, N'奶油菠菜濃湯', 110.00, 1, GETDATE(), N'絲滑奶油口感', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'牛肝菌菇奶油湯')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SoupId, N'牛肝菌菇奶油湯', 160.00, 1, GETDATE(), N'精選牛肝菌', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'法式南瓜培根濃湯')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SoupId, N'法式南瓜培根濃湯', 120.00, 1, GETDATE(), N'香甜南瓜風味', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'法式洋蔥起司湯')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SoupId, N'法式洋蔥起司湯', 110.00, 1, GETDATE(), N'經典法式風味', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'義式茄汁海鮮湯')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SoupId, N'義式茄汁海鮮湯', 180.00, 1, GETDATE(), N'酸甜茄汁底', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'義式蒜味蛤蜊清湯')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SoupId, N'義式蒜味蛤蜊清湯', 140.00, 1, GETDATE(), N'清甜蒜香感', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'黑松露野菇濃湯')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SoupId, N'黑松露野菇濃湯', 200.00, 1, GETDATE(), N'奢華松露香', NULL, 1, 0, NULL, NULL, NULL);
+
+-- ==================== 附餐 (6筆) ====================
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'松露起司薯條')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SideId, N'松露起司薯條', 90.00, 1, GETDATE(), N'現炸薯條配起司', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'義式香料大蒜麵包')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SideId, N'義式香料大蒜麵包', 60.00, 1, GETDATE(), N'香氣逼人', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'義式香草烤雞翅')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SideId, N'義式香草烤雞翅', 120.00, 1, GETDATE(), N'香嫩多汁', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'酥炸墨魚圈')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SideId, N'酥炸墨魚圈', 150.00, 1, GETDATE(), N'海鮮炸物', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'酥炸洋蔥圈')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SideId, N'酥炸洋蔥圈', 80.00, 1, GETDATE(), N'外酥內軟', NULL, 1, 0, NULL, NULL, NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'凱薩經典沙拉')
+    INSERT INTO dbo.Dishes (CategoryId, DishName, Price, IsActive, CreatedAt, Description, ImageUrl, IsTakeOut, IsLimited, StartDate, EndDate, UpdatedAt)
+    VALUES (@SideId, N'凱薩經典沙拉', 100.00, 1, GETDATE(), N'清爽解膩', NULL, 1, 0, NULL, NULL, NULL);
 
 GO

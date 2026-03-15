@@ -36,7 +36,6 @@ namespace EatTogether.Models.Repositories
 		public async Task<IEnumerable<DishDto>> GetAllAsync()
 		{
 			return await _context.Dishes
-			   .Where(d => d.IsActive)
 			   .Select(d => new DishDto
 			   {
 				   Id = d.Id,
@@ -47,6 +46,10 @@ namespace EatTogether.Models.Repositories
 				   CategoryName = d.Category != null ? d.Category.CategoryName : null,
 				   ImageUrl = d.ImageUrl,
 				   IsActive = d.IsActive,
+				   IsTakeOut = d.IsTakeOut,
+				   IsLimited = d.IsLimited,
+				   StartDate = d.StartDate,
+				   EndDate = d.EndDate,
 				   CreatedAt = d.CreatedAt,
 				   UpdatedAt = d.UpdatedAt
 			   })
@@ -56,7 +59,7 @@ namespace EatTogether.Models.Repositories
 		public async Task<DishDto?> GetByIdAsync(int id)
         {
             return await _context.Dishes
-                .Where(d => d.Id == id && d.IsActive)
+                .Where(d => d.Id == id)
                 .Select(d => new DishDto
                 {
                     Id = d.Id,
@@ -102,6 +105,7 @@ namespace EatTogether.Models.Repositories
 				dish.IsLimited = dto.IsLimited;
 				dish.StartDate = dto.StartDate;
 				dish.EndDate = dto.EndDate;
+				dish.IsActive = dto.IsActive;
 				dish.UpdatedAt = DateTime.UtcNow;
 
 				await _context.SaveChangesAsync();

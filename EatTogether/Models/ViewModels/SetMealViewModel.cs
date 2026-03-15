@@ -43,6 +43,14 @@ namespace EatTogether.Models.ViewModels
         [DataType(DataType.Date)]
         public DateOnly? EndDate { get; set; }
 
+        [Display(Name = "供應開始時間")]
+        [DataType(DataType.Time)]
+        public TimeSpan? StartTime { get; set; }
+
+        [Display(Name = "供應結束時間")]
+        [DataType(DataType.Time)]
+        public TimeSpan? EndTime { get; set; }
+
         // 裁切後的 Base64 圖片資料
         public string? CroppedImageData { get; set; }
 

@@ -21,6 +21,8 @@ namespace EatTogether.Models.ViewModels
                 ImageUrl      = dto.ImageUrl,
                 StartDate     = dto.StartDate,
                 EndDate       = dto.EndDate,
+                StartTime     = dto.StartTime,
+                EndTime       = dto.EndTime,
                 UpdatedAt     = dto.UpdatedAt,
                 DisplayOrder  = dto.DisplayOrder,
                 Items         = dto.Items.Select(i => i.ToItemViewModel()).ToList()
@@ -42,6 +44,8 @@ namespace EatTogether.Models.ViewModels
                 ImageUrl      = vm.ImageUrl,
                 StartDate     = vm.StartDate,
                 EndDate       = vm.EndDate,
+                StartTime     = vm.StartTime,
+                EndTime       = vm.EndTime,
                 DisplayOrder  = vm.DisplayOrder
             };
         }

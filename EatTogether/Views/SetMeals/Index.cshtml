@@ -70,21 +70,115 @@
                                 <div class="text-muted small mb-1">
                                     @if (item.StartDate.HasValue || item.EndDate.HasValue)
                                     {
-                                        <i class="fas fa-calendar-alt me-1 text-primary"></i>
-                                        <span class="text-primary fw-bold">
-                                            @(item.StartDate?.ToString("yyyy/MM/dd") ?? "—") ~ 
-                                            @(item.EndDate?.ToString("yyyy/MM/dd") ?? "—")
-                                        </span>
+                                        <div class="d-flex align-items-center mb-1">
+                                            <i class="fas fa-calendar-alt me-1 text-primary"></i>
+                                            <span class="text-primary fw-bold">
+                                                @(item.StartDate?.ToString("yyyy/MM/dd") ?? "—") ~ 
+                                                @(item.EndDate?.ToString("yyyy/MM/dd") ?? "—")
+                                            </span>
+                                        </div>
                                     }
                                     else
                                     {
                                         <i class="fas fa-calendar-check me-1"></i>
-                                        <span>不限日期</span>
+                                        <span>長期供應</span>
+                                    }
+
+                                    @if (item.StartTime.HasValue && item.EndTime.HasValue)
+                                    {
+                                        <div class="d-flex align-items-center mt-1">
+                                            <i class="fas fa-clock me-1 text-danger"></i>
+                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size: 10px;">
+                                                供應時段：@item.StartTime.Value.ToString(@"hh\:mm") ~ @item.EndTime.Value.ToString(@"hh\:mm")
+                                            </span>
+                                        </div>
                                     }
                                 </div>
 
-                                <div class="text-muted small mb-2">
-                                    <i class="fas fa-list me-1"></i>包含 @item.Items.Count 道餐點
+                                <div class="mb-3">
+                                    <button class="btn btn-sm w-100 d-flex justify-content-between align-items-center btn-setmeal-trigger" 
+                                            style="border-radius: 12px; font-weight: 600; background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%); border: 1px solid #cce3fd; color: #007bff; box-shadow: 0 4px 15px rgba(0, 123, 255, 0.1); transition: all 0.3s ease;"
+                                            onmouseover="this.style.boxShadow='0 8px 25px rgba(0, 123, 255, 0.2)'; this.style.transform='translateY(-2px)';"
+                                            onmouseout="this.style.boxShadow='0 4px 15px rgba(0, 123, 255, 0.1)'; this.style.transform='translateY(0)';"
+                                            type="button" data-bs-toggle="modal" data-bs-target="#modal-@item.Id">
+                                        <span class="trigger-text"><i class="fas fa-wand-magic-sparkles me-2"></i>設定套餐內容</span>
+                                        <i class="fas fa-chevron-right small" style="opacity: 0.5;"></i>
+                                    </button>
+                                    
+                                    <!-- 彈跳視窗 -->
+                                    <div class="modal fade" id="modal-@item.Id" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content" style="border: none; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                                                <div class="modal-header border-0 p-4" style="background: #2c3e50; color: #fff;">
+                                                    <h5 class="modal-title fw-bold">
+                                                        <i class="fas fa-utensils me-2 text-warning"></i>@item.SetMealName
+                                                    </h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body p-4 bg-white">
+                                                    @{
+                                                        var fixedItems = item.Items.Where(i => !i.IsOptional).ToList();
+                                                        var optionalGroups = item.Items.Where(i => i.IsOptional)
+                                                                                       .GroupBy(i => i.OptionGroupNo ?? 0)
+                                                                                       .OrderBy(g => g.Key)
+                                                                                       .ToList();
+                                                    }
+
+                                                    @if (fixedItems.Any())
+                                                    {
+                                                        <div class="mb-4">
+                                                            <div class="small fw-bold text-muted mb-2 text-uppercase letter-spacing-1">固定包含</div>
+                                                            <div class="p-3 rounded-3" style="background: #f8f9fa; border: 1px solid #edf2f7;">
+                                                                @foreach (var f in fixedItems)
+                                                                {
+                                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                        <span class="text-dark">@f.DishName</span>
+                                                                        <span class="badge bg-secondary">@f.Quantity 份</span>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+
+                                                    @foreach (var g in optionalGroups)
+                                                    {
+                                                        var count = g.Count();
+                                                        var pick = g.First().PickLimit ?? 1;
+                                                        <div class="mb-4 optional-group-section" data-pick-limit="@pick">
+                                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                                <div class="small fw-bold text-primary text-uppercase letter-spacing-1 optional-group-header">精選區 (@count 選 @pick)</div>
+                                                                <span class="badge bg-light text-primary border border-primary current-sum">已選 0</span>
+                                                            </div>
+                                                            <div class="optional-group-content">
+                                                                @foreach (var opt in g)
+                                                                {
+                                                                    <div class="d-flex align-items-center justify-content-between p-3 mb-2 rounded-3 shadow-sm border border-light item-row" style="background: #fff;">
+                                                                        <span class="text-dark fw-medium" style="cursor: pointer; flex-grow: 1;" onclick="this.nextElementSibling.querySelector('button:last-child').click()">
+                                                                            @opt.DishName
+                                                                        </span>
+                                                                        <div class="input-group input-group-sm" style="width: 110px;">
+                                                                            <button class="btn btn-outline-secondary rounded-start px-2" type="button" onclick="changeQty(this, -1)">-</button>
+                                                                            <input type="text" class="form-control text-center qty-input fw-bold border-secondary" 
+                                                                                   value="0" readonly style="background: #fff;"
+                                                                                   data-dish-name="@opt.DishName">
+                                                                            <button class="btn btn-outline-secondary rounded-end px-2" type="button" onclick="changeQty(this, 1)">+</button>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                                <div class="modal-footer border-0 p-4 pt-0">
+                                                    <button class="btn btn-primary btn-lg w-100 fw-bold shadow-sm" 
+                                                            style="border-radius: 10px;"
+                                                            type="button" onclick="confirmSelection(@item.Id)">
+                                                        確認組合
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="d-flex flex-wrap gap-1 mb-2">
@@ -201,6 +295,97 @@
         function goToPage(page) {
             currentPage = page;
             renderPage();
+        }
+
+        function changeQty(btn, delta) {
+            const section = btn.closest(".optional-group-section");
+            const limit = parseInt(section.dataset.pickLimit);
+            const input = btn.parentElement.querySelector(".qty-input");
+            const sumBadge = section.querySelector(".current-sum");
+            
+            // 計算目前群組總和
+            const allInputs = section.querySelectorAll(".qty-input");
+            let currentTotal = 0;
+            allInputs.forEach(i => currentTotal += parseInt(i.value));
+
+            // 限制：增加時不可超過總 pickLimit
+            if (delta > 0 && currentTotal >= limit) {
+                return;
+            }
+
+            // 限制：減少時不可低於 0
+            let newVal = parseInt(input.value) + delta;
+            if (newVal < 0) newVal = 0;
+            
+            input.value = newVal;
+
+            // 即時更新總和顯示
+            let newTotal = 0;
+            allInputs.forEach(i => newTotal += parseInt(i.value));
+            sumBadge.textContent = `已選 ${newTotal}`;
+            
+            // 視覺回饋：選滿時變色
+            if (newTotal === limit) {
+                sumBadge.classList.replace("bg-light", "bg-success");
+                sumBadge.classList.replace("text-primary", "text-white");
+            } else {
+                sumBadge.classList.replace("bg-success", "bg-light");
+                sumBadge.classList.replace("text-white", "text-primary");
+            }
+        }
+
+        function confirmSelection(id) {
+            const modalEl = document.getElementById(`modal-${id}`);
+            const triggerBtn = document.querySelector(`[data-bs-target="#modal-${id}"]`);
+            const triggerText = triggerBtn.querySelector(".trigger-text");
+            
+            // 驗證選擇數量總和
+            const headers = modalEl.querySelectorAll(".optional-group-header");
+            let isValid = true;
+            
+            headers.forEach(header => {
+                const limit = parseInt(header.dataset.pickLimit);
+                const qtyInputs = header.closest(".optional-group-section").querySelectorAll(".qty-input");
+                let totalQty = 0;
+                qtyInputs.forEach(input => totalQty += parseInt(input.value));
+
+                if (totalQty !== limit) {
+                    isValid = false;
+                    header.style.background = "#ff6b6b";
+                    header.style.color = "#fff";
+                } else {
+                    header.style.background = "#fff0f0";
+                    header.style.color = "#d32f2f";
+                }
+            });
+
+            if (!isValid) {
+                alert("請確保每個精選區選擇的「總數量」符合規定！");
+                return;
+            }
+
+            // 收集已選名稱與數量
+            const selectedNames = [];
+            // 選擇品項 (僅收集數量 > 0 的)
+            modalEl.querySelectorAll(".qty-input").forEach(input => {
+                const q = parseInt(input.value);
+                if (q > 0) {
+                    selectedNames.push(`${input.dataset.dishName} x${q}`);
+                }
+            });
+
+            // 更新按鈕文字
+            const summary = selectedNames.length > 0 ? selectedNames.join(", ") : "尚未選擇精選品項";
+            triggerText.innerHTML = `<i class="fas fa-check-circle me-1" style="color: #51cf66;"></i>已選: ${summary}`;
+            triggerText.style.fontSize = "11px";
+
+            // 關閉 Modal
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            modalInstance.hide();
+            
+            // 變更觸發按鈕樣式
+            triggerBtn.style.background = "#f8fff9";
+            triggerBtn.style.borderColor = "#51cf66";
         }
 
         async function disableSetMeal(id) {

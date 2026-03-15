@@ -71,6 +71,18 @@
                                 <span asp-validation-for="EndDate" class="text-danger small"></span>
                             </div>
 
+                            <div class="col-md-6">
+                                <label asp-for="StartTime" class="form-label fw-bold text-secondary"></label>
+                                <input asp-for="StartTime" type="time" class="form-control form-control-lg border-light-subtle shadow-sm" />
+                                <span asp-validation-for="StartTime" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="EndTime" class="form-label fw-bold text-secondary"></label>
+                                <input asp-for="EndTime" type="time" class="form-control form-control-lg border-light-subtle shadow-sm" />
+                                <span asp-validation-for="EndTime" class="text-danger small"></span>
+                            </div>
+
                             <div class="col-md-12">
                                 <label class="form-label fw-bold text-secondary">套餐描述</label>
                                 <textarea asp-for="Description" class="form-control border-light-subtle shadow-sm" rows="4"></textarea>

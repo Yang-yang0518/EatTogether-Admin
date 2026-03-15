@@ -20,7 +20,10 @@ namespace EatTogether.Models.Extensions
 				ImageUrl = setMeal.ImageUrl,
 				StartDate = setMeal.StartDate,
 				EndDate = setMeal.EndDate,
+				StartTime = setMeal.StartTime,
+				EndTime = setMeal.EndTime,
 				UpdatedAt = setMeal.UpdatedAt,
+				DisplayOrder = setMeal.DisplayOrder,
 				Items = setMeal.SetMealItems.Select(i => i.ToItemDto()).ToList()
 			};
 		}

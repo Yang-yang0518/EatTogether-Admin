@@ -540,13 +540,16 @@ CREATE TABLE [dbo].[SetMeals](
 	[DiscountType] [nvarchar](20) NOT NULL,
 	[DiscountValue] [decimal](10, 2) NOT NULL,
 	[IsActive] [bit] NOT NULL,
-	[CreatedAt] [datetime2](0) NOT NULL,
+	[CreatedAt] [datetime] NOT NULL,
 	[SetPrice] [decimal](10, 2) NULL,
 	[Description] [nvarchar](300) NULL,
-	[ImageUrl] [nvarchar](300) NULL,
+	[ImageUrl] [nvarchar](255) NULL,
 	[StartDate] [date] NULL,
 	[EndDate] [date] NULL,
-	[UpdatedAt] [datetime2](0) NULL,
+	[StartTime] [time](7) NULL,
+	[EndTime] [time](7) NULL,
+	[UpdatedAt] [datetime] NULL,
+	[DisplayOrder] [int] NOT NULL DEFAULT 1,
  CONSTRAINT [PK_SetMeals] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC

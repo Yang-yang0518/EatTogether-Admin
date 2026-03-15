@@ -29,7 +29,13 @@ public partial class SetMeal
 
     public DateOnly? EndDate { get; set; }
 
+    public TimeSpan? StartTime { get; set; }
+
+    public TimeSpan? EndTime { get; set; }
+
     public DateTime? UpdatedAt { get; set; }
+
+    public int DisplayOrder { get; set; }
 
     public virtual ICollection<SetMealItem> SetMealItems { get; set; } = new List<SetMealItem>();
 }

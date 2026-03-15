@@ -46,7 +46,10 @@ namespace EatTogether.Models.Repositories
                                 Description = dto.Description,
                                 ImageUrl = dto.ImageUrl,
                                 StartDate = dto.StartDate,
-                                EndDate = dto.EndDate
+                                EndDate = dto.EndDate,
+                                StartTime = dto.StartTime,
+                                EndTime = dto.EndTime,
+                                DisplayOrder = dto.DisplayOrder
                         };
 
                         _context.SetMeals.Add(setMeal);
@@ -72,7 +75,10 @@ namespace EatTogether.Models.Repositories
                                         ImageUrl = s.ImageUrl,
                                         StartDate = s.StartDate,
                                         EndDate = s.EndDate,
+                                        StartTime = s.StartTime,
+                                        EndTime = s.EndTime,
                                         UpdatedAt = s.UpdatedAt,
+                                        DisplayOrder = s.DisplayOrder,
                                         Items = s.SetMealItems.Select(i => new SetmealItemDto
                                         {
                                                 Id = i.Id,
@@ -109,7 +115,10 @@ namespace EatTogether.Models.Repositories
                                                 ImageUrl = s.ImageUrl,
                                                 StartDate = s.StartDate,
                                                 EndDate = s.EndDate,
+                                                StartTime = s.StartTime,
+                                                EndTime = s.EndTime,
                                                 UpdatedAt = s.UpdatedAt,
+                                                DisplayOrder = s.DisplayOrder,
                                                 Items = s.SetMealItems.Select(i => new SetmealItemDto     
                                                 {
                                                         Id = i.Id,
@@ -160,6 +169,9 @@ namespace EatTogether.Models.Repositories
                         setMeal.ImageUrl = dto.ImageUrl;
                         setMeal.StartDate = dto.StartDate;
                         setMeal.EndDate = dto.EndDate;
+                        setMeal.StartTime = dto.StartTime;
+                        setMeal.EndTime = dto.EndTime;
+                        setMeal.DisplayOrder = dto.DisplayOrder;
                         setMeal.UpdatedAt = DateTime.Now;
 
                         await _context.SaveChangesAsync();
