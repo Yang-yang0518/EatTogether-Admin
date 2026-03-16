@@ -37,6 +37,8 @@ public partial class PreOrder
 
     public int DoneOrCancel { get; set; }
 
+    public DateTime? CancelledAt { get; set; }
+
     public virtual Coupon Coupon { get; set; }
 
     public virtual Member Member { get; set; }

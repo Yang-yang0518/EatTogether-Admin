@@ -13,6 +13,10 @@
         public string? ImageUrl { get; set; }
         public bool IsTakeOut { get; set; }
         public bool IsLimited { get; set; }
+        public bool IsRecommended { get; set; }
+        public bool IsPopular { get; set; }
+        public bool IsVegetarian { get; set; }
+        public int SpicyLevel { get; set; }
         public DateOnly? StartDate { get; set; }
         public DateOnly? EndDate { get; set; }
         public DateTime CreatedAt { get; set; }

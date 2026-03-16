@@ -11,55 +11,118 @@
         <li class="breadcrumb-item active">分類管理</li>
     </ol>
 
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div><i class="fas fa-table me-1"></i>分類列表</div>
-            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
-                <i class="fas fa-plus me-1"></i>新增分類
-            </button>
+    <!-- 統計卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-primary text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">總分類數</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count()</div>
+                    </div>
+                    <i class="fas fa-tags fa-2x text-white-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-success text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">啟用中</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count(c => c.IsActive)</div>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x text-white-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-secondary text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">已停用</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count(c => !c.IsActive)</div>
+                    </div>
+                    <i class="fas fa-ban fa-2x text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜尋區 -->
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-body bg-light rounded">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" id="customSearchInput" class="form-control border-start-0" placeholder="搜尋分類名稱...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="statusFilter" class="form-select">
+                        <option value="">所有狀態</option>
+                        <option value="啟用">啟用</option>
+                        <option value="停用">停用</option>
+                    </select>
+                </div>
+                <div class="col-md-5 text-end">
+                    <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                        <i class="fas fa-plus me-1"></i>新增分類
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <div class="fw-bold text-primary"><i class="fas fa-table me-1"></i>分類列表</div>
         </div>
         <div class="card-body">
             <div id="alertBox"></div>
             <div class="table-responsive">
-                <table id="categoryTable" class="table table-bordered table-hover">
+                <table id="categoryTable" class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
                             <th>分類名稱</th>
                             <th>上層分類</th>
-                            <th style="width: 100px;">顯示順序</th>
-                            <th style="width: 80px;">狀態</th>
+                            <th class="text-center">餐點數量</th>
+                            <th class="text-center" style="width: 100px;">顯示順序</th>
+                            <th class="text-center" style="width: 100px;">狀態</th>
                             <th>建立時間</th>
                             <th class="text-center" style="width: 150px;">操作</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @{
-                            int autoOrder = 1;
-                        }
                         @foreach (var item in Model)
                         {
                             <tr>
                                 <td class="fw-bold">@item.CategoryName</td>
                                 <td>@(item.ParentCategoryName ?? "—")</td>
-                                <td>@(item.DisplayOrder > 0 ? item.DisplayOrder : autoOrder++)</td>
-                                <td>
+                                <td class="text-center">
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle px-3">@item.DishCount</span>
+                                </td>
+                                <td class="text-center">@item.DisplayOrder</td>
+                                <td class="text-center">
                                     @if (item.IsActive)
                                     {
-                                        <span class="badge bg-success">啟用</span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3">啟用</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary">停用</span>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3">停用</span>
                                     }
                                 </td>
-                                <td>@item.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                <td class="small text-muted">@item.CreatedAt.ToString("yyyy-MM-dd")</td>
                                 <td class="text-center">
-                                    <button class="btn btn-outline-warning btn-sm me-1" onclick="openEditModal(@item.Id, '@item.CategoryName', '@item.ParentCategoryId', @item.DisplayOrder, @(item.IsActive.ToString().ToLower()))">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="disableCategory(@item.Id)">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    <div class="btn-group">
+                                        <button class="btn btn-outline-warning btn-sm" onclick="openEditModal(@item.Id, '@item.CategoryName', '@item.ParentCategoryId', @item.DisplayOrder, @(item.IsActive.ToString().ToLower()))" title="編輯">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="disableCategory(@item.Id)" title="停用" @(!item.IsActive ? "disabled" : "")>
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -180,7 +243,7 @@
     <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js"></script>
     <script>
         const dataTable = new simpleDatatables.DataTable("#categoryTable", {
-            searchable: true,
+            searchable: false, // 關閉預設搜尋，使用自定義搜尋
             fixedHeight: false,
             perPage: 10,
             labels: {
@@ -190,6 +253,37 @@
                 info: "顯示第 {start} 至 {end} 筆，共 {rows} 筆記錄",
             }
         });
+
+        // 自定義搜尋與篩選邏輯
+        const customSearchInput = document.getElementById("customSearchInput");
+        const statusFilter = document.getElementById("statusFilter");
+
+        function filterTable() {
+            const searchTerm = customSearchInput.value.toLowerCase();
+            const statusTerm = statusFilter.value;
+
+            const rows = document.querySelectorAll("#categoryTable tbody tr");
+            
+            rows.forEach(row => {
+                const categoryName = row.cells[0].textContent.toLowerCase();
+                const status = row.cells[4].textContent.trim(); // 狀態在第 5 個欄位 (index 4)
+
+                const matchesSearch = categoryName.includes(searchTerm);
+                const matchesStatus = statusTerm === "" || status === statusTerm;
+
+                if (matchesSearch && matchesStatus) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+            
+            // 由於使用 simple-datatables，手動隱藏 tr 可能會影響分頁
+            // 這裡簡單處理，或可重新 render dataTable 資料
+        }
+
+        customSearchInput.addEventListener("input", filterTable);
+        statusFilter.addEventListener("change", filterTable);
 
         async function submitCreateCategory() {
             const data = {

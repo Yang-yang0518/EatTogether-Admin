@@ -10,123 +10,213 @@
         <li class="breadcrumb-item active">套餐管理</li>
     </ol>
 
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div><i class="fas fa-box-open me-1"></i>套餐列表</div>
-            <div class="d-flex gap-2 align-items-center">
-                <input type="text" id="searchInput" class="form-control form-control-sm"
-                       placeholder="搜尋套餐..." style="width:180px" oninput="filterCards()" />
-                <a asp-action="Create" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus me-1"></i>新增套餐
-                </a>
+    <!-- 統計卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-primary text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">總套餐數</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count()</div>
+                    </div>
+                    <i class="fas fa-box-open fa-2x text-white-50"></i>
+                </div>
             </div>
         </div>
-        <div class="card-body">
-            <div id="alertBox"></div>
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-success text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">啟用中</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count(s => s.IsActive)</div>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x text-white-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-secondary text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">已停用</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count(s => !s.IsActive)</div>
+                    </div>
+                    <i class="fas fa-ban fa-2x text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            <div class="row g-3" id="setMealCardContainer">
+    <div id="alertBox"></div>
+
+    <!-- 搜尋與篩選區 -->
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-body bg-light rounded">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" id="searchInput" class="form-control border-start-0" 
+                               placeholder="搜尋套餐名稱..." oninput="filterCards()" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="statusFilter" class="form-select shadow-sm" onchange="filterCards()">
+                        <option value="">所有狀態</option>
+                        <option value="熱烈供應中">供應中</option>
+                        <option value="已停用">已停用</option>
+                        <option value="非供應時段">非供應時段</option>
+                        <option value="即將開始">即將開始</option>
+                        <option value="活動結束">活動結束</option>
+                    </select>
+                </div>
+                <div class="col-md-5 text-end">
+                    <a asp-action="Create" class="btn btn-primary shadow-sm px-4 rounded-pill">
+                        <i class="fas fa-plus me-1"></i>新增套餐
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm border-0">
+        <!-- 移除原本內部的搜尋列 -->
+        <div class="card-body p-4">
+            <!-- 套餐卡片區 -->
+            <div class="row g-4" id="setmeal-card-container">
                 @foreach (var item in Model)
                 {
-                    <div class="col-6 col-md-4 col-lg-3 setmeal-card"
+                    var now = DateTime.Now;
+                    var today = DateOnly.FromDateTime(now);
+                    var currentTime = now.TimeOfDay;
+
+                    bool isDateValid = (!item.StartDate.HasValue || item.StartDate <= today) &&
+                                       (!item.EndDate.HasValue || item.EndDate >= today);
+
+                    bool isTimeValid = (!item.StartTime.HasValue || item.StartTime <= currentTime) &&
+                                       (!item.EndTime.HasValue || item.EndTime >= currentTime);
+
+                    string statusText;
+                    string statusClass;
+
+                    if (!item.IsActive) {
+                        statusText = "已停用";
+                        statusClass = "bg-secondary-subtle text-secondary border-secondary";
+                    } else if (item.StartDate.HasValue && item.StartDate > today) {
+                        statusText = "即將開始";
+                        statusClass = "bg-info-subtle text-info border-info";
+                    } else if (item.EndDate.HasValue && item.EndDate < today) {
+                        statusText = "活動結束";
+                        statusClass = "bg-danger-subtle text-danger border-danger";
+                    } else if (!isTimeValid) {
+                        statusText = "非供應時段";
+                        statusClass = "bg-warning-subtle text-warning-emphasis border-warning";
+                    } else {
+                        statusText = "熱烈供應中";
+                        statusClass = "bg-success-subtle text-success border-success";
+                    }
+
+                    <div class="col-md-6 col-lg-4 col-xl-3 setmeal-card"
                          data-name="@item.SetMealName.ToLower()"
                          data-order="@item.DisplayOrder">
-                        <div class="card h-100 shadow-sm">
-                            <div style="position:relative; padding-top:75%; overflow:hidden; background:#f8f9fa;">
+                        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden transition-hover">
+                            <div class="position-relative">
                                 @if (!string.IsNullOrEmpty(item.ImageUrl))
                                 {
-                                    <img src="@item.ImageUrl"
-                                         style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;"
-                                         alt="@item.SetMealName"
-                                         onerror="this.src='/images/no-image.png'" />
+                                    <img src="@item.ImageUrl" class="card-img-top" style="height:180px; object-fit:cover;" />
                                 }
                                 else
                                 {
-                                    <div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;" class="text-muted">
-                                        <i class="fas fa-image fa-3x"></i>
+                                    <div class="bg-light d-flex align-items-center justify-content-center" style="height:180px;">
+                                        <i class="fas fa-image fa-3x text-muted opacity-25"></i>
+                                    </div>
+                                }
+                                <div class="position-absolute top-0 end-0 p-2">
+                                    <span class="badge rounded-pill border @statusClass px-3 shadow-sm" style="backdrop-filter: blur(4px);">
+                                        @statusText
+                                    </span>
+                                </div>
+                                @if (item.IsPopular)
+                                {
+                                    <div class="position-absolute top-0 start-0 p-2">
+                                        <span class="badge bg-warning text-dark shadow-sm"><i class="fas fa-fire me-1"></i>人氣</span>
                                     </div>
                                 }
                             </div>
-
-                            <div class="card-body p-2">
-                                <h6 class="card-title mb-1 fw-bold text-truncate" title="@item.SetMealName">
-                                    @item.SetMealName
-                                </h6>
-
-                                <div class="fw-bold text-danger mb-1">
-                                    @(item.SetPrice.HasValue ? $"${item.SetPrice}" : "未設定定價")
+                            
+                            <div class="card-body d-flex flex-column p-4">
+                                <div class="mb-2">
+                                    <h5 class="fw-bold mb-1 text-dark">@item.SetMealName</h5>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-danger fw-bold fs-5">$@(item.SetPrice.HasValue ? item.SetPrice.Value.ToString("N0") : "0")</span>
+                                        @if (item.DiscountValue > 0)
+                                        {
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">
+                                                <i class="fas fa-percentage me-1"></i>
+                                                @(item.DiscountType == "percent" ? $"{(100 - item.DiscountValue):0}折" : $"現折 ${item.DiscountValue:N0}")
+                                            </span>
+                                        }
+                                    </div>
                                 </div>
 
-                                <div class="text-muted small mb-1">
-                                    @if (item.DiscountType == "percent")
-                                    {
-                                        <span>折扣：@item.DiscountValue%</span>
-                                    }
-                                    else
-                                    {
-                                        <span>折扣：$@item.DiscountValue</span>
-                                    }
-                                </div>
-
-                                <div class="text-muted small mb-1">
+                                <p class="text-muted small mb-3 text-truncate-2" style="height: 40px; line-height: 1.4;">
+                                    @item.Description
+                                </p>
+                                
+                                <div class="bg-primary-subtle bg-opacity-10 rounded-4 p-3 mb-4 border border-primary border-opacity-10">
+                                    <div class="d-flex align-items-center mb-2 text-primary-emphasis">
+                                        <i class="fas fa-ticket-alt me-2 small"></i>
+                                        <span class="small fw-bold">優惠券可用：</span>
+                                        <span class="ms-auto small">@(item.IsActive ? "啟用中" : "未啟用")</span>
+                                    </div>
+                                    
                                     @if (item.StartDate.HasValue || item.EndDate.HasValue)
                                     {
-                                        <i class="fas fa-calendar-alt me-1 text-primary"></i>
-                                        <span class="text-primary fw-bold">
-                                            @(item.StartDate?.ToString("yyyy/MM/dd") ?? "—") ~ 
-                                            @(item.EndDate?.ToString("yyyy/MM/dd") ?? "—")
-                                        </span>
+                                        <div class="d-flex align-items-start mb-2 text-muted">
+                                            <i class="far fa-calendar-alt me-2 mt-1 small"></i>
+                                            <div class="small">
+                                                <div class="fw-bold text-dark-emphasis">供應期間</div>
+                                                @(item.StartDate?.ToString("yyyy/MM/dd") ?? "不限") ~ @(item.EndDate?.ToString("yyyy/MM/dd") ?? "不限")
+                                            </div>
+                                        </div>
                                     }
-                                    else
+                                    
+                                    @if (item.StartTime.HasValue || item.EndTime.HasValue)
                                     {
-                                        <i class="fas fa-calendar-check me-1"></i>
-                                        <span>不限日期</span>
+                                        <div class="d-flex align-items-start text-muted">
+                                            <i class="far fa-clock me-2 mt-1 small"></i>
+                                            <div class="small">
+                                                <div class="fw-bold text-dark-emphasis">每日時段</div>
+                                                @(item.StartTime?.ToString(@"hh\:mm") ?? "不限") ~ @(item.EndTime?.ToString(@"hh\:mm") ?? "不限")
+                                            </div>
+                                        </div>
                                     }
                                 </div>
 
-                                <div class="text-muted small mb-2">
-                                    <i class="fas fa-list me-1"></i>包含 @item.Items.Count 道餐點
-                                </div>
-
-                                <div class="d-flex flex-wrap gap-1 mb-2">
-                                    @if (item.IsActive)
-                                    {
-                                        var today = DateOnly.FromDateTime(DateTime.Today);
-                                        if (item.StartDate.HasValue && today < item.StartDate.Value)
+                                <div class="mt-auto">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <button class="btn btn-outline-info w-100 rounded-pill btn-sm py-2 view-setmeal-items"
+                                                    data-setmeal-id="@item.Id">
+                                                <i class="fas fa-search me-1"></i>詳情
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <a asp-action="Edit" asp-route-id="@item.Id"
+                                               class="btn btn-outline-warning w-100 rounded-pill btn-sm py-2">
+                                                <i class="fas fa-edit me-1"></i>編輯
+                                            </a>
+                                        </div>
+                                        @if (item.IsActive)
                                         {
-                                            <span class="badge bg-info text-dark">尚未開始</span>
+                                            <div class="col-12 mt-2">
+                                                <button class="btn btn-light text-danger w-100 rounded-pill btn-sm py-2 border"
+                                                        onclick="disableSetMeal(@item.Id)">
+                                                    <i class="fas fa-power-off me-1"></i>下架套餐
+                                                </button>
+                                            </div>
                                         }
-                                        else if (item.EndDate.HasValue && today > item.EndDate.Value)
-                                        {
-                                            <span class="badge bg-danger">已過期</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-success">進行中</span>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">停用</span>
-                                    }
-                                    @if (item.DiscountType == "percent")
-                                    {
-                                        <span class="badge bg-light text-dark border">百分比</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-light text-dark border">固定折扣</span>
-                                    }
-                                </div>
-
-                                <div class="d-flex gap-1">
-                                    <a asp-action="Edit" asp-route-id="@item.Id"
-                                       class="btn btn-warning btn-sm flex-fill">
-                                        <i class="fas fa-edit"></i> 編輯
-                                    </a>
-                                    <button class="btn btn-danger btn-sm flex-fill"
-                                            onclick="disableSetMeal(@item.Id)">
-                                        <i class="fas fa-trash"></i> 停用
-                                    </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -134,20 +224,29 @@
                 }
             </div>
 
-            @if (!Model.Any())
-            {
-                <div class="text-center text-muted py-5">
-                    <i class="fas fa-box-open fa-3x mb-3"></i>
-                    <p>目前沒有套餐資料</p>
-                </div>
-            }
-
             <!-- 分頁 -->
             <div class="d-flex justify-content-between align-items-center mt-4">
-                <div class="text-muted small" id="pageInfo"></div>
-                <nav>
-                    <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
-                </nav>
+                <small class="text-muted" id="pageInfo"></small>
+                <ul class="pagination mb-0" id="pagination"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 查看餐點 Modal -->
+<div class="modal fade" id="viewSetMealItemsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-list me-2 text-primary"></i>
+                    <span id="viewSetMealName"></span> 的餐點內容
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="viewSetMealItemsSummary"></div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
             </div>
         </div>
     </div>
@@ -158,15 +257,25 @@
         const PAGE_SIZE = 12;
         let currentPage = 1;
         let filteredCards = [];
+        const allSetMeals = @Html.Raw(Json.Serialize(Model));
 
         function filterCards() {
             const search = document.getElementById("searchInput").value.toLowerCase();
+            const status = document.getElementById("statusFilter").value;
 
             filteredCards = Array.from(document.querySelectorAll(".setmeal-card")).filter(card => {
-                return !search || card.dataset.name.includes(search);
+                const matchSearch = !search || card.dataset.name.includes(search);
+                
+                let matchStatus = true;
+                if (status) {
+                    const statusBadge = card.querySelector(".badge.rounded-pill");
+                    const statusText = statusBadge ? statusBadge.textContent.trim() : "";
+                    matchStatus = (statusText === status);
+                }
+
+                return matchSearch && matchStatus;
             });
 
-            // 依順序排序
             filteredCards.sort((a, b) => parseInt(a.dataset.order) - parseInt(b.dataset.order));
 
             currentPage = 1;
@@ -179,22 +288,28 @@
             allCards.forEach(c => c.style.display = "none");
 
             const start = (currentPage - 1) * PAGE_SIZE;
-            const end   = start + PAGE_SIZE;
+            const end = start + PAGE_SIZE;
             filteredCards.slice(start, end).forEach(c => c.style.display = "");
 
-            const total      = filteredCards.length;
+            const total = filteredCards.length;
             const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
-            document.getElementById("pageInfo").textContent =
-                `顯示第 ${Math.min(start + 1, total)} 至 ${Math.min(end, total)} 筆，共 ${total} 筆記錄`;
 
-            const pagination = document.getElementById("pagination");
-            pagination.innerHTML = "";
+            const pageInfoElement = document.getElementById("pageInfo");
+            if (pageInfoElement) {
+                pageInfoElement.textContent =
+                    `顯示第 ${total === 0 ? 0 : start + 1} 至 ${Math.min(end, total)} 筆，共 ${total} 筆記錄`;
+            }
 
-            for (let i = 1; i <= totalPages; i++) {
-                const li = document.createElement("li");
-                li.className = `page-item ${i === currentPage ? "active" : ""}`;
-                li.innerHTML = `<button class="page-link" onclick="goToPage(${i})">${i}</button>`;
-                pagination.appendChild(li);
+            const paginationElement = document.getElementById("pagination");
+            if (paginationElement) {
+                paginationElement.innerHTML = "";
+
+                for (let i = 1; i <= totalPages; i++) {
+                    const li = document.createElement("li");
+                    li.className = `page-item ${i === currentPage ? "active" : ""}`;
+                    li.innerHTML = `<button type="button" class="page-link" onclick="goToPage(${i})">${i}</button>`;
+                    paginationElement.appendChild(li);
+                }
             }
         }
 
@@ -206,13 +321,17 @@
         async function disableSetMeal(id) {
             if (!confirm("確定要停用此套餐嗎？")) return;
 
-            const res = await fetch(`/SetMeals/Disable/${id}`, { method: "POST" });
+            try {
+                const res = await fetch(`/SetMeals/Disable/${id}`, { method: "POST" });
 
-            if (res.ok) {
-                showAlert("success", "停用成功");
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showAlert("danger", "停用失敗，請稍後再試");
+                if (res.ok) {
+                    showAlert("success", "停用成功");
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert("danger", "停用失敗，請稍後再試");
+                }
+            } catch (error) {
+                showAlert("danger", "發生錯誤，請稍後再試");
             }
         }
 
@@ -224,8 +343,89 @@
                 </div>`;
         }
 
-        // 初始化
-        filteredCards = Array.from(document.querySelectorAll(".setmeal-card"));
-        renderPage();
+        function formatItemForDisplay(item) {
+            let text = `${item.dishName} ($${item.dishPrice}) x${item.quantity}`;
+
+            if (item.isOptional) {
+                // 只保留限選資訊
+                text += ` <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1">限選 ${item.pickLimit ?? ''}</span>`;
+            } else {
+                text += ` <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-1">固定</span>`;
+            }
+
+            return text;
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Event listener for "查看餐點" buttons
+            document.querySelectorAll(".view-setmeal-items").forEach(button => {
+                button.addEventListener("click", function () {
+                    const setMealId = parseInt(this.dataset.setmealId);
+                    const setMeal = allSetMeals.find(sm => sm.id === setMealId);
+
+                    if (!setMeal) return;
+
+                    document.getElementById("viewSetMealName").textContent = setMeal.setMealName;
+
+                    const summaryContainer = document.getElementById("viewSetMealItemsSummary");
+                    let summaryHtml = "";
+
+                    if (setMeal.items && setMeal.items.length > 0) {
+                        // 將項目分為「固定」與「自選群組」
+                        const fixedItems = setMeal.items.filter(i => !i.isOptional);
+                        const optionalGroups = {};
+
+                        setMeal.items.filter(i => i.isOptional).forEach(item => {
+                            const categoryName = item.categoryName || "其他自選";
+                            if (!optionalGroups[categoryName]) {
+                                optionalGroups[categoryName] = {
+                                    items: [],
+                                    pickLimit: item.pickLimit
+                                };
+                            }
+                            optionalGroups[categoryName].items.push(item);
+                        });
+
+                        // 渲染固定項目
+                        if (fixedItems.length > 0) {
+                            summaryHtml += `<h6 class="fw-bold mt-2 text-dark-emphasis"><i class="fas fa-thumbtack me-2"></i>固定餐點</h6>`;
+                            summaryHtml += `<ul class="list-group list-group-flush mb-4 rounded-3 border">`;
+                            fixedItems.forEach(item => {
+                                summaryHtml += `<li class="list-group-item small py-2 border-light">${formatItemForDisplay(item)}</li>`;
+                            });
+                            summaryHtml += `</ul>`;
+                        }
+
+                        // 渲染自選群組 (按分類名稱)
+                        for (const catName in optionalGroups) {
+                            const group = optionalGroups[catName];
+                            summaryHtml += `<div class="mb-4">`;
+                            summaryHtml += `<div class="d-flex align-items-center mb-2">`;
+                            summaryHtml += `<h6 class="fw-bold mb-0 text-primary"><i class="fas fa-utensils me-2"></i>${catName}</h6>`;
+                            summaryHtml += `<span class="badge bg-primary ms-2">限選 ${group.pickLimit}</span>`;
+                            summaryHtml += `</div>`;
+                            summaryHtml += `<ul class="list-group list-group-flush rounded-3 border">`;
+                            group.items.forEach(item => {
+                                summaryHtml += `<li class="list-group-item small py-2 border-light">${formatItemForDisplay(item)}</li>`;
+                            });
+                            summaryHtml += `</ul>`;
+                            summaryHtml += `</div>`;
+                        }
+                    } else {
+                        summaryHtml = `<div class="text-center py-4 text-muted"><i class="fas fa-info-circle me-2"></i>此套餐目前沒有包含任何餐點。</div>`;
+                    }
+
+                    summaryContainer.innerHTML = summaryHtml;
+
+                    const modal = new bootstrap.Modal(document.getElementById("viewSetMealItemsModal"));
+                    modal.show();
+                });
+            });
+
+            // 初始化分頁和過濾
+            filteredCards = Array.from(document.querySelectorAll(".setmeal-card"));
+            filteredCards.sort((a, b) => parseInt(a.dataset.order) - parseInt(b.dataset.order));
+            renderPage();
+        });
     </script>
 }

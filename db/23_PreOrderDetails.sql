@@ -93,3 +93,41 @@ INSERT INTO [dbo].[PreOrderDetails] ([PreOrderId], [ProductId], [ProductName], [
 (49, 3, N'分享拼盤', 320, 1, 320, 0), -- 未完成
 (50, 2, N'奶油培根燉飯', 200, 1, 200, 1);
 GO
+
+-- 把同一訂單內，所有餐點都是取消(2)的 PreOrder，狀態改成 2
+UPDATE PreOrders
+SET DoneOrCancel = 2
+WHERE DoneOrCancel = 0
+  AND Id IN (
+      SELECT PreOrderId
+      FROM PreOrderDetails
+      GROUP BY PreOrderId
+      HAVING COUNT(*) = SUM(CASE WHEN DoneOrCancel = 2 THEN 1 ELSE 0 END)
+  );
+
+-- 1. 有已完成餐點 → 改成 1
+UPDATE PreOrders
+SET DoneOrCancel = 1
+WHERE DoneOrCancel = 0
+  AND Id IN (
+      SELECT PreOrderId
+      FROM PreOrderDetails
+      WHERE DoneOrCancel = 1
+  );
+
+-- 2. 所有餐點都取消 → 改成 2
+UPDATE PreOrders
+SET DoneOrCancel = 2
+WHERE DoneOrCancel = 0
+  AND Id IN (
+      SELECT PreOrderId
+      FROM PreOrderDetails
+      GROUP BY PreOrderId
+      HAVING COUNT(*) = SUM(CASE WHEN DoneOrCancel = 2 THEN 1 ELSE 0 END)
+  );
+
+-- 3. 已取消的訂單補上 CancelledAt（用 OrderAt 加 30 分鐘模擬取消時間）
+UPDATE PreOrders
+SET CancelledAt = DATEADD(MINUTE, 30, OrderAt)
+WHERE DoneOrCancel = 2
+  AND CancelledAt IS NULL;

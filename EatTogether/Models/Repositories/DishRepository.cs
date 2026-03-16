@@ -24,6 +24,10 @@ namespace EatTogether.Models.Repositories
 				ImageUrl = dto.ImageUrl,
 				IsTakeOut = dto.IsTakeOut,
 				IsLimited = dto.IsLimited,
+				IsRecommended = dto.IsRecommended,
+				IsPopular = dto.IsPopular,
+				IsVegetarian = dto.IsVegetarian,
+				SpicyLevel = dto.SpicyLevel,
 				StartDate = dto.StartDate,
 				EndDate = dto.EndDate,
 				IsActive = true,
@@ -36,7 +40,7 @@ namespace EatTogether.Models.Repositories
 		public async Task<IEnumerable<DishDto>> GetAllAsync()
 		{
 			return await _context.Dishes
-			   .Where(d => d.IsActive)
+			   .Where(d => d.IsActive) // Add this filter
 			   .Select(d => new DishDto
 			   {
 				   Id = d.Id,
@@ -47,6 +51,14 @@ namespace EatTogether.Models.Repositories
 				   CategoryName = d.Category != null ? d.Category.CategoryName : null,
 				   ImageUrl = d.ImageUrl,
 				   IsActive = d.IsActive,
+				   IsTakeOut = d.IsTakeOut,
+				   IsLimited = d.IsLimited,
+				   IsRecommended = d.IsRecommended,
+				   IsPopular = d.IsPopular,
+				   IsVegetarian = d.IsVegetarian,
+				   SpicyLevel = d.SpicyLevel,
+				   StartDate = d.StartDate,
+				   EndDate = d.EndDate,
 				   CreatedAt = d.CreatedAt,
 				   UpdatedAt = d.UpdatedAt
 			   })
@@ -56,7 +68,7 @@ namespace EatTogether.Models.Repositories
 		public async Task<DishDto?> GetByIdAsync(int id)
         {
             return await _context.Dishes
-                .Where(d => d.Id == id && d.IsActive)
+                .Where(d => d.Id == id)
                 .Select(d => new DishDto
                 {
                     Id = d.Id,
@@ -102,6 +114,11 @@ namespace EatTogether.Models.Repositories
 				dish.IsLimited = dto.IsLimited;
 				dish.StartDate = dto.StartDate;
 				dish.EndDate = dto.EndDate;
+				dish.IsActive = dto.IsActive;
+				dish.IsRecommended = dto.IsRecommended;
+				dish.IsPopular = dto.IsPopular;
+				dish.IsVegetarian = dto.IsVegetarian;
+				dish.SpicyLevel = dto.SpicyLevel;
 				dish.UpdatedAt = DateTime.UtcNow;
 
 				await _context.SaveChangesAsync();
