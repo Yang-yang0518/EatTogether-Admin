@@ -154,7 +154,7 @@
 	查詢 RoleFunctions 取 FunctionName 聯集，判斷是否包含指定 FunctionName，
 	不符則回傳 403 Forbidden
 
-[working] 全域錯誤頁路由設定
+[V] 全域錯誤頁路由設定
 	Program.cs — 設定全域錯誤路由
 	建立 Controllers/ErrorController.cs
 		[Route("Error/403")]
@@ -163,9 +163,11 @@
         public IActionResult NotFound()
 	建立 Views/Error/Forbidden.cshtml、NotFound.cshtml
 
-[] IEmailService / EmailService（Models/Services/EmailService.cs）
-	Task SendPasswordResetEmailAsync(string toEmail, string resetLink)
-	// 忘記密碼流程，連結有效期 60 分鐘
+[working] 新增 SMTP 設定
+	IPasswordResetEmailService / PasswordResetEmailService（Models/Services/PasswordResetEmailService.cs）
+		Task SendPasswordResetEmailAsync(string toEmail, string resetLink)
+		private static string BuildHtml(string resetLink)
+		Program.cs — DI 註冊
 
 [] DI 註冊（Program.cs）
 	builder.Services.AddScoped<IUserRepository, UserRepository>()
@@ -279,7 +281,8 @@
 		（Models/Repositories/PasswordResetTokenRepository.cs）
 		Task CreateAsync(PasswordResetToken token)
 			// ExpiresAt = 建立時間 +60 分鐘
-		Task<PasswordResetToken?> GetByTokenAsync(string token)
+		Task InvalidatePreviousTokensAsync(int userId)
+		Task<PasswordResetToken?> GetValidTokenAsync(string token)
 		Task MarkUsedAsync(int tokenId)
 
 	[] AuthService（modify）
