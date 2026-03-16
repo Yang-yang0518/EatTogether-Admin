@@ -77,6 +77,15 @@ namespace EatTogether
             builder.Services.AddScoped<ReservationService>();
             builder.Services.AddScoped<CouponService>();
 
+			builder.Services.AddScoped<IUserRepository, UserRepository>();
+			builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+			builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+			builder.Services.AddScoped<IFunctionRepository, FunctionRepository>();
+			builder.Services.AddScoped<IMemberRepository, MemberRepository>();
+			builder.Services.AddScoped<IAuthService, AuthService>();
+			builder.Services.AddScoped<IUserService, UserService>();
+			builder.Services.AddScoped<IRoleService, RoleService>();
+			builder.Services.AddScoped<IMemberService, MemberService>();
 			builder.Services.AddScoped<IPasswordResetEmailService, PasswordResetEmailService>();
 
 			// ªY¬Xµù¥U

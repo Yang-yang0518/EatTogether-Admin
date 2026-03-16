@@ -149,11 +149,6 @@
 		public async Task<IEnumerable<string>> GetFunctionNamesByRoleIdsAsync(List<int> roleIds)
 	_Layout.cshtml — 從 JWT Payload 顯示登入者資訊
 
-	------ Copilot 提示詞 ------
-	asp.net core mvc 實作自訂 ActionFilter，從 JWT Cookie 取角色 Id 清單，
-	查詢 RoleFunctions 取 FunctionName 聯集，判斷是否包含指定 FunctionName，
-	不符則回傳 403 Forbidden
-
 [V] 全域錯誤頁路由設定
 	Program.cs — 設定全域錯誤路由
 	建立 Controllers/ErrorController.cs
@@ -163,13 +158,13 @@
         public IActionResult NotFound()
 	建立 Views/Error/Forbidden.cshtml、NotFound.cshtml
 
-[working] 新增 SMTP 設定
+[V] 新增 SMTP 設定
 	IPasswordResetEmailService / PasswordResetEmailService（Models/Services/PasswordResetEmailService.cs）
 		Task SendPasswordResetEmailAsync(string toEmail, string resetLink)
 		private static string BuildHtml(string resetLink)
 		Program.cs — DI 註冊
 
-[] DI 註冊（Program.cs）
+[working] DI 註冊（Program.cs）
 	builder.Services.AddScoped<IUserRepository, UserRepository>()
 	builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>()
 	builder.Services.AddScoped<IRoleRepository, RoleRepository>()
@@ -179,10 +174,7 @@
 	builder.Services.AddScoped<IUserService, UserService>()
 	builder.Services.AddScoped<IRoleService, RoleService>()
 	builder.Services.AddScoped<IMemberService, MemberService>()
-	builder.Services.AddScoped<IEmailService, EmailService>()
-
-	------ Copilot 提示詞 ------
-	asp.net core mvc 在 Program.cs 以 AddScoped 批次註冊 Repository 與 Service 介面
+	builder.Services.AddScoped<IPasswordResetEmailService, PasswordResetEmailService>()
 
 =========
 模組一：登入登出
