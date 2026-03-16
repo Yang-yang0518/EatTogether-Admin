@@ -12,17 +12,20 @@ namespace EatTogether.Models.Services
 
 	public class AuthService : IAuthService
 	{
-		private readonly IUserRepository _repo;
+		private readonly IUserRepository _userRepo;
+		private readonly IRoleRepository _roleRepo;
 
-		public AuthService(IUserRepository repo)
+		public AuthService(IUserRepository userRepo, IRoleRepository roleRepo)
 		{
-			_repo = repo;
+
+			this._userRepo = userRepo;
+			this._roleRepo = roleRepo;
 		}
 
 		public async Task<Result<LoginDto>> LoginAsync(string account, string password)
 		{
 			// 1. 用帳號查使用者
-			var user = await _repo.GetByAccountAsync(account);
+			var user = await _userRepo.GetByAccountAsync(account);
 
 			// 2. 帳號不存在 or 密碼錯誤 → 一律回傳同一訊息（防帳號枚舉）
 			if (user == null || !HashUtility.VerifyPassword(password, user.HashedPassword))
@@ -36,6 +39,8 @@ namespace EatTogether.Models.Services
 			if (!user.IsActive)
 				return Result<LoginDto>.Fail("此帳號已停用，請聯絡店長");
 
+			var roleNames = await _roleRepo.GetRoleNamesByIdsAsync(user.RoleIds);
+
 			// 5. 驗證通過 → 組裝 LoginDto 回傳
 			var loginDto = new LoginDto
 			{
@@ -43,10 +48,13 @@ namespace EatTogether.Models.Services
 				Account = user.Account,
 				Name = user.Name,
 				RoleIds = user.RoleIds,
+				RoleNames = roleNames,
 				MustChangePassword = user.MustChangePassword
 			};
 
 			return Result<LoginDto>.Success(loginDto);
 		}
+
+
 	}
 }

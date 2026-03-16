@@ -198,16 +198,17 @@
 		ctor(IUserRepository repo)
 		Task<Result<LoginDto>> LoginAsync(string account, string password)
 			// 驗證 BCrypt 密碼（HashUtility.VerifyPassword）
-			// 依序判斷 IsDeleted → IsActive → 停用顯示「此帳號已停用，請聯絡店長」
 			// 帳號或密碼錯誤 → 一律回傳「帳號或密碼錯誤」（防帳號枚舉）
+			// IsDeleted → 回傳「帳號或密碼錯誤」
+			// IsActive → 回傳「此帳號已停用，請聯絡店長」
 			// 驗證通過 → 回傳 LoginDto（含 MustChangePassword 旗標）
 
-	[] ViewModel（Models/ViewModels/LoginViewModel.cs）
+	[V] ViewModel（Models/ViewModels/LoginViewModel.cs）
 		LoginViewModel
 			string Account
 			string Password
 
-	[] AuthController（Controllers/AuthController.cs）
+	[working] AuthController（Controllers/AuthController.cs）
 		POST /Auth/Login
 			驗證通過且 MustChangePassword=0 → 發行 JWT（httpOnly Cookie）→ Redirect Dashboard
 			驗證通過且 MustChangePassword=1 → 回傳 { mustChangePassword: true }，前端開強制改密碼 Modal

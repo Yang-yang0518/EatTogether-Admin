@@ -17,8 +17,6 @@ public partial class Product
 
     public virtual Dish Dish { get; set; }
 
-    public virtual SetMeal SetMeal { get; set; }
-
     public virtual ICollection<MemberFavorite> MemberFavorites { get; set; } = new List<MemberFavorite>();
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
