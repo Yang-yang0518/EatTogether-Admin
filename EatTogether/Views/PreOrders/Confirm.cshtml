@@ -400,24 +400,15 @@
             }
         </div>
 
-        <!-- 優惠券（登入會員才顯示） -->
+        <!-- 優惠券 -->
         <div class="card">
             <div class="section-title">優惠折扣碼</div>
-            @if (isMember)
-            {
-                <div class="coupon-row">
-                    <input type="text" class="form-control" id="couponInput"
-                           name="CouponCode" placeholder="請輸入折扣碼" />
-                    <button type="button" class="btn-coupon" onclick="applyCoupon()">套用</button>
-                </div>
-                <p id="couponMsg" class="coupon-msg"></p>
-            }
-            else
-            {
-                <div class="member-only-hint">
-                    🔒 <a href="/Members/Login">登入會員</a> 即可使用優惠折扣碼
-                </div>
-            }
+            <div class="coupon-row">
+                <input type="text" class="form-control" id="couponInput"
+                       name="CouponCode" placeholder="請輸入折扣碼" />
+                <button type="button" class="btn-coupon" onclick="applyCoupon()">套用</button>
+            </div>
+            <p id="couponMsg" class="coupon-msg"></p>
         </div>
 
         <!-- 金額 -->
