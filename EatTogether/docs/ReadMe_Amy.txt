@@ -75,7 +75,7 @@
 
 [V] Seed Data — Demo 測試帳號（6 筆）
 	密碼統一：Aa000000，MustChangePassword=0，配合登入頁 Demo 按鈕使用
-	manager_chen   → 店長（全部 13 項權限）
+	manager_amy   → 店長（全部 13 項權限）
 	vicemgr_lin    → 副店長（11 項權限）
 	cashier_wang   → 收銀員 + 外場服務生（多角色聯集示範）
 	waiter_liu     → 外場服務生
@@ -164,7 +164,7 @@
 		private static string BuildHtml(string resetLink)
 		Program.cs — DI 註冊
 
-[working] DI 註冊（Program.cs）
+[V] DI 註冊（Program.cs）
 	builder.Services.AddScoped<IUserRepository, UserRepository>()
 	builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>()
 	builder.Services.AddScoped<IRoleRepository, RoleRepository>()
@@ -179,10 +179,10 @@
 =========
 模組一：登入登出
 =========
-[] add 登入功能
+[working] add 登入功能
 	url: POST /Auth/Login
 
-	[] DTO（Models/DTOs/LoginDto.cs）
+	[V] DTO（Models/DTOs/LoginDto.cs）
 		LoginDto
 			int UserId
 			string Account
@@ -190,11 +190,11 @@
 			List<int> RoleIds
 			bool MustChangePassword
 
-	[] IUserRepository / UserRepository（Models/Repositories/UserRepository.cs）
+	[V] IUserRepository / UserRepository（Models/Repositories/UserRepository.cs）
 		Task<UserDto?> GetByAccountAsync(string account)
 		// UserDto：Id, Account, HashedPassword, IsActive, IsDeleted, MustChangePassword, Name, RoleIds
 
-	[] IAuthService / AuthService（Models/Services/AuthService.cs）
+	[V] IAuthService / AuthService（Models/Services/AuthService.cs）
 		ctor(IUserRepository repo)
 		Task<Result<LoginDto>> LoginAsync(string account, string password)
 			// 驗證 BCrypt 密碼（HashUtility.VerifyPassword）
@@ -219,7 +219,7 @@
 		「忘記密碼」文字連結
 		Demo 帳號選擇區塊（6 角色按鈕，點擊自動填入帳號密碼，密碼統一 Aa000000）
 			<!-- TODO: Demo Only，上線前移除 -->
-			店長        → manager_chen
+			店長        → manager_amy
 			副店長      → vicemgr_lin
 			收銀員      → cashier_wang（兼外場服務生，多角色聯集示範）
 			外場服務生  → waiter_liu
