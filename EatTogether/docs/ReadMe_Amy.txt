@@ -127,7 +127,7 @@
 	static Result Success()
 	static Result Fail(string errorMessage)
 
-[working] JWT 設定
+[V] JWT 設定
 	Token 效期：8 小時
 	儲存方式：httpOnly Cookie
 	- appsettings.json — JWT 金鑰設定
@@ -140,10 +140,14 @@
 	- Models/Infra/JwtHelper.cs — 產生 Token (在 Program.cs 中註冊)
 	
 
-[] 自訂 ActionFilter（Models/Infra/RequirePermissionAttribute.cs）
-	[RequirePermission("FunctionName")]
-	從 JWT 取角色 Id 清單 → 查詢 RoleFunctions 取 FunctionName 聯集 → 驗證是否包含指定 FunctionName
-	不符 → 回傳 403 Forbidden
+[working] 自訂 ActionFilter（Models/Infra/RequirePermissionAttribute.cs）
+	RequirePermissionAttribute : Attribute, IAsyncActionFilter
+		[RequirePermission("FunctionName")]
+		從 JWT 取角色 Id 清單 → 查詢 RoleFunctions 取 FunctionName 聯集 → 驗證是否包含指定 FunctionName
+		不符 → 回傳 403 Forbidden
+	IRoleFunctionRepository / RoleFunctionRepository（Models/Repositories/FunctionRepository.cs）
+		public async Task<IEnumerable<string>> GetFunctionNamesByRoleIdsAsync(List<int> roleIds)
+	_Layout.cshtml — 從 JWT Payload 顯示登入者資訊
 
 	------ Copilot 提示詞 ------
 	asp.net core mvc 實作自訂 ActionFilter，從 JWT Cookie 取角色 Id 清單，
@@ -208,6 +212,7 @@
 		POST /Auth/Login
 			驗證通過且 MustChangePassword=0 → 發行 JWT（httpOnly Cookie）→ Redirect Dashboard
 			驗證通過且 MustChangePassword=1 → 回傳 { mustChangePassword: true }，前端開強制改密碼 Modal
+			登入後寫入 httpOnly Cookie
 
 	[V] Login.cshtml（Views/Auth/Login.cshtml）
 		深色背景、白色卡片
