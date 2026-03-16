@@ -8,6 +8,7 @@
 		public int DishId { get; set; }
 		public string? DishName { get; set; } 
 		public decimal? DishPrice { get; set; }
+		public string? CategoryName { get; set; }
 		public int Quantity { get; set; }
 		public bool IsOptional { get; set; }
 		public int? OptionGroupNo { get; set; }

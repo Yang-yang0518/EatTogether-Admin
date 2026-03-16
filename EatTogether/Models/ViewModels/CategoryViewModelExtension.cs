@@ -16,7 +16,8 @@ namespace EatTogether.Models.ViewModels
 				DisplayOrder = dto.DisplayOrder,
 				ImageUrl = dto.ImageUrl,
 				CreatedAt = dto.CreatedAt,
-				UpdatedAt = dto.UpdatedAt
+				UpdatedAt = dto.UpdatedAt,
+				DishCount = dto.DishCount
 			};
 		}
 

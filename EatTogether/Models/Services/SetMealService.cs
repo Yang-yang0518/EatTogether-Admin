@@ -59,5 +59,11 @@ namespace EatTogether.Models.Services
 		{
 			await _repo.RemoveItemAsync(itemId);
 		}
+
+		public async Task UpdateItemsAsync(int setMealId, IEnumerable<SetmealItemDto> itemDtos)
+		{
+			// 在這裡可以加入服務層的驗證邏輯，例如檢查總價等，此處暫略
+			await _repo.UpdateItemsAsync(setMealId, itemDtos);
+		}
 	}
 }

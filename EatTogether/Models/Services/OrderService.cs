@@ -119,13 +119,17 @@ namespace EatTogether.Models.Services
 
             foreach (var p in products)
             {
-                if (p.Dish == null) continue;  // Dish 是 null 就跳過
+                // 根據 ProductType 取得名稱與價格
+                string? name = p.ProductType == "Dish" ? p.DishName : p.SetMealName;
+                decimal? price = p.ProductType == "Dish" ? p.DishPrice : p.SetMealPrice;
+
+                if (string.IsNullOrEmpty(name)) continue;
 
                 result.Add(new CreatePreOrderItemViewModel
                 {
                     ProductId = p.Id,
-                    ProductName = p.Dish.DishName,
-                    UnitPrice = (int)p.Dish.Price,
+                    ProductName = name,
+                    UnitPrice = (int)(price ?? 0),
                     Qty = 0
                 });
             }

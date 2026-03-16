@@ -1,4 +1,4 @@
-@model IEnumerable<EatTogether.Models.ViewModels.DishViewModel>
+﻿@model IEnumerable<EatTogether.Models.ViewModels.DishViewModel>
 @{
     ViewData["Title"] = "餐點管理";
 }
@@ -10,85 +10,159 @@
         <li class="breadcrumb-item active">餐點管理</li>
     </ol>
 
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div><i class="fas fa-utensils me-1"></i>餐點列表</div>
-            <div class="d-flex gap-2 align-items-center">
-                <select id="categoryFilter" class="form-select form-select-sm" style="width:150px"
-                        onchange="filterCards()">
-                    <option value="">所有分類</option>
-                    @foreach (var cat in Model.Select(d => d.CategoryName).Distinct())
-                    {
-                        <option value="@cat">@cat</option>
-                    }
-                </select>
-                <input type="text" id="searchInput" class="form-control form-control-sm"
-                       placeholder="搜尋餐點..." style="width:180px" oninput="filterCards()" />
-                <a asp-action="Create" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus me-1"></i>新增餐點
-                </a>
+    <!-- 統計卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-primary text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">總餐點數</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count()</div>
+                    </div>
+                    <i class="fas fa-utensils fa-2x text-white-50"></i>
+                </div>
             </div>
         </div>
-        <div class="card-body">
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-success text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">上架中</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count(d => d.IsActive)</div>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x text-white-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-secondary text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">已下架</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count(d => !d.IsActive)</div>
+                    </div>
+                    <i class="fas fa-ban fa-2x text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜尋與篩選區 -->
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-body bg-light rounded">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" id="searchInput" class="form-control border-start-0" 
+                               placeholder="搜尋餐點名稱..." oninput="filterCards(true)" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select id="categoryFilter" class="form-select shadow-sm" onchange="filterCards(true)">
+                        <option value="">所有類別</option>
+                        @foreach (var cat in Model.Select(d => d.CategoryName).Distinct().OrderBy(c => c))
+                        {
+                            <option value="@cat">@cat</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="statusFilter" class="form-select shadow-sm" onchange="filterCards(true)">
+                        <option value="">所有狀態</option>
+                        <option value="上架中">上架中</option>
+                        <option value="已下架">已下架</option>
+                    </select>
+                </div>
+                <div class="col-md-5 text-end">
+                    <div class="d-flex justify-content-end align-items-center gap-3">
+                        <nav id="topPaginationWrapper" class="d-none d-lg-block">
+                            <ul class="pagination pagination-sm mb-0 shadow-sm" id="topPagination"></ul>
+                        </nav>
+                        <a asp-action="Create" class="btn btn-primary shadow-sm px-4 rounded-pill">
+                            <i class="fas fa-plus me-1"></i>新增餐點
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm border-0">
+        <!-- 原有的 card-header 移除，因為功能已移至上方搜尋區 -->
+        <div class="card-body p-4 bg-light bg-opacity-10">
             <div id="alertBox"></div>
 
-            <!-- 卡片容器 -->
-            <div class="row g-3" id="dishCardContainer">
+            <!-- 餐點展示區域 -->
+            <div class="row g-4" id="dishCardContainer">
                 @foreach (var item in Model)
                 {
                     <div class="col-6 col-md-4 col-lg-3 dish-card"
                          data-category="@item.CategoryName"
                          data-name="@item.DishName.ToLower()"
                          data-order="@item.DisplayOrder">
-                        <div class="card h-100 shadow-sm">
-                            <div style="position:relative; padding-top:75%; overflow:hidden; background:#f8f9fa;">
+                        <div class="card h-100 border-0 shadow-sm dish-card-inner">
+                            <div class="position-relative overflow-hidden" style="padding-top:75%; background:#fff;">
                                 @if (!string.IsNullOrEmpty(item.ImageUrl))
                                 {
                                     <img src="@item.ImageUrl"
-                                          style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;"
+                                          style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; object-position: center center;"
                                           alt="@item.DishName"
-                                          onerror="this.src='/images/no-image.png'" />
+                                          onerror="this.src='/images/no-image.png'; this.onerror=null;" />
                                 }
                                 else
                                 {
-                                    <div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;" class="text-muted">
-                                        <i class="fas fa-image fa-3x"></i>
+                                    <div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;" class="bg-light text-muted">
+                                        <i class="fas fa-image fa-3x opacity-25"></i>
                                     </div>
-
                                 }
                             </div>
-                            <div class="card-body p-2">
-                                <h6 class="card-title mb-1 fw-bold text-truncate" title="@item.DishName">
-                                    @item.DishName
-                                </h6>
-                                <div class="text-muted small mb-1">@item.CategoryName</div>
-                                <div class="fw-bold text-danger mb-2">$@item.Price</div>
-                                <div class="d-flex flex-wrap gap-1 mb-2">
-                                    @if (item.IsActive)
+                            <div class="card-body p-3 text-center position-relative">
+                                <!-- 左上角：特色標籤顯示區 (純顯示) -->
+                                <div class="position-absolute top-0 start-0 p-2 d-flex gap-1" style="z-index: 10; margin-top: -45px;">
+                                    @if (item.IsRecommended)
                                     {
-                                        <span class="badge bg-success">啟用</span>
+                                        <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center" 
+                                             style="width:34px; height:34px; border: 2px solid #0d6efd;">
+                                            <i class="fas fa-thumbs-up text-primary"></i>
+                                        </div>
                                     }
-                                    else
+                                    @if (item.IsPopular)
                                     {
-                                        <span class="badge bg-secondary">停用</span>
-                                    }
-                                    @if (item.IsTakeOut)
-                                    {
-                                        <span class="badge bg-info text-dark">可外帶</span>
-                                    }
-                                    @if (item.IsLimited)
-                                    {
-                                        <span class="badge bg-warning text-dark">限定</span>
+                                        <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center" 
+                                             style="width:34px; height:34px; border: 2px solid #ffc107;">
+                                            <i class="fas fa-crown text-warning"></i>
+                                        </div>
                                     }
                                 </div>
-                                <div class="d-flex gap-1">
-                                    <a asp-action="Edit" asp-route-id="@item.Id"
-                                       class="btn btn-warning btn-sm flex-fill">
-                                        <i class="fas fa-edit"></i> 編輯
+
+                                <h6 class="card-title mb-1 fw-bold text-truncate" title="@item.DishName">@item.DishName</h6>
+                                <div class="text-muted small mb-2 d-flex justify-content-center align-items-center gap-2">
+                                    <span><i class="fas fa-tag me-1 small"></i>@item.CategoryName</span>
+                                    @if (item.IsVegetarian) { <span class="text-success"><i class="fas fa-leaf me-1"></i>素食</span> }
+                                    @if (item.SpicyLevel > 0) { 
+                                        <span class="text-danger">
+                                            @for(int i=0; i<item.SpicyLevel; i++){ <i class="fas fa-pepper-hot"></i> }
+                                        </span>
+                                    }
+                                </div>
+                                <div class="mb-3">
+                                    <span class="fw-bold text-danger fs-5">$@item.Price</span>
+                                </div>
+                                <div class="d-flex justify-content-center flex-wrap gap-1 mb-3">
+                                    <span class="badge rounded-pill @(item.IsActive ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary") px-2 border @(item.IsActive ? "border-success" : "border-secondary")" 
+                                          style="cursor:pointer;" onclick="toggleFeature(@item.Id, 'Active')" id="active-badge-@item.Id">
+                                        @(item.IsActive ? "上架中" : "已下架")
+                                    </span>
+                                    @if (item.IsTakeOut) { <span class="badge rounded-pill bg-info-subtle text-info px-2 border border-info">外帶</span> }
+                                    @if (item.IsLimited) { <span class="badge rounded-pill bg-warning-subtle text-warning px-2 border border-warning">限定</span> }
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm flex-fill fw-bold shadow-sm">
+                                        <i class="fas fa-edit me-1"></i>編輯
                                     </a>
-                                    <button class="btn btn-danger btn-sm flex-fill"
-                                            onclick="disableDish(@item.Id)">
-                                        <i class="fas fa-trash"></i> 停用
+                                    <button class="btn btn-outline-danger btn-sm px-2" onclick="disableDish(@item.Id)">
+                                        <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
                             </div>
@@ -100,21 +174,31 @@
             @if (!Model.Any())
             {
                 <div class="text-center text-muted py-5">
-                    <i class="fas fa-utensils fa-3x mb-3"></i>
-                    <p>目前沒有餐點資料</p>
+                    <i class="fas fa-utensils fa-3x mb-3 opacity-25"></i>
+                    <p>目前尚無餐點資料</p>
                 </div>
             }
 
-            <!-- 分頁 -->
-            <div class="d-flex justify-content-between align-items-center mt-4">
-                <div class="text-muted small" id="pageInfo"></div>
+            <!-- 底部控制項 -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-5 pt-3 border-top gap-3">
+                <div class="text-muted small fw-bold" id="pageInfo"></div>
                 <nav>
-                    <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                    <ul class="pagination pagination-sm mb-0 shadow-sm" id="pagination"></ul>
                 </nav>
             </div>
         </div>
     </div>
 </div>
+
+@section Styles {
+    <style>
+        .dish-card-inner { transition: all 0.2s ease-in-out; border: 1px solid transparent !important; }
+        .dish-card-inner:hover { transform: translateY(-8px); box-shadow: 0 1rem 2rem rgba(0,0,0,0.12) !important; border-color: #0d6efd !important; }
+        .page-link { cursor: pointer; color: #495057; border-radius: 4px !important; margin: 0 2px; }
+        .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: #fff; }
+        .badge { font-weight: 600; font-size: 0.7rem; }
+    </style>
+}
 
 @section Scripts {
     <script>
@@ -122,78 +206,136 @@
         let currentPage = 1;
         let filteredCards = [];
 
-        function filterCards() {
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedPage = sessionStorage.getItem("dish_currentPage");
+            const savedCategory = sessionStorage.getItem("dish_category");
+            const savedSearch = sessionStorage.getItem("dish_search");
+
+            if (savedCategory) document.getElementById("categoryFilter").value = savedCategory;
+            if (savedSearch) document.getElementById("searchInput").value = savedSearch;
+            if (savedPage) currentPage = parseInt(savedPage);
+
+            filterCards(false);
+        });
+
+        function filterCards(resetPage = true) {
             const category = document.getElementById("categoryFilter").value;
-            const search   = document.getElementById("searchInput").value.toLowerCase();
+            const search = document.getElementById("searchInput").value.toLowerCase();
+            const status = document.getElementById("statusFilter").value;
+
+            sessionStorage.setItem("dish_category", category);
+            sessionStorage.setItem("dish_search", search);
+            sessionStorage.setItem("dish_status", status);
 
             filteredCards = Array.from(document.querySelectorAll(".dish-card")).filter(card => {
                 const matchCategory = !category || card.dataset.category === category;
-                const matchSearch   = !search   || card.dataset.name.includes(search);
-                return matchCategory && matchSearch;
+                const matchSearch = !search || card.dataset.name.includes(search);
+                
+                let matchStatus = true;
+                if (status) {
+                    const statusText = card.querySelector("#active-badge-" + card.querySelector(".badge").id.split("-")[2]).textContent.trim();
+                    matchStatus = (statusText === status);
+                }
+
+                return matchCategory && matchSearch && matchStatus;
             });
 
-            // 依順序排序
             filteredCards.sort((a, b) => parseInt(a.dataset.order) - parseInt(b.dataset.order));
 
-            currentPage = 1;
+            if (resetPage) currentPage = 1;
             renderPage();
         }
 
         function renderPage() {
             const allCards = Array.from(document.querySelectorAll(".dish-card"));
-
-            // 先全部隱藏
             allCards.forEach(c => c.style.display = "none");
 
-            // 顯示當頁
-            const start = (currentPage - 1) * PAGE_SIZE;
-            const end   = start + PAGE_SIZE;
-            filteredCards.slice(start, end).forEach(c => c.style.display = "");
-
-            // 更新頁碼資訊
             const total = filteredCards.length;
             const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
-            document.getElementById("pageInfo").textContent =
-                `顯示第 ${Math.min(start + 1, total)} 至 ${Math.min(end, total)} 筆，共 ${total} 筆記錄`;
 
-            // 產生分頁按鈕
-            const pagination = document.getElementById("pagination");
-            pagination.innerHTML = "";
+            if (currentPage > totalPages) currentPage = totalPages;
+            sessionStorage.setItem("dish_currentPage", currentPage);
 
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+            filteredCards.slice(start, end).forEach(c => c.style.display = "");
+
+            document.getElementById("pageInfo").textContent = 
+                `目前顯示：${total} 筆餐點中的第 ${Math.min(start + 1, total)} ~ ${Math.min(end, total)} 筆`;
+
+            renderPaginationButtons("pagination", totalPages);
+            renderPaginationButtons("topPagination", totalPages);
+        }
+
+        function renderPaginationButtons(elementId, totalPages) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = "";
+
+            const prevLi = document.createElement("li");
+            prevLi.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
+            prevLi.innerHTML = `<a class="page-link shadow-none" onclick="goToPage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></a>`;
+            container.appendChild(prevLi);
+
+            // 頁碼顯示邏輯：若總頁數過多則簡化 (目前全部顯示，若有需要可加 ...)
             for (let i = 1; i <= totalPages; i++) {
                 const li = document.createElement("li");
                 li.className = `page-item ${i === currentPage ? "active" : ""}`;
-                li.innerHTML = `<button class="page-link" onclick="goToPage(${i})">${i}</button>`;
-                pagination.appendChild(li);
+                li.innerHTML = `<a class="page-link shadow-none" onclick="goToPage(${i})">${i}</a>`;
+                container.appendChild(li);
             }
+
+            const nextLi = document.createElement("li");
+            nextLi.className = `page-item ${currentPage === totalPages ? "disabled" : ""}`;
+            nextLi.innerHTML = `<a class="page-link shadow-none" onclick="goToPage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></a>`;
+            container.appendChild(nextLi);
         }
 
         function goToPage(page) {
+            const totalPages = Math.ceil(filteredCards.length / PAGE_SIZE) || 1;
+            if (page < 1 || page > totalPages) return;
             currentPage = page;
             renderPage();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function disableDish(id) {
-            if (!confirm("確定要停用此餐點嗎？")) return;
+            if (!confirm("確定要將此餐點下架嗎？")) return;
             const res = await fetch(`/Dishes/Disable/${id}`, { method: "POST" });
             if (res.ok) {
-                showAlert("success", "停用成功");
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showAlert("danger", "停用失敗，請稍後再試");
+                location.reload();
             }
         }
 
-        function showAlert(type, message) {
-            document.getElementById("alertBox").innerHTML = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>`;
+        async function toggleFeature(id, type) {
+            const res = await fetch(`/Dishes/Toggle${type}/${id}`, { method: "POST" });
+            if (res.ok) {
+                const data = await res.json();
+                
+                if (type === 'Active') {
+                    const badge = document.getElementById(`active-badge-${id}`);
+                    if (data.isActive) {
+                        badge.className = "badge rounded-pill bg-success-subtle text-success px-2 border border-success";
+                        badge.textContent = "上架中";
+                    } else {
+                        badge.className = "badge rounded-pill bg-secondary-subtle text-secondary px-2 border border-secondary";
+                        badge.textContent = "已下架";
+                    }
+                } else {
+                    // 更新圓圈按鈕圖示顏色
+                    const btn = event.currentTarget;
+                    const icon = btn.querySelector("i");
+                    const isNewActive = type === 'Recommend' ? data.isRecommended : data.isPopular;
+                    
+                    if (isNewActive) {
+                        icon.classList.replace("text-muted", type === 'Recommend' ? "text-primary" : "text-danger");
+                        btn.classList.add("active");
+                    } else {
+                        icon.classList.remove("text-primary", "text-danger");
+                        icon.classList.add("text-muted");
+                        btn.classList.remove("active");
+                    }
+                }
+            }
         }
-
-        // 初始化
-        filteredCards = Array.from(document.querySelectorAll(".dish-card"));
-        renderPage();
     </script>
 }

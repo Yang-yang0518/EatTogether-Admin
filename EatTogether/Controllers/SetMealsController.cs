@@ -1,6 +1,6 @@
-using EatTogether.Models.DTOs;
-using EatTogether.Models.Services;
-using EatTogether.Models.ViewModels;
+﻿using EatTogether.Models.DTOs;
+using EatTogether.Models.Services;       
+using EatTogether.Models.ViewModels;     
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
@@ -8,20 +8,21 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace EatTogether.Controllers
+namespace EatTogether.Controllers        
 {
     public class SetMealsController : Controller
     {
         private readonly SetMealService _setMealService;
         private readonly DishService _dishService;
+        private readonly CategoryService _categoryService;
 
-        public SetMealsController(SetMealService setMealService, DishService dishService)
+        public SetMealsController(SetMealService setMealService, DishService dishService, CategoryService categoryService)
         {
             _setMealService = setMealService;
             _dishService    = dishService;
+            _categoryService = categoryService;
         }
 
-        // GET: /SetMeals
         public async Task<IActionResult> Index()
         {
             var dtos = await _setMealService.GetAllAsync();
@@ -29,59 +30,112 @@ namespace EatTogether.Controllers
             return View(vms);
         }
 
-        // GET: /SetMeals/Create
         public async Task<IActionResult> Create()
         {
             var allSetMeals = await _setMealService.GetAllAsync();
             int nextOrder = allSetMeals.Any() ? allSetMeals.Max(s => s.DisplayOrder) + 1 : 1;
-
-            return View(new SetMealViewModel
-            {
-                DisplayOrder = nextOrder
-            });
+            
+            // Prepare data for the new UI
+            var vm = new SetMealViewModel { DisplayOrder = nextOrder };
+            await PopulateCategoriesWithDishes(vm);
+            
+            return View(vm);
         }
 
-        // POST: /SetMeals/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([FromForm] SetMealViewModel vm)
         {
             if (!ModelState.IsValid)
+            {
+                await PopulateCategoriesWithDishes(vm); // Repopulate if validation fails
                 return View(vm);
+            }
 
             if (!string.IsNullOrEmpty(vm.CroppedImageData))
-                vm.ImageUrl = await SaveBase64ImageAsync(vm.CroppedImageData);
+                vm.ImageUrl = await SaveBase64ImageAsync(vm.CroppedImageData, vm.SetMealName);
 
             await _setMealService.CreateAsync(vm.ToDto());
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: /SetMeals/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
             var dto = await _setMealService.GetByIdAsync(id);
             if (dto == null) return NotFound();
-            return View(dto.ToViewModel());
+
+            var vm = dto.ToViewModel();
+
+            // Populate CategoriesWithDishes for the new UI
+            await PopulateCategoriesWithDishes(vm);
+            
+            return View(vm);
         }
 
-        // POST: /SetMeals/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [FromForm] SetMealViewModel vm)
         {
             if (id != vm.Id) return BadRequest();
-
             if (!ModelState.IsValid)
+            {
+                await PopulateCategoriesWithDishes(vm); // Repopulate if validation fails
                 return View(vm);
+            }
 
             if (!string.IsNullOrEmpty(vm.CroppedImageData))
-                vm.ImageUrl = await SaveBase64ImageAsync(vm.CroppedImageData);
+            {
+                // 強制覆蓋原有檔案，並用餐點名稱命名
+                vm.ImageUrl = await SaveBase64ImageAsync(vm.CroppedImageData, vm.SetMealName);
+            }
 
             await _setMealService.UpdateAsync(vm.ToDto());
             return RedirectToAction(nameof(Index));
         }
+        
+        // Helper method to populate CategoriesWithDishes
+        private async Task PopulateCategoriesWithDishes(SetMealViewModel vm)
+        {
+            var allCategories = await _categoryService.GetAllAsync();
+            var allActiveDishes = await _dishService.GetAllAsync(); // This already filters for IsActive
 
-        // POST: /SetMeals/Disable/5
+            var categoriesWithDishes = new List<CategoryWithDishesViewModel>();
+
+            foreach (var category in allCategories.OrderBy(c => c.DisplayOrder)) // Assuming categories have DisplayOrder
+            {
+                var categoryVm = new CategoryWithDishesViewModel
+                {
+                    CategoryId = category.Id,
+                    CategoryName = category.CategoryName,
+                    DishesInThisCategory = allActiveDishes
+                        .Where(d => d.CategoryId == category.Id)
+                        .Select(d => new SelectListItem
+                        {
+                            Value = d.Id.ToString(),
+                            Text = $"{d.DishName} (${d.Price})",
+                            Selected = vm.Items.Any(item => item.DishId == d.Id) // Pre-select in dropdown if already in set meal
+                        }).ToList()
+                };
+
+                // Populate SelectedItemsForCategory for rendering existing items
+                categoryVm.SelectedItemsForCategory = vm.Items
+                    .Where(item => allActiveDishes.Any(d => d.Id == item.DishId && d.CategoryId == category.Id))
+                    .ToList();
+                
+                // Set category-level optionality based on the first optional item in this category (if any)
+                var firstOptionalItem = categoryVm.SelectedItemsForCategory.FirstOrDefault(i => i.IsOptional);
+                if (firstOptionalItem != null)
+                {
+                    categoryVm.IsCategoryOptional = true;
+                    categoryVm.OptionGroupNoForCategory = firstOptionalItem.OptionGroupNo;
+                    categoryVm.PickLimitForCategory = firstOptionalItem.PickLimit;
+                }
+
+                categoriesWithDishes.Add(categoryVm);
+            }
+            vm.CategoriesWithDishes = categoriesWithDishes;
+        }
+
         [HttpPost]
         public async Task<IActionResult> Disable(int id)
         {
@@ -89,54 +143,44 @@ namespace EatTogether.Controllers
             return Ok();
         }
 
-        // POST: /SetMeals/AddItem
-        [HttpPost]
-        public async Task<IActionResult> AddItem([FromBody] SetMealItemViewModel vm)
-        {
-            try
-            {
-                await _setMealService.AddItemAsync(vm.ToItemDto());
-                return Ok();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        // POST: /SetMeals/RemoveItem/5
-        [HttpPost]
-        public async Task<IActionResult> RemoveItem(int id)
-        {
-            await _setMealService.RemoveItemAsync(id);
-            return Ok();
-        }
-
-        // =============================================
-        // 私有輔助方法
-        // =============================================
-        private async Task<string> SaveBase64ImageAsync(string base64Data)
+        private async Task<string> SaveBase64ImageAsync(string base64Data, string fileNamePrefix)
         {
             if (string.IsNullOrEmpty(base64Data)) return null;
 
-            // 移除 data:image/xxx;base64, 前綴
-            var base64 = base64Data.Contains(",")
-                ? base64Data.Split(',')[1]
-                : base64Data;
+            var base64 = base64Data.Contains(",") ? base64Data.Split(',')[1] : base64Data;
+            var bytes = Convert.FromBase64String(base64);
 
-            var bytes    = Convert.FromBase64String(base64);
-            var fileName = $"{Guid.NewGuid()}.jpg";
-            
-            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
-            if (!Directory.Exists(folderPath))
-            {
-                Directory.CreateDirectory(folderPath);
+            // 強制使用套餐名稱作為檔名
+            string fileName = $"{fileNamePrefix}.jpg";
+            foreach (char c in Path.GetInvalidFileNameChars()) {
+                fileName = fileName.Replace(c, '_');
             }
+
+            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
             var savePath = Path.Combine(folderPath, fileName);
             await System.IO.File.WriteAllBytesAsync(savePath, bytes);
 
             return "/images/" + fileName;
+        }
+
+        [HttpPost("SetMeals/UpdateItems/{setMealId}")]
+        public async Task<IActionResult> UpdateItems(int setMealId, [FromBody] List<SetMealItemViewModel> items)
+        {
+            if (items == null) return BadRequest("無項目可更新。");
+
+            try
+            {
+                var dtos = items.Select(i => i.ToItemDto());
+                await _setMealService.UpdateItemsAsync(setMealId, dtos);
+                return Ok(new { message = "套餐內容更新成功！" });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                return BadRequest(new { message = "更新失敗：" + ex.Message });
+            }
         }
     }
 }
