@@ -32,11 +32,11 @@ INSERT INTO [dbo].[Users]
 VALUES
 -- 店長
 ( 1,
-  'manager_chen',
+  'manager_amy',
   '$2a$11$rBnqTpOHBLFvFM1yKFVcAuXskO9BWlVjDKRmHHlm5Qo9sVFkNeV5C',
   'EMP2021001',
-  N'陳志明',
-  'manager_chen@eatogether.com',
+  N'陳怡伶',
+  'chen.amy.eng@gmail.com',
   '0912345678',
   '2021-03-01',
   '2021-03-01',
