@@ -20,7 +20,12 @@ namespace EatTogether.Models.Extensions
 				ImageUrl = setMeal.ImageUrl,
 				StartDate = setMeal.StartDate,
 				EndDate = setMeal.EndDate,
+				StartTime = setMeal.StartTime,
+				EndTime = setMeal.EndTime,
 				UpdatedAt = setMeal.UpdatedAt,
+				DisplayOrder = setMeal.DisplayOrder,
+				IsPopular = setMeal.IsPopular,
+				IsRecommended = setMeal.IsRecommended,
 				Items = setMeal.SetMealItems.Select(i => i.ToItemDto()).ToList()
 			};
 		}
@@ -34,6 +39,7 @@ namespace EatTogether.Models.Extensions
 				DishId = item.DishId,
 				DishName = item.Dish?.DishName,
 				DishPrice = item.Dish?.Price,
+				CategoryName = item.Dish?.Category?.CategoryName,
 				Quantity = item.Quantity,
 				IsOptional = item.IsOptional,
 				OptionGroupNo = item.OptionGroupNo,

@@ -33,7 +33,6 @@ namespace EatTogether.Models.Repositories
 		public async Task<IEnumerable<CategoryDto>> GetAllAsync()
 		{
 			return await _context.Categories
-				.Where(c => c.IsActive)
 				.OrderBy(c => c.DisplayOrder)
 				.Select(c => new CategoryDto
 				{
@@ -45,7 +44,8 @@ namespace EatTogether.Models.Repositories
 					DisplayOrder = c.DisplayOrder,
 					ImageUrl = c.ImageUrl,
 					CreatedAt = c.CreatedAt,
-					UpdatedAt = c.UpdatedAt
+					UpdatedAt = c.UpdatedAt,
+					DishCount = c.Dishes.Count()
 				})
 				.ToListAsync();
 		}

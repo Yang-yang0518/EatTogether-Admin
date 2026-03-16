@@ -27,6 +27,14 @@ public partial class Dish
 
     public bool IsLimited { get; set; }
 
+    public bool IsRecommended { get; set; }
+
+    public bool IsPopular { get; set; }
+
+    public bool IsVegetarian { get; set; }
+
+    public int SpicyLevel { get; set; }
+
     public DateOnly? StartDate { get; set; }
 
     public DateOnly? EndDate { get; set; }

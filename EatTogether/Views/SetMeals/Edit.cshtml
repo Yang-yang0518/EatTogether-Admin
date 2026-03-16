@@ -71,16 +71,36 @@
                                 <span asp-validation-for="EndDate" class="text-danger small"></span>
                             </div>
 
+                            <div class="col-md-6">
+                                <label asp-for="StartTime" class="form-label fw-bold text-secondary"></label>
+                                <input asp-for="StartTime" type="time" class="form-control form-control-lg border-light-subtle shadow-sm" />
+                                <span asp-validation-for="StartTime" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="EndTime" class="form-label fw-bold text-secondary"></label>
+                                <input asp-for="EndTime" type="time" class="form-control form-control-lg border-light-subtle shadow-sm" />
+                                <span asp-validation-for="EndTime" class="text-danger small"></span>
+                            </div>
+
                             <div class="col-md-12">
                                 <label class="form-label fw-bold text-secondary">套餐描述</label>
                                 <textarea asp-for="Description" class="form-control border-light-subtle shadow-sm" rows="4"></textarea>
                                 <span asp-validation-for="Description" class="text-danger small"></span>
                             </div>
 
-                            <div class="col-md-12">
+                            <div class="col-md-12 d-flex gap-4">
                                 <div class="form-check form-switch mt-2">
-                                    <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked">
-                                    <label class="form-check-label fw-bold text-muted" for="flexSwitchCheckChecked">啟用此套餐</label>
+                                    <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch">
+                                    <label asp-for="IsActive" class="form-check-label fw-bold text-muted"></label>
+                                </div>
+                                <div class="form-check form-switch mt-2">
+                                    <input asp-for="IsPopular" class="form-check-input" type="checkbox" role="switch">
+                                    <label asp-for="IsPopular" class="form-check-label fw-bold text-muted"></label>
+                                </div>
+                                <div class="form-check form-switch mt-2">
+                                    <input asp-for="IsRecommended" class="form-check-input" type="checkbox" role="switch">
+                                    <label asp-for="IsRecommended" class="form-check-label fw-bold text-muted"></label>
                                 </div>
                             </div>
                         </div>
@@ -134,94 +154,53 @@
 
     <!-- 套餐餐點明細 -->
     <div class="card mb-4 shadow-sm border-0">
-        <div class="card-header bg-white py-3 border-bottom">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
             <span class="fw-bold"><i class="fas fa-list me-1 text-primary"></i>套餐包含餐點</span>
+            <button type="button" class="btn btn-success rounded-pill shadow-sm px-4" onclick="saveItems()">
+                <i class="fas fa-save me-1"></i> 儲存餐點設定
+            </button>
         </div>
         <div class="card-body p-4">
             <div id="itemAlertBox"></div>
-
-            <div class="table-responsive rounded-3 overflow-hidden border mb-4">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4">餐點名稱</th>
-                            <th>單價</th>
-                            <th>數量</th>
-                            <th>屬性</th>
-                            <th>群組</th>
-                            <th>上限</th>
-                            <th>順序</th>
-                            <th class="text-center pe-4">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model.Items)
+            <div class="row justify-content-center">
+                <div class="col-lg-10"> <!-- Adjust col-lg-x and offset-lg-x as needed -->
+                    <div id="category-slots-container">
+                        @foreach (var categoryVm in Model.CategoriesWithDishes)
                         {
-                            <tr id="item-@item.Id" class="align-middle">
-                                <td class="ps-4 fw-bold">@item.DishName</td>
-                                <td>$@item.DishPrice</td>
-                                <td>@item.Quantity</td>
-                                <td>
-                                    @if (item.IsOptional)
-                                    {
-                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3">選擇性</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-3">固定</span>
-                                    }
-                                </td>
-                                <td>@(item.OptionGroupNo?.ToString() ?? "—")</td>
-                                <td>@(item.PickLimit?.ToString() ?? "—")</td>
-                                <td>@item.DisplayOrder</td>
-                                <td class="text-center pe-4">
-                                    <button class="btn btn-link text-danger p-0" onclick="removeItem(@item.Id)">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                            <div class="card mb-3 shadow-sm category-slot" data-category-id="@categoryVm.CategoryId">
+                                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%); border-bottom: 1px solid #e0e0e0;">
+                                    <h5 class="mb-0 fw-bold text-dark">@categoryVm.CategoryName</h5>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input is-optional-toggle" type="checkbox" role="switch"
+                                               id="isOptional-@categoryVm.CategoryId" @(categoryVm.IsCategoryOptional ? "checked" : "")
+                                               onchange="toggleCategoryOptionalFields(@categoryVm.CategoryId)">
+                                        <label class="form-check-label" for="isOptional-@categoryVm.CategoryId">是否為選擇性分類</label>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3 optional-settings mb-3" style="display: @(categoryVm.IsCategoryOptional ? "" : "none");">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold text-secondary">群組編號</label>
+                                            <input type="number" class="form-control category-group-no" value="@(categoryVm.OptionGroupNoForCategory ?? 1)" min="1" />
+                                            <small class="form-text text-muted">將「選擇性」餐點分組，顧客只能從同群組中選擇。</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold text-secondary">選取上限</label>
+                                            <input type="number" class="form-control category-pick-limit" value="@(categoryVm.PickLimitForCategory ?? 1)" min="1" />
+                                            <small class="form-text text-muted">顧客從此群組中，最多能選擇的餐點數量。</small>
+                                        </div>
+                                    </div>
 
-            <div class="bg-light p-4 rounded-4">
-                <h6 class="fw-bold mb-4 d-flex align-items-center">
-                    <span class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-2" style="width:24px; height:24px; font-size:12px;">+</span>
-                    新增餐點到套餐
-                </h6>
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold text-secondary">選擇餐點</label>
-                        <select id="newDishId" class="form-select border-light-subtle shadow-sm"></select>
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label small fw-bold text-secondary">數量</label>
-                        <input type="number" id="newQuantity" class="form-control border-light-subtle shadow-sm" value="1" min="1" />
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small fw-bold text-secondary">類型</label>
-                        <select id="newIsOptional" class="form-select border-light-subtle shadow-sm" onchange="toggleOptionalFields()">
-                            <option value="false">固定包含</option>
-                            <option value="true">選擇性</option>
-                        </select>
-                    </div>
-                    <div class="col-md-1" id="groupNoField" style="display:none">
-                        <label class="form-label small fw-bold text-secondary">群組</label>
-                        <input type="number" id="newOptionGroupNo" class="form-control border-light-subtle shadow-sm" value="1" min="1" />
-                    </div>
-                    <div class="col-md-1" id="pickLimitField" style="display:none">
-                        <label class="form-label small fw-bold text-secondary">上限</label>
-                        <input type="number" id="newPickLimit" class="form-control border-light-subtle shadow-sm" value="1" min="1" />
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label small fw-bold text-secondary">順序</label>
-                        <input type="number" id="newDisplayOrder" class="form-control border-light-subtle shadow-sm" value="1" min="1" />
-                    </div>
-                    <div class="col-md-2">
-                        <button type="button" class="btn btn-success w-100 shadow-sm rounded-pill py-2" onclick="addItem()">
-                            確認新增
-                        </button>
+                                    <div class="dish-selection-rows">
+                                        <!-- Dish selection rows will be dynamically added here by JavaScript -->
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm add-dish-to-category mt-3"
+                                            data-category-id="@categoryVm.CategoryId">
+                                        <i class="fas fa-plus me-1"></i>新增餐點
+                                    </button>
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -252,6 +231,26 @@
     </div>
 </div>
 
+<!-- Save Confirmation Modal -->
+<div class="modal fade" id="saveConfirmModal" tabindex="-1" aria-labelledby="saveConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="saveConfirmModalLabel">確認儲存套餐餐點設定</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>您即將儲存以下套餐餐點設定：</p>
+        <div id="saveConfirmSummary" class="alert alert-light border small" style="max-height: 300px; overflow-y: auto;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" id="confirmSaveItemsBtn">確認儲存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @section Styles {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
     <style>
@@ -264,6 +263,262 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script>
         const setMealId = @Model.Id;
+        // const availableList = document.getElementById('available-dishes'); // No longer needed
+        // const selectedList = document.getElementById('selected-dishes');   // No longer needed
+        // const editor = document.getElementById('item-editor');           // No longer needed
+
+        function formatSelectedOptionText(item) {
+            let text = `${item.dishName} ($${item.dishPrice}) x${item.quantity}`;
+            if (item.isOptional === true || item.isOptional === 'true') {
+                text += ` (選擇性 - 群組${item.optionGroupNo ?? ''}, 限選${item.pickLimit ?? ''})`;
+            } else {
+                text += ` (固定)`;
+            }
+            return text;
+        }
+
+        // Old dual-list box functions removed
+        
+        // Helper function to toggle optional fields for a category
+        function toggleCategoryOptionalFields(categoryId) {
+            const categorySlot = document.querySelector(`.category-slot[data-category-id="${categoryId}"]`);
+            const isOptionalToggle = categorySlot.querySelector('.is-optional-toggle');
+            const optionalSettings = categorySlot.querySelector('.optional-settings');
+
+            if (isOptionalToggle.checked) {
+                optionalSettings.style.display = '';
+            } else {
+                optionalSettings.style.display = 'none';
+            }
+        }
+
+        // Helper to generate options HTML for dish dropdown
+        function getCategorySelectOptions(categoryId, allDishesInCategories) {
+            const category = allDishesInCategories.find(c => c.categoryId == categoryId);
+            if (!category || !category.dishesInThisCategory) return '';
+
+            let optionsHtml = '<option value="" data-price="0">請選擇餐點</option>';
+            category.dishesInThisCategory.forEach(dish => {
+                // Assuming dish.text might contain something like "DishName ($Price)"
+                // We want to store the price in a data attribute
+                const priceMatch = dish.text.match(/\$(\d+(\.\d+)?)/);
+                const price = priceMatch ? priceMatch[1] : 0;
+                optionsHtml += `<option value="${dish.value}" data-price="${price}">${dish.text}</option>`;
+            });
+            return optionsHtml;
+        }
+
+        // Helper to render a single dish selection row
+        function renderDishSelectionRow(categoryId, categorySelectOptions, initialItem = null) {
+            const dishId = initialItem ? initialItem.dishId : '';
+            const quantity = initialItem ? initialItem.quantity : 1;
+            const displayOrder = initialItem ? initialItem.displayOrder : 1;
+
+            const rowHtml = `
+                <div class="row g-3 mb-2 dish-selection-row align-items-end" data-dish-id="${dishId}">
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold text-secondary">餐點</label>
+                        <select class="form-select dish-id-select">
+                            ${categorySelectOptions}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-secondary">數量</label>
+                        <input type="number" class="form-control dish-quantity" value="${quantity}" min="1" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-secondary">順序</label>
+                        <input type="number" class="form-control dish-display-order" value="${displayOrder}" min="1" />
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-dish-from-category">移除</button>
+                    </div>
+                </div>
+            `;
+            return rowHtml;
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // New UI Initialization
+            const categoriesWithDishes = @Html.Raw(Json.Serialize(Model.CategoriesWithDishes));
+            
+            categoriesWithDishes.forEach(categoryVm => {
+                const categorySlot = document.querySelector(`.category-slot[data-category-id="${categoryVm.categoryId}"]`);
+                const dishSelectionRowsContainer = categorySlot.querySelector('.dish-selection-rows');
+                const categorySelectOptions = getCategorySelectOptions(categoryVm.categoryId, categoriesWithDishes);
+
+                // Render existing selected items for this category
+                categoryVm.selectedItemsForCategory.forEach(item => {
+                    const rowHtml = renderDishSelectionRow(categoryVm.categoryId, categorySelectOptions, item);
+                    dishSelectionRowsContainer.insertAdjacentHTML('beforeend', rowHtml);
+                    // Set selected dish in dropdown
+                    const newRow = dishSelectionRowsContainer.lastElementChild;
+                    newRow.querySelector('.dish-id-select').value = item.dishId;
+                });
+            });
+
+            // Event listener for Add Dish buttons
+            document.querySelectorAll('.add-dish-to-category').forEach(button => {
+                button.addEventListener('click', function() {
+                    const categoryId = this.dataset.categoryId;
+                    const categorySlot = document.querySelector(`.category-slot[data-category-id="${categoryId}"]`);
+                    const dishSelectionRowsContainer = categorySlot.querySelector('.dish-selection-rows');
+                    const categorySelectOptions = getCategorySelectOptions(categoryId, categoriesWithDishes);
+                    
+                    const rowHtml = renderDishSelectionRow(categoryId, categorySelectOptions);
+                    dishSelectionRowsContainer.insertAdjacentHTML('beforeend', rowHtml);
+                });
+            });
+
+            // Event listener for Remove Dish buttons (delegated)
+            document.getElementById('category-slots-container').addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-dish-from-category')) {
+                    e.target.closest('.dish-selection-row').remove();
+                }
+            });
+
+            // Initial toggle for optional fields
+            document.querySelectorAll('.is-optional-toggle').forEach(toggle => {
+                toggleCategoryOptionalFields(toggle.id.split('-')[1]);
+            });
+
+        });
+
+        // Helper to format item for confirmation summary
+        function formatItemForSummary(item, dishName) {
+            let text = `${dishName} ($${item.dishPrice}) x${item.quantity}`;
+            if (item.isOptional === true || item.isOptional === 'true') {
+                text += ` <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1">限選 ${item.pickLimit ?? ''}</span>`;
+            } else {
+                text += ` <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-1">固定</span>`;
+            }
+            return text;
+        }
+
+        async function saveItems() {
+            const allItemsToSave = [];
+            let isValid = true;
+            const categorySlots = document.querySelectorAll('.category-slot');
+            const saveConfirmSummaryDiv = document.getElementById('saveConfirmSummary');
+            let summaryHtml = '';
+
+            categorySlots.forEach(categorySlot => {
+                const categoryId = parseInt(categorySlot.dataset.categoryId);
+                const categoryName = categorySlot.querySelector('h5').textContent; // Get category name
+                const isCategoryOptional = categorySlot.querySelector('.is-optional-toggle').checked;
+                let optionGroupNoForCategory = null;
+                let pickLimitForCategory = null;
+
+                if (isCategoryOptional) {
+                    optionGroupNoForCategory = parseInt(categorySlot.querySelector('.category-group-no').value);
+                    pickLimitForCategory = parseInt(categorySlot.querySelector('.category-pick-limit').value);
+                    if (isNaN(optionGroupNoForCategory) || isNaN(pickLimitForCategory) || optionGroupNoForCategory < 1 || pickLimitForCategory < 1) {
+                        showAlert('itemAlertBox', 'danger', `分類 ${categoryName} 的「群組編號」或「選取上限」無效。`);
+                        isValid = false;
+                        return; // Skip this category
+                    }
+                }
+
+                const dishRows = categorySlot.querySelectorAll('.dish-selection-row');
+                // Add category header to summary
+                if (dishRows.length > 0) {
+                    summaryHtml += `<h6 class="fw-bold mt-3 text-dark-emphasis">${categoryName}</h6><ul class="list-group list-group-flush mb-2 border rounded shadow-sm">`;
+                }
+
+                dishRows.forEach(row => {
+                    const dishIdSelect = row.querySelector('.dish-id-select');
+                    const quantityInput = row.querySelector('.dish-quantity');
+                    const displayOrderInput = row.querySelector('.dish-display-order');
+
+                    const dishId = parseInt(dishIdSelect.value);
+                    const quantity = parseInt(quantityInput.value);
+                    const displayOrder = parseInt(displayOrderInput.value);
+                    
+                    const selectedOption = dishIdSelect.options[dishIdSelect.selectedIndex];
+                    const dishName = selectedOption.text.split('(')[0].trim(); // Extract just the name
+                    const dishPrice = selectedOption.dataset.price || 0;
+
+                    if (isNaN(dishId) || dishId === 0) {
+                        showAlert('itemAlertBox', 'danger', `分類 ${categoryName} 中有未選擇餐點的列。`);
+                        isValid = false;
+                        return; // Skip this row
+                    }
+                    if (isNaN(quantity) || quantity < 1) {
+                        showAlert('itemAlertBox', 'danger', `餐點 ${dishName} 的數量無效。`);
+                        isValid = false;
+                        return; // Skip this row
+                    }
+                     if (isNaN(displayOrder) || displayOrder < 1) {
+                        showAlert('itemAlertBox', 'danger', `餐點 ${dishName} 的顯示順序無效。`);
+                        isValid = false;
+                        return; // Skip this row
+                    }
+
+                    const itemToSave = {
+                        dishId: dishId,
+                        dishPrice: dishPrice, // For summary display
+                        quantity: quantity,
+                        isOptional: isCategoryOptional,
+                        optionGroupNo: isCategoryOptional ? optionGroupNoForCategory : null,
+                        pickLimit: isCategoryOptional ? pickLimitForCategory : null,
+                        displayOrder: displayOrder
+                    };
+                    allItemsToSave.push(itemToSave);
+
+                    // Add to summary
+                    summaryHtml += `<li class="list-group-item small py-2">- ${formatItemForSummary(itemToSave, dishName)}</li>`;
+                });
+                if (dishRows.length > 0) {
+                    summaryHtml += `</ul>`;
+                }
+            });
+
+            if (!isValid) {
+                return; // Stop if any validation failed
+            }
+            
+            if (allItemsToSave.length === 0) {
+                summaryHtml = '<p>您沒有選擇任何餐點，套餐內容將被清空。</p>';
+            }
+
+            saveConfirmSummaryDiv.innerHTML = summaryHtml;
+            const saveConfirmModal = new bootstrap.Modal(document.getElementById('saveConfirmModal'));
+            saveConfirmModal.show();
+
+            // Set up event listener for the confirmation button
+            document.getElementById('confirmSaveItemsBtn').onclick = async function() {
+                saveConfirmModal.hide(); // Hide the confirmation modal
+
+                const response = await fetch(`/SetMeals/UpdateItems/${setMealId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify(allItemsToSave)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showAlert('itemAlertBox', 'success', result.message);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    const error = await response.json();
+                    showAlert('itemAlertBox', 'danger', error.message || '儲存失敗，請檢查網路連線或聯絡管理員。');
+                }
+            };
+        }
+        
+        function showAlert(boxId, type, message) {
+            const alertBox = document.getElementById(boxId);
+            alertBox.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                                    ${message}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                  </div>`;
+        }
+
+        // --- CropperJS and other page logic from before ---
         let cropper = null;
         let originalFile = null;
 
@@ -302,54 +557,6 @@
             bootstrap.Modal.getInstance(document.getElementById("cropperModal")).hide();
             cropper.destroy(); cropper = null;
         }
-
-        function toggleOptionalFields() {
-            const isOptional = document.getElementById("newIsOptional").value === "true";
-            document.getElementById("groupNoField").style.display = isOptional ? "" : "none";
-            document.getElementById("pickLimitField").style.display = isOptional ? "" : "none";
-        }
-
-        async function addItem() {
-            const dishId = document.getElementById("newDishId").value;
-            if (!dishId) { showAlert("itemAlertBox", "warning", "請選擇餐點"); return; }
-            const data = {
-                SetMealId: setMealId,
-                DishId: parseInt(dishId),
-                Quantity: parseInt(document.getElementById("newQuantity").value),
-                IsOptional: document.getElementById("newIsOptional").value === "true",
-                OptionGroupNo: document.getElementById("newIsOptional").value === "true" ? parseInt(document.getElementById("newOptionGroupNo").value) : null,
-                PickLimit: document.getElementById("newIsOptional").value === "true" ? parseInt(document.getElementById("newPickLimit").value) : null,
-                DisplayOrder: parseInt(document.getElementById("newDisplayOrder").value)
-            };
-            const res = await fetch("/SetMeals/AddItem", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-            if (res.ok) { showAlert("itemAlertBox", "success", "新增成功"); setTimeout(() => location.reload(), 800); }
-            else { const err = await res.json(); showAlert("itemAlertBox", "danger", err.message || "新增失敗"); }
-        }
-
-        async function removeItem(itemId) {
-            if (!confirm("確定要移除此餐點嗎？")) return;
-            const res = await fetch(`/SetMeals/RemoveItem/${itemId}`, { method: "POST" });
-            if (res.ok) { document.getElementById(`item-${itemId}`)?.remove(); showAlert("itemAlertBox", "success", "移除成功"); }
-            else showAlert("itemAlertBox", "danger", "移除失敗");
-        }
-
-        function showAlert(boxId, type, message) {
-            document.getElementById(boxId).innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
-        }
-
-        async function loadDishOptions() {
-            const res = await fetch("/Dishes/GetAllJson"); if (!res.ok) return;
-            const dishes = await res.json();
-            const select = document.getElementById("newDishId");
-            if(select) {
-                select.innerHTML = '<option value="">請選擇餐點</option>';
-                dishes.forEach(d => {
-                    const option = document.createElement("option");
-                    option.value = d.id; option.text = `${d.dishName} ($${d.price})`; select.appendChild(option);
-                });
-            }
-        }
-        loadDishOptions();
 
         const area = document.getElementById('imageArea');
         area.addEventListener('dragover', (e) => { e.preventDefault(); area.classList.add('border-primary'); });

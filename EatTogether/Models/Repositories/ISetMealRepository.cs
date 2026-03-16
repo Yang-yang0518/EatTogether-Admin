@@ -11,5 +11,6 @@ namespace EatTogether.Models.Repositories
 		Task SoftDeleteAsync(int id);
 		Task AddItemAsync(SetmealItemDto itemDto);
 		Task RemoveItemAsync(int itemId);
+		Task UpdateItemsAsync(int setMealId, IEnumerable<SetmealItemDto> itemDtos);
 	}
 }
