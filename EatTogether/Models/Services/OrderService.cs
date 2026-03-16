@@ -272,7 +272,7 @@ namespace EatTogether.Models.Services
                 PreOrderId = p.Id,
                 OrderNumber = p.OrderNumber,
                 InOrOut = p.InOrOut,
-                TableName = p.Table != null ? p.Table.TableName : "外帶",
+                TableName = p.Table?.TableName ?? "",
                 UserName = p.User != null ? p.User.Name : null,
                 MemberName = p.Member != null ? MaskName(p.Member.Name) : "訪客",
                 OrderAt = p.OrderAt,
@@ -284,7 +284,11 @@ namespace EatTogether.Models.Services
                 Note = p.Note,
                 PayMethod = p.PayMethod,
                 DoneOrCancel = p.DoneOrCancel,
-                CompletedAt = p.DoneOrCancel == 1 ? p.Payments.FirstOrDefault(pay => pay.DoneOrCancel == 1)?.PaidAt : null,
+                CompletedAt = p.DoneOrCancel == 1
+                    ? p.Payments?.FirstOrDefault(pay => pay.DoneOrCancel == 1)?.PaidAt
+                    : p.DoneOrCancel == 2
+                    ? p.CancelledAt
+                    : null,
                 CompletedAtLabel = p.DoneOrCancel == 1 ? "付款時間" : p.DoneOrCancel == 2 ? "取消時間" : null,
                 Items = p.PreOrderDetails.Select(d => new PreOrderDetailItemViewModel
                 {

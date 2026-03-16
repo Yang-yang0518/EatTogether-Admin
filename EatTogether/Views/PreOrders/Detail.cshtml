@@ -446,20 +446,23 @@
     </div>
 
     <!-- ── 金額明細 ── -->
-    <div class="card">
-        <div class="card-title">金額明細</div>
-        <div class="amount-row">
-            <span>總計</span>
-            <span>NT$ @Model.OriginalAmount</span>
+    @if (Model.DoneOrCancel != 2)
+    {
+        <div class="card">
+            <div class="card-title">金額明細</div>
+            <div class="amount-row">
+                <span>總計</span>
+                <span>NT$ @Model.OriginalAmount</span>
+            </div>
+            <div class="amount-row discount">
+                <span>折扣</span>
+                <span>− NT$ @Model.DiscountAmount</span>
+            </div>
+            <div class="amount-row total">
+                <span>應付</span>
+                <span>NT$ @Model.TotalAmount</span>
+            </div>
         </div>
-        <div class="amount-row discount">
-            <span>折扣</span>
-            <span>− NT$ @Model.DiscountAmount</span>
-        </div>
-        <div class="amount-row total">
-            <span>應付</span>
-            <span>NT$ @Model.TotalAmount</span>
-        </div>
-    </div>
+    }
 
 </div>

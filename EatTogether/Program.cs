@@ -78,6 +78,10 @@ namespace EatTogether
             builder.Services.AddScoped<TableService>();
             builder.Services.AddScoped<ReservationService>();
             builder.Services.AddScoped<CouponService>();
+            builder.Services.AddScoped<ReservationEmailService>();
+            builder.Services.AddScoped<BirthdayCouponService>();
+            builder.Services.AddHostedService<BirthdayCouponBackgroundService>();
+            builder.Services.AddHostedService<CouponNotifyBackgroundService>();
 
 			builder.Services.AddScoped<IUserRepository, UserRepository>();
 			builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
