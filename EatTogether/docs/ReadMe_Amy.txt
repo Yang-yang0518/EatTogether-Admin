@@ -140,7 +140,7 @@
 	- Models/Infra/JwtHelper.cs — 產生 Token (在 Program.cs 中註冊)
 	
 
-[working] 自訂 ActionFilter（Models/Infra/RequirePermissionAttribute.cs）
+[V] 自訂 ActionFilter（Models/Infra/RequirePermissionAttribute.cs）
 	RequirePermissionAttribute : Attribute, IAsyncActionFilter
 		[RequirePermission("FunctionName")]
 		從 JWT 取角色 Id 清單 → 查詢 RoleFunctions 取 FunctionName 聯集 → 驗證是否包含指定 FunctionName
@@ -154,9 +154,14 @@
 	查詢 RoleFunctions 取 FunctionName 聯集，判斷是否包含指定 FunctionName，
 	不符則回傳 403 Forbidden
 
-[] 全域錯誤頁路由（Program.cs）
-	403 → /Error/Forbidden
-	404 → /Error/NotFound
+[working] 全域錯誤頁路由設定
+	Program.cs — 設定全域錯誤路由
+	建立 Controllers/ErrorController.cs
+		[Route("Error/403")]
+        public IActionResult Forbidden()
+		[Route("Error/404")]
+        public IActionResult NotFound()
+	建立 Views/Error/Forbidden.cshtml、NotFound.cshtml
 
 [] IEmailService / EmailService（Models/Services/EmailService.cs）
 	Task SendPasswordResetEmailAsync(string toEmail, string resetLink)
