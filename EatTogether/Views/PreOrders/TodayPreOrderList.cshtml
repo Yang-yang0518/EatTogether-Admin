@@ -22,8 +22,8 @@
     }
 
     /* ════════════════════════════════
-           整體佈局：全螢幕，不留白
-        ════════════════════════════════ */
+               整體佈局：全螢幕，不留白
+            ════════════════════════════════ */
     .board {
         display: flex;
         flex-direction: column;
@@ -66,8 +66,8 @@
     }
 
     /* ════════════════════════════════
-           右側：前3筆展開卡片
-        ════════════════════════════════ */
+               右側：前3筆展開卡片
+            ════════════════════════════════ */
     .expanded-area {
         display: flex;
         flex-direction: row-reverse; /* 第1筆最右，第3筆最左 */
@@ -268,6 +268,105 @@
             background: #219a52;
         }
 
+    .card-cancel-bar {
+        display: none;
+        padding: 8px 12px;
+        border-top: 1px solid #fde8e8;
+        background: #fff5f5;
+    }
+
+    .exp-card.card-selected .card-cancel-bar {
+        display: block;
+    }
+
+    .btn-cancel-order {
+        width: 100%;
+        padding: 8px;
+        background: #fff;
+        color: #c0392b;
+        border: 1.5px solid #c0392b;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+        .btn-cancel-order:hover {
+            background: #c0392b;
+            color: #fff;
+        }
+
+    .confirm-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .confirm-box {
+        background: #fff;
+        border-radius: 16px;
+        padding: 32px 40px;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        min-width: 280px;
+    }
+
+        .confirm-box .confirm-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .confirm-box .confirm-msg {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+
+        .confirm-box .confirm-btns {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .confirm-box .btn-confirm-yes {
+            padding: 10px 28px;
+            background: #c0392b;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+            .confirm-box .btn-confirm-yes:hover {
+                background: #a93226;
+            }
+
+        .confirm-box .btn-confirm-no {
+            padding: 10px 28px;
+            background: #fff;
+            color: #555;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+            .confirm-box .btn-confirm-no:hover {
+                border-color: #aaa;
+            }
+
     .btn-cancel {
         padding: 5px 12px;
         background: #fff;
@@ -286,8 +385,8 @@
         }
 
     /* ════════════════════════════════
-           左側：其餘訂單 List（可捲動）
-        ════════════════════════════════ */
+               左側：其餘訂單 List（可捲動）
+            ════════════════════════════════ */
     .list-area {
         flex: 1;
         overflow-y: auto;
@@ -439,7 +538,7 @@
                 int pendingCount = order.Items.Count(x => x.Status == 0);
 
                 <div class="exp-card" id="card-@order.PreOrderId" data-preorder-id="@order.PreOrderId" data-pending="@pendingCount">
-                    <div class="card-header">
+                    <div class="card-header" style="cursor:pointer;" onclick="toggleCardSelected(@order.PreOrderId, event)">
                         <div class="card-header-left">
                             <span class="card-order-number">@order.OrderNumber</span>
                             <div class="card-meta">
@@ -454,7 +553,10 @@
                                 <span class="order-time">@order.OrderAt.ToString("HH:mm")</span>
                             </div>
                         </div>
-                        <span class="pending-badge @(pendingCount == 0 ? "done" : "")" id="badge-@order.PreOrderId">
+                        @{
+                            var badgeCls = pendingCount == 0 ? "pending-badge done" : "pending-badge";
+                        }
+                        <span class="@badgeCls" id="badge-@order.PreOrderId">
                             @(pendingCount == 0 ? "✅ 全部完成" : $"⏳ {pendingCount} 份")
                         </span>
                     </div>
@@ -485,6 +587,9 @@
                                 <button class="btn-done" onclick="updateStatus(event, @item.DetailId, 1, @order.PreOrderId)">✓ 已完成</button>
                             </div>
                         }
+                    </div>
+                    <div class="card-cancel-bar">
+                        <button class="btn-cancel-order" onclick="cancelOrder(event, @order.PreOrderId)">✕ 整單取消</button>
                     </div>
                 </div>
             }
@@ -520,7 +625,10 @@
                                 <span class="order-time">@order.OrderAt.ToString("HH:mm")</span>
                             </div>
                             <div class="list-header-right">
-                                <span class="pending-badge @(pendingCount == 0 ? "done" : "")" id="badge-@order.PreOrderId">
+                                @{
+                                    var badgeCls2 = pendingCount == 0 ? "pending-badge done" : "pending-badge";
+                                }
+                                <span class="@badgeCls2" id="badge-@order.PreOrderId">
                                     @(pendingCount == 0 ? "✅ 全部完成" : $"⏳ {pendingCount} 份")
                                 </span>
                                 <span class="chevron">▼</span>
@@ -557,12 +665,23 @@
                     </div>
                 }
             }
-            <div class="refresh-hint">頁面每 30 秒自動重新整理</div>
+            <div class="refresh-hint">頁面每 10 秒自動重新整理</div>
         </div>
 
     </div>
 </div>
 
+<!-- 確認框 -->
+<div class="confirm-overlay" id="confirmOverlay" style="display:none;">
+    <div class="confirm-box">
+        <div class="confirm-icon">⚠️</div>
+        <div class="confirm-msg">確定要取消整筆訂單嗎？<br>所有餐點（包含已完成）都會取消。</div>
+        <div class="confirm-btns">
+            <button class="btn-confirm-yes" id="confirmYes">確認取消</button>
+            <button class="btn-confirm-no" onclick="closeConfirm()">返回</button>
+        </div>
+    </div>
+</div>
 @Html.AntiForgeryToken()
 
 <script>
@@ -636,7 +755,7 @@
         updatePendingCount(preOrderId);
     }
 
-    function updatePendingCount(preOrderId) {
+        function updatePendingCount(preOrderId) {
         const card = document.getElementById('card-' + preOrderId)
                   || document.getElementById('lcard-' + preOrderId);
         const items = card.querySelectorAll('.detail-item');
@@ -651,8 +770,16 @@
             badge.classList.add('done');
             setTimeout(() => {
                 card.classList.add('all-done');
-                setTimeout(() => { card.remove(); updateTotalBadge(); }, 600);
-            }, 800);
+                setTimeout(() => {
+                    card.remove();
+                    updateTotalBadge();
+                    // ← 補上這段
+                    const expCards = document.querySelectorAll('.exp-card');
+                    if (expCards.length < 3 && document.querySelector('.list-card')) {
+                        location.reload();
+                    }
+                }, 300);
+            }, 400);
         } else {
             badge.textContent = `⏳ ${pending} 份`;
             badge.classList.remove('done');
@@ -664,5 +791,105 @@
         document.getElementById('totalBadge').textContent = `共 ${remaining} 筆`;
     }
 
-    setTimeout(() => location.reload(), 30000);
+    let selectedCardId = null;
+    let pendingCancelId = null;
+
+    function toggleCardSelected(preOrderId, event) {
+        if (event.target.closest('.detail-item, .action-btns, .btn-cancel-order')) return;
+        const card = document.getElementById('card-' + preOrderId);
+        if (!card) return;
+        if (selectedCardId && selectedCardId !== preOrderId)
+            document.getElementById('card-' + selectedCardId)?.classList.remove('card-selected');
+        card.classList.toggle('card-selected');
+        selectedCardId = card.classList.contains('card-selected') ? preOrderId : null;
+    }
+
+    function cancelOrder(event, preOrderId) {
+        event.stopPropagation();
+        pendingCancelId = preOrderId;
+        document.getElementById('confirmOverlay').style.display = 'flex';
+        document.getElementById('confirmYes').onclick = confirmCancel;
+    }
+
+    function closeConfirm() {
+        document.getElementById('confirmOverlay').style.display = 'none';
+        pendingCancelId = null;
+    }
+
+        async function confirmCancel() {
+        if (!pendingCancelId) return;
+        const preOrderId = pendingCancelId;  // ← 先存起來
+        closeConfirm();                       // ← 再關閉（會清掉 pendingCancelId）
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        const res = await fetch('/PreOrders/CancelOrder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token ?? '' },
+            body: `preOrderId=${preOrderId}`
+        });
+        const data = await res.json();
+        if (!data.success) return;
+
+        const card = document.getElementById('card-' + preOrderId)
+                  || document.getElementById('lcard-' + preOrderId);
+        if (!card) return;
+
+        card.querySelectorAll('.detail-item').forEach(item => {
+            item.dataset.status = 2;
+            item.classList.remove('status-done');
+            item.classList.add('status-cancel');
+            const icon = document.getElementById('icon-' + item.dataset.detailId);
+            if (icon) icon.textContent = '❌';
+        });
+
+            card.classList.remove('card-selected');
+    setTimeout(() => {
+        card.classList.add('all-done');
+        setTimeout(() => {
+            card.remove();
+            updateTotalBadge();
+            // 右側不足3筆才 reload
+            const expCards = document.querySelectorAll('.exp-card');
+            if (expCards.length < 3 && document.querySelector('.list-card')) {
+                location.reload();
+            }
+        }, 600);
+    }, 600);
+    }
+        function promoteListCard() {
+        const expandedArea = document.getElementById('expandedArea');
+        const expCards = expandedArea.querySelectorAll('.exp-card');
+
+        // 右側不足3筆才補
+        if (expCards.length >= 3) return;
+
+        const listArea = document.getElementById('listArea');
+        const firstListCard = listArea.querySelector('.list-card');
+        if (!firstListCard) return;
+
+        // 直接 reload 補上最簡單
+        location.reload();
+    }
+
+        let lastCount = @Model.Count;
+
+    setInterval(async () => {
+        try {
+            const res = await fetch('/PreOrders/PendingCount');
+            const data = await res.json();
+            if (data.count !== lastCount) location.reload();
+        } catch {}
+    }, 3000);
+
+        document.addEventListener('DOMContentLoaded', () => {
+        // 已完成/取消的餐點移到最下面
+        document.querySelectorAll('.card-body, .list-detail-area').forEach(area => {
+            const done = [...area.querySelectorAll('.detail-item.status-done, .detail-item.status-cancel')];
+            done.forEach(item => {
+                const actionDiv = document.getElementById('actions-' + item.dataset.detailId);
+                area.appendChild(item);
+                if (actionDiv) area.appendChild(actionDiv);
+            });
+        });
+    });
 </script>

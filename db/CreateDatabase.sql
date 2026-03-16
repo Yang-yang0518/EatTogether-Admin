@@ -433,6 +433,7 @@ CREATE TABLE [dbo].[PreOrders](
 	[PaymentId] [int] NULL,
 	[PayMethod] [nvarchar](50) NOT NULL,
 	[DoneOrCancel] [int] NOT NULL,
+	[CancelledAt] [datetime2](0) NULL,
  CONSTRAINT [PK_PreOrders] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC

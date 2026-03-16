@@ -1,8 +1,9 @@
-﻿using EatTogether.Models.EfModels;
+﻿using EatTogether.Models.DTOs;
+using EatTogether.Models.EfModels;
+using EatTogether.Models.Repositories;
 using EatTogether.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using EatTogether.Models.Repositories;
-using EatTogether.Models.DTOs;
+using Microsoft.EntityFrameworkCore;
 
 namespace EatTogether.Models.Services
 {
@@ -10,13 +11,14 @@ namespace EatTogether.Models.Services
     {
         // CreatePreOrder
         Task<string> CreatePreOrderAsync(CreatePreOrderDto dto);
-        Task<List<SelectListItem>> GetTableOptionsAsync();
+        Task<List<SelectListItem>> GetTableOptionsAsync(int? includeTableId = null);
         Task<List<CreatePreOrderItemViewModel>> GetMenuItemsAsync();
 
         // PreOrdersList
         Task<List<PreOrderListItemViewModel>> GetPendingPreOrdersAsync();
         Task UpdatePreOrderDetailStatusAsync(int detailId, int status);
         Task<PreOrderListQueryViewModel> GetAllPreOrdersAsync(PreOrderListQueryViewModel query);
+        Task CancelOrderAsync(int preOrderId);
 
         // Details
         Task<PreOrderListItemViewModel> GetPreOrderDetailAsync(int preOrderId);
@@ -27,10 +29,6 @@ namespace EatTogether.Models.Services
         Task CancelUnservedDetailsAsync(int preOrderId);
         Task<int> CheckoutAsync(int preOrderId, string payMethod);
         Task<PaymentIndexViewModel> GetPaymentIndexAsync();
-
-        
-
-
     }
     public class OrderService : IOrderService
     {
@@ -93,11 +91,9 @@ namespace EatTogether.Models.Services
             // D4 = 補零到4位，例如 0001, 0010
         }
 
-        public async Task<List<SelectListItem>> GetTableOptionsAsync()
+        public async Task<List<SelectListItem>> GetTableOptionsAsync(int? includeTableId = null)
         {
             var tables = await _tableRepo.GetAllAsync();
-
-            // 找出今日有未完成(Pending)PreOrder的桌號ID
             var today = DateTime.Today;
             var pendingOrders = await _preOrderRepo.GetByStatusAsync(PreOrderStatus.Pending);
             var occupiedTableIds = pendingOrders
@@ -106,12 +102,13 @@ namespace EatTogether.Models.Services
                 .ToHashSet();
 
             return tables
-                .Where(t => t.Status == 1)                        // ← 只顯示用餐中
-                .Where(t => !occupiedTableIds.Contains(t.Id))     // ← 且還沒有 PreOrder
+                .Where(t => t.Status == 1)
+                .Where(t => !occupiedTableIds.Contains(t.Id) || t.Id == includeTableId)  // ← 保留當前桌
                 .Select(t => new SelectListItem
                 {
                     Value = t.Id.ToString(),
-                    Text = t.TableName
+                    Text = t.TableName,
+                    Selected = t.Id == includeTableId
                 }).ToList();
         }
 
@@ -168,6 +165,17 @@ namespace EatTogether.Models.Services
         public async Task UpdatePreOrderDetailStatusAsync(int detailId, int status)
         {
             await _preOrderRepo.UpdateDetailStatusAsync(detailId, status);
+
+            // 取得該 detail 的 PreOrderId
+            var preOrderId = await _preOrderRepo.GetPreOrderIdByDetailIdAsync(detailId);
+
+            // 檢查是否所有餐點都取消了
+            var preOrder = await _preOrderRepo.GetByIdAsync(preOrderId);
+            if (preOrder != null && preOrder.DoneOrCancel == PreOrderStatus.Pending
+                && preOrder.PreOrderDetails.All(d => d.DoneOrCancel == 2))
+            {
+                await _preOrderRepo.UpdateStatusAsync(preOrderId, PreOrderStatus.Cancel);
+            }
         }
 
         public async Task<PreOrderListQueryViewModel> GetAllPreOrdersAsync(PreOrderListQueryViewModel query)
@@ -228,6 +236,15 @@ namespace EatTogether.Models.Services
             if (string.IsNullOrEmpty(name) || name.Length < 2) return name;
             return name[0] + "*" + name[2..];  // 第2個字換成 *
         }
+        public async Task CancelOrderAsync(int preOrderId)
+        {
+            await _preOrderRepo.CancelEntireOrderAsync(preOrderId);
+
+            // 如果是內用，把桌位改回空桌
+            var preOrder = await _preOrderRepo.GetByIdAsync(preOrderId);
+            if (preOrder?.TableId.HasValue == true)
+                await _tableRepo.UpdateStatusAsync(preOrder.TableId.Value, 0);
+        }
 
         // ── Details ──────────────────────────────────────────────────
         public async Task<PreOrderListItemViewModel> GetPreOrderDetailAsync(int preOrderId)
@@ -263,6 +280,8 @@ namespace EatTogether.Models.Services
                 Note = p.Note,
                 PayMethod = p.PayMethod,
                 DoneOrCancel = p.DoneOrCancel,
+                CompletedAt = p.DoneOrCancel == 1 ? p.Payments.FirstOrDefault(pay => pay.DoneOrCancel == 1)?.PaidAt : null,
+                CompletedAtLabel = p.DoneOrCancel == 1 ? "付款時間" : p.DoneOrCancel == 2 ? "取消時間" : null,
                 Items = p.PreOrderDetails.Select(d => new PreOrderDetailItemViewModel
                 {
                     DetailId = d.Id,

@@ -14,19 +14,13 @@ namespace EatTogether.Models.Repositories
         // List
         Task UpdateDetailStatusAsync(int detailId, int status);
         Task<List<PreOrder>> GetAllAsync();
+        Task<int> GetPreOrderIdByDetailIdAsync(int detailId);
+        Task UpdateStatusAsync(int id, int doneOrCancel);
 
         // Payment
         Task CancelUnservedDetailsAsync(int preOrderId);
         Task<PreOrder?> GetByIdAsync(int id);
-
-
-
-
-        
-        
-        Task UpdateStatusAsync(int id, int doneOrCancel);        // string → int
-        Task DeleteAsync(int id);
-        
+        Task CancelEntireOrderAsync(int preOrderId);
     }
 
     public class PreOrderRepository : IPreOrderRepository
@@ -69,6 +63,18 @@ namespace EatTogether.Models.Repositories
                      .Include(p => p.Member)
                      .OrderByDescending(p => p.OrderAt)
                      .ToListAsync();
+        public async Task<int> GetPreOrderIdByDetailIdAsync(int detailId)
+        {
+            var detail = await _context.PreOrderDetails.FindAsync(detailId);
+            return detail?.PreOrderId ?? 0;
+        }
+        public async Task UpdateStatusAsync(int id, int doneOrCancel)
+        {
+            var entity = await _context.PreOrders.FindAsync(id);
+            if (entity is null) return;
+            entity.DoneOrCancel = doneOrCancel;
+            await _context.SaveChangesAsync();
+        }
 
         // Payment
         public async Task CancelUnservedDetailsAsync(int preOrderId)
@@ -88,30 +94,25 @@ namespace EatTogether.Models.Repositories
                      .Include(p => p.Table)
                      .Include(p => p.User)
                      .Include(p => p.Coupon)
+                     .Include(p => p.Payments)
                      .FirstOrDefaultAsync(p => p.Id == id);
-
         
-
-        
-
-        
-
-        public async Task UpdateStatusAsync(int id, int doneOrCancel) // 改這裡
+        public async Task CancelEntireOrderAsync(int preOrderId)
         {
-            var entity = await _context.PreOrders.FindAsync(id);
-            if (entity is null) return;
-            entity.DoneOrCancel = doneOrCancel; // 改這裡
+            var order = await _context.PreOrders
+                .Include(p => p.PreOrderDetails)
+                .FirstOrDefaultAsync(p => p.Id == preOrderId);
+
+            if (order == null) return;
+
+            order.DoneOrCancel = 2; // Cancelled
+
+            foreach (var detail in order.PreOrderDetails)
+            {
+                detail.DoneOrCancel = 2; // Cancelled
+            }
+
             await _context.SaveChangesAsync();
         }
-
-        public async Task DeleteAsync(int id)
-        {
-            var entity = await _context.PreOrders.FindAsync(id);
-            if (entity is null) return;
-            _context.PreOrders.Remove(entity);
-            await _context.SaveChangesAsync();
-        }
-
-        
     }
 }

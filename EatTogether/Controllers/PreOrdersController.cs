@@ -13,11 +13,12 @@ namespace EatTogether.Controllers
         // Create----------------------------------------------------------------------------
         // 前台：點餐頁
         // GET /PreOrder/Create
-        public async Task<IActionResult> Create()
+        public async Task<IActionResult> Create(int? tableId)
         {
             var vm = new CreatePreOrderViewModel
             {
-                TableOptions = await _service.GetTableOptionsAsync(),
+                TableId = tableId ?? 0,
+                TableOptions = await _service.GetTableOptionsAsync(tableId),  // ← 傳入 tableId
                 Items = await _service.GetMenuItemsAsync()
             };
             return View(vm);
@@ -130,6 +131,13 @@ namespace EatTogether.Controllers
             var vms = await _service.GetPendingPreOrdersAsync();
             return View(vms);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> PendingCount()
+        {
+            var list = await _service.GetPendingPreOrdersAsync();
+            return Json(new { count = list.Count });
+        }
         public async Task<IActionResult> AllOrders(PreOrderListQueryViewModel query)
         {
             if (query.Page < 1) query.Page = 1;
@@ -142,6 +150,15 @@ namespace EatTogether.Controllers
         public async Task<IActionResult> UpdateDetailStatus(int detailId, int status)
         {
             await _service.UpdatePreOrderDetailStatusAsync(detailId, status);
+            return Json(new { success = true });
+        }
+
+        // AJAX: 整單取消
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CancelOrder(int preOrderId)
+        {
+            await _service.CancelOrderAsync(preOrderId);
             return Json(new { success = true });
         }
 

@@ -634,7 +634,7 @@
     </div>
 </div>
 
-@if (TempData["Success"] != null)
+@if (ViewBag.ShowSuccess == true) @* TempData["Success"] != null *@
 {
     <div id="toast" style="
             position:fixed; inset:0;
@@ -655,7 +655,8 @@
             t.style.transition = 'opacity 0.4s';
             t.style.opacity = '0';
             setTimeout(() => t.remove(), 300);
-        }, 2000);
+        }, 600);
+        history.replaceState({}, '', '/Payments/Create');
     </script>
 }
 
@@ -787,23 +788,28 @@
 
             if (defaultTableId > 0) {
         const tables = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                        Model.Tables.Select(t => new { t.TableId, t.PreOrderId, t.HasOrder })
+                        Model.Tables.Select(t => new { t.TableId, t.TableName, t.PreOrderId, t.HasOrder })
                 ));
-        const target = tables.find(t => t.tableId === defaultTableId);
-        if (target) {
-            if (target.hasOrder && target.preOrderId) {
-                // 有訂單 → 直接載入明細
-                const el = document.getElementById('tbtn-' + target.preOrderId);
-                if (el) {
-                    el.classList.add('active-selected');
-                    loadDetail(target.preOrderId, el);
-                }
-            }
-            // 不管有沒有訂單，捲動到該桌位
-            const anyEl = document.getElementById('tbtn-' + target.preOrderId)
-                       || document.querySelector(`[data-tableid="${defaultTableId}"]`);
-            if (anyEl) anyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const target = tables.find(t => t.TableId === defaultTableId);
+    if (target) {
+        const anyEl = document.getElementById('tbtn-' + target.PreOrderId)
+                   || document.querySelector(`[data-tableid="${defaultTableId}"]`);
+        if (anyEl) {
+            anyEl.classList.add('active-selected');
+            anyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+        if (target.HasOrder && target.PreOrderId) {
+            const el = document.getElementById('tbtn-' + target.PreOrderId);
+            if (el) loadDetail(target.PreOrderId, el);
+        } else {
+            document.getElementById('emptyRight').style.display = 'none';
+            document.getElementById('checkoutContent').style.display = 'flex';
+            document.getElementById('rightTitle').textContent = `🪑 ${target.TableName}`;
+            document.getElementById('rightSubtitle').textContent = '點餐中...';
+            document.querySelector('.detail-scroll').style.display = 'none';
+            document.querySelector('.amount-section').style.display = 'none';
+        }
+    }
     } else {
         switchTab('take');
     }
