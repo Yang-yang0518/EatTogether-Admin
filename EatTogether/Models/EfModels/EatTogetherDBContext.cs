@@ -185,7 +185,9 @@ public partial class EatTogetherDBContext : DbContext
 
             entity.HasIndex(e => e.Status, "IX_Events_Status");
 
-            entity.Property(e => e.DiscountType).HasMaxLength(20);
+            entity.Property(e => e.DiscountType)
+                .IsRequired()
+                .HasMaxLength(20);
             entity.Property(e => e.DiscountValue).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.EndDate).HasPrecision(0);
             entity.Property(e => e.RewardItem).HasMaxLength(100);
@@ -405,6 +407,7 @@ public partial class EatTogetherDBContext : DbContext
 
             entity.HasIndex(e => e.OrderNumber, "IX_PreOrders_OrderNumber").IsUnique();
 
+            entity.Property(e => e.CancelledAt).HasPrecision(0);
             entity.Property(e => e.Note).HasMaxLength(200);
             entity.Property(e => e.OrderAt)
                 .HasPrecision(0)
@@ -575,6 +578,7 @@ public partial class EatTogetherDBContext : DbContext
         {
             entity.HasIndex(e => e.TableName, "IX_Tables_TableName").IsUnique();
 
+            entity.Property(e => e.Remark).HasMaxLength(200);
             entity.Property(e => e.SeatCount).HasDefaultValue(2);
             entity.Property(e => e.TableName)
                 .IsRequired()

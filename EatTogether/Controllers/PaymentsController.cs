@@ -9,14 +9,16 @@ namespace EatTogether.Controllers
         public PaymentsController(IOrderService service) => _service = service;
 
         [HttpGet]
-        public async Task<IActionResult> Create(int? tableId)
+        public async Task<IActionResult> Create(int? tableId, bool success = false)
         {
             var vm = await _service.GetPaymentIndexAsync();
-            ViewBag.DefaultTableId = tableId ?? 0;  // ← 確認有這行
+            ViewBag.DefaultTableId = tableId ?? 0;
+            ViewBag.ShowSuccess = success;  // ← 加這行
             return View(vm);
         }
 
         [HttpGet]
+        [Route("Payments/GetDetail")]
         public async Task<IActionResult> GetDetail(int preOrderId)
         {
             var vm = await _service.GetCheckoutDetailAsync(preOrderId);
@@ -25,6 +27,7 @@ namespace EatTogether.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CancelUnserved(int preOrderId)
         {
             await _service.CancelUnservedDetailsAsync(preOrderId);
@@ -36,9 +39,8 @@ namespace EatTogether.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Checkout(int preOrderId, string payMethod)
         {
-            await _service.CheckoutAsync(preOrderId, payMethod);  // ← 傳入 payMethod
-            TempData["Success"] = "結帳成功！";
-            return RedirectToAction(nameof(Create));
+            await _service.CheckoutAsync(preOrderId, payMethod);
+            return RedirectToAction(nameof(Create), new { success = true });
         }
     }
 }

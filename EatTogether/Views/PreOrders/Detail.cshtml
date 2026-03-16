@@ -369,6 +369,18 @@
                                         : "📱 行動支付")
                 </div>
             </div>
+
+            @if (!string.IsNullOrEmpty(Model.CompletedAtLabel))
+            {
+                <div class="info-item">
+                    <div class="info-label">@Model.CompletedAtLabel</div>
+                    <div class="info-value">
+                        @(Model.CompletedAt.HasValue
+                                            ? Model.CompletedAt.Value.ToString("yyyy/MM/dd HH:mm")
+                                            : "-")
+                </div>
+            </div>
+                        }
         </div>
 
         <!-- 備註 -->
