@@ -178,6 +178,7 @@ namespace EatTogether.Models.Services
             if (preOrder != null && preOrder.DoneOrCancel == PreOrderStatus.Pending
                 && preOrder.PreOrderDetails.All(d => d.DoneOrCancel == 2))
             {
+                preOrder.CancelledAt = DateTime.Now;
                 await _preOrderRepo.UpdateStatusAsync(preOrderId, PreOrderStatus.Cancel);
             }
         }
@@ -276,6 +277,12 @@ namespace EatTogether.Models.Services
                 UserName = p.User != null ? p.User.Name : null,
                 MemberName = p.Member != null ? MaskName(p.Member.Name) : "訪客",
                 OrderAt = p.OrderAt,
+                CompletedAt = p.DoneOrCancel == 1 ? p.Payments.FirstOrDefault(pay => pay.DoneOrCancel == 1)?.PaidAt
+                     : p.DoneOrCancel == 2 ? p.CancelledAt
+                     : null,
+                CompletedAtLabel = p.DoneOrCancel == 1 ? "付款時間"
+                     : p.DoneOrCancel == 2 ? "取消時間"
+                     : null,
                 CouponName = couponName,
                 CouponDesc = couponDesc,
                 OriginalAmount = p.OriginalAmount,
@@ -284,8 +291,6 @@ namespace EatTogether.Models.Services
                 Note = p.Note,
                 PayMethod = p.PayMethod,
                 DoneOrCancel = p.DoneOrCancel,
-                CompletedAt = p.DoneOrCancel == 1 ? p.Payments.FirstOrDefault(pay => pay.DoneOrCancel == 1)?.PaidAt : null,
-                CompletedAtLabel = p.DoneOrCancel == 1 ? "付款時間" : p.DoneOrCancel == 2 ? "取消時間" : null,
                 Items = p.PreOrderDetails.Select(d => new PreOrderDetailItemViewModel
                 {
                     DetailId = d.Id,
