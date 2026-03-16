@@ -40,6 +40,7 @@ namespace EatTogether.Models.Repositories
 		public async Task<IEnumerable<DishDto>> GetAllAsync()
 		{
 			return await _context.Dishes
+			   .Where(d => d.IsActive) // Add this filter
 			   .Select(d => new DishDto
 			   {
 				   Id = d.Id,

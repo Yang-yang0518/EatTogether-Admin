@@ -554,6 +554,8 @@ CREATE TABLE [dbo].[SetMeals](
 	[EndTime] [time](7) NULL,
 	[UpdatedAt] [datetime] NULL,
 	[DisplayOrder] [int] NOT NULL DEFAULT 1,
+	[IsPopular] [bit] NOT NULL DEFAULT 0,
+	[IsRecommended] [bit] NOT NULL DEFAULT 0,
  CONSTRAINT [PK_SetMeals] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC

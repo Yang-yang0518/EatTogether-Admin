@@ -41,6 +41,9 @@ namespace EatTogether.Models.ViewModels
 		[Display(Name = "更新時間")]
 		public DateTime? UpdatedAt { get; set; }
 
+		[Display(Name = "餐點數量")]
+		public int DishCount { get; set; }
+
 		public List<SelectListItem> ParentCategoryOptions { get; set; } = new(); // 用於下拉選單的分類選項
 	}
 }

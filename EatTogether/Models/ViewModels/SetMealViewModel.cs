@@ -63,6 +63,12 @@ namespace EatTogether.Models.ViewModels
         [Display(Name = "顯示順序")]
         public int DisplayOrder { get; set; }
 
+        [Display(Name = "人氣餐點")]
+        public bool IsPopular { get; set; }
+
+        [Display(Name = "主廚推薦")]
+        public bool IsRecommended { get; set; }
+
         public List<SetMealItemViewModel> Items { get; set; } = new();
 
         public List<SelectListItem> DiscountTypeOptions { get; set; } = new()
@@ -70,6 +76,8 @@ namespace EatTogether.Models.ViewModels
             new SelectListItem { Value = "percent", Text = "百分比折扣（%）" },
             new SelectListItem { Value = "fixed",   Text = "固定折扣（元）" }
         };
+
+        public List<CategoryWithDishesViewModel> CategoriesWithDishes { get; set; } = new();
     }
 
     public class SetMealItemViewModel
@@ -86,6 +94,9 @@ namespace EatTogether.Models.ViewModels
 
         [Display(Name = "餐點單價")]
         public decimal? DishPrice { get; set; }
+
+        [Display(Name = "分類名稱")]
+        public string? CategoryName { get; set; }
 
         [Required(ErrorMessage = "數量為必填")]
         [Range(1, 99, ErrorMessage = "數量請填 1~99")]

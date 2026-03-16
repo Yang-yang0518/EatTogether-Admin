@@ -26,6 +26,8 @@
 		public TimeSpan? EndTime { get; set; }
 		public DateTime? UpdatedAt { get; set; }
 		public int DisplayOrder { get; set; }
+		public bool IsPopular { get; set; }
+		public bool IsRecommended { get; set; }
 
 		public List<SetmealItemDto> Items { get; set; } = new ();
 

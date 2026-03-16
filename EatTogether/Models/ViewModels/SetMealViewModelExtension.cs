@@ -25,6 +25,8 @@ namespace EatTogether.Models.ViewModels
                 EndTime       = dto.EndTime,
                 UpdatedAt     = dto.UpdatedAt,
                 DisplayOrder  = dto.DisplayOrder,
+                IsPopular     = dto.IsPopular,
+                IsRecommended = dto.IsRecommended,
                 Items         = dto.Items.Select(i => i.ToItemViewModel()).ToList()
             };
         }
@@ -46,7 +48,9 @@ namespace EatTogether.Models.ViewModels
                 EndDate       = vm.EndDate,
                 StartTime     = vm.StartTime,
                 EndTime       = vm.EndTime,
-                DisplayOrder  = vm.DisplayOrder
+                DisplayOrder  = vm.DisplayOrder,
+                IsPopular     = vm.IsPopular,
+                IsRecommended = vm.IsRecommended
             };
         }
 
@@ -60,6 +64,7 @@ namespace EatTogether.Models.ViewModels
                 DishId        = dto.DishId,
                 DishName      = dto.DishName,
                 DishPrice     = dto.DishPrice,
+                CategoryName  = dto.CategoryName,
                 Quantity      = dto.Quantity,
                 IsOptional    = dto.IsOptional,
                 OptionGroupNo = dto.OptionGroupNo,

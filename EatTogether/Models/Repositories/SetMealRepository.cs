@@ -1,5 +1,6 @@
 ﻿using EatTogether.Models.DTOs;
 using EatTogether.Models.EfModels;
+using EatTogether.Models.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -49,7 +50,9 @@ namespace EatTogether.Models.Repositories
                                 EndDate = dto.EndDate,
                                 StartTime = dto.StartTime,
                                 EndTime = dto.EndTime,
-                                DisplayOrder = dto.DisplayOrder
+                                DisplayOrder = dto.DisplayOrder,
+                                IsPopular = dto.IsPopular,
+                                IsRecommended = dto.IsRecommended
                         };
 
                         _context.SetMeals.Add(setMeal);
@@ -61,80 +64,22 @@ namespace EatTogether.Models.Repositories
                         return await _context.SetMeals
                                 .Where(s => s.IsActive)
                                 .Include(s => s.SetMealItems)
-                                        .ThenInclude(i => i.Dish)
-                                .Select(s => new Setmealdto
-                                {
-                                        Id = s.Id,
-                                        SetMealName = s.SetMealName,
-                                        DiscountType = s.DiscountType,
-                                        DiscountValue = s.DiscountValue,
-                                        IsActive = s.IsActive,
-                                        CreatedAt = s.CreatedAt,
-                                        SetPrice = s.SetPrice,
-                                        Description = s.Description,
-                                        ImageUrl = s.ImageUrl,
-                                        StartDate = s.StartDate,
-                                        EndDate = s.EndDate,
-                                        StartTime = s.StartTime,
-                                        EndTime = s.EndTime,
-                                        UpdatedAt = s.UpdatedAt,
-                                        DisplayOrder = s.DisplayOrder,
-                                        Items = s.SetMealItems.Select(i => new SetmealItemDto
-                                        {
-                                                Id = i.Id,
-                                                SetMealId = i.SetMealId,
-                                                DishId = i.DishId,
-                                                DishName = i.Dish != null ? i.Dish.DishName : null,       
-                                                DishPrice = i.Dish != null ? i.Dish.Price : null,
-                                                Quantity = i.Quantity,
-                                                IsOptional = i.IsOptional,
-                                                OptionGroupNo = i.OptionGroupNo,
-                                                PickLimit = i.PickLimit,
-                                                DisplayOrder = i.DisplayOrder
-                                        }).ToList()
-                                })
+                                .ThenInclude(i => i.Dish)
+                                .ThenInclude(d => d.Category)
+                                .Select(s => s.ToDo())
                                 .ToListAsync();
                 }
 
                 public async Task<Setmealdto?> GetByIdAsync(int id)
                 {
-                        return await _context.SetMeals
-                                        .Where(s => s.Id == id && s.IsActive)
-                                        .Include(s => s.SetMealItems)
-                                                .ThenInclude(i => i.Dish)
-                                        .Select(s => new Setmealdto
-                                        {
-                                                Id = s.Id,
-                                                SetMealName = s.SetMealName,
-                                                DiscountType = s.DiscountType,
-                                                DiscountValue = s.DiscountValue,
-                                                IsActive = s.IsActive,
-                                                CreatedAt = s.CreatedAt,
-                                                SetPrice = s.SetPrice,
-                                                Description = s.Description,
-                                                ImageUrl = s.ImageUrl,
-                                                StartDate = s.StartDate,
-                                                EndDate = s.EndDate,
-                                                StartTime = s.StartTime,
-                                                EndTime = s.EndTime,
-                                                UpdatedAt = s.UpdatedAt,
-                                                DisplayOrder = s.DisplayOrder,
-                                                Items = s.SetMealItems.Select(i => new SetmealItemDto     
-                                                {
-                                                        Id = i.Id,
-                                                        SetMealId = i.SetMealId,
-                                                        DishId = i.DishId,
-                                                        DishName = i.Dish != null ? i.Dish.DishName : null
-,
-                                                        DishPrice = i.Dish != null ? i.Dish.Price : null, 
-                                                        Quantity = i.Quantity,
-                                                        IsOptional = i.IsOptional,
-                                                        OptionGroupNo = i.OptionGroupNo,
-                                                        PickLimit = i.PickLimit,
-                                                        DisplayOrder = i.DisplayOrder
-                                                }).ToList()
-                                        })
-                                        .FirstOrDefaultAsync();
+                    var setMeal = await _context.SetMeals
+                                    .Where(s => s.Id == id && s.IsActive)
+                                    .Include(s => s.SetMealItems)
+                                    .ThenInclude(i => i.Dish)
+                                    .ThenInclude(d => d.Category)
+                                    .FirstOrDefaultAsync();
+
+                    return setMeal?.ToDo();
                 }
 
                 public async Task RemoveItemAsync(int itemId)
@@ -172,9 +117,46 @@ namespace EatTogether.Models.Repositories
                         setMeal.StartTime = dto.StartTime;
                         setMeal.EndTime = dto.EndTime;
                         setMeal.DisplayOrder = dto.DisplayOrder;
+                        setMeal.IsPopular = dto.IsPopular;
+                        setMeal.IsRecommended = dto.IsRecommended;
                         setMeal.UpdatedAt = DateTime.Now;
 
                         await _context.SaveChangesAsync();
+                }
+
+                public async Task UpdateItemsAsync(int setMealId, IEnumerable<SetmealItemDto> itemDtos)
+                {
+                    using var transaction = await _context.Database.BeginTransactionAsync();
+                    try
+                    {
+                        // 1. 刪除現有所有項目
+                        var existingItems = _context.SetMealItems.Where(i => i.SetMealId == setMealId);
+                        _context.SetMealItems.RemoveRange(existingItems);
+                        await _context.SaveChangesAsync();
+
+                        // 2. 新增傳入的項目
+                        var newItems = itemDtos.Select(dto => new SetMealItem
+                        {
+                            SetMealId = setMealId, // 確保使用傳入的 setMealId
+                            DishId = dto.DishId,
+                            Quantity = dto.Quantity,
+                            IsOptional = dto.IsOptional,
+                            OptionGroupNo = dto.IsOptional ? dto.OptionGroupNo : null,
+                            PickLimit = dto.IsOptional ? dto.PickLimit : null,
+                            DisplayOrder = dto.DisplayOrder
+                        });
+
+                        await _context.SetMealItems.AddRangeAsync(newItems);
+                        await _context.SaveChangesAsync();
+
+                        // 3. 提交事務
+                        await transaction.CommitAsync();
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
                 }
         }
 }

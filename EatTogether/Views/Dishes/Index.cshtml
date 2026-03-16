@@ -10,50 +10,86 @@
         <li class="breadcrumb-item active">餐點管理</li>
     </ol>
 
+    <!-- 統計卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-primary text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">總餐點數</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count()</div>
+                    </div>
+                    <i class="fas fa-utensils fa-2x text-white-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-success text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">上架中</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count(d => d.IsActive)</div>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x text-white-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4">
+            <div class="card bg-secondary text-white mb-4 shadow-sm border-0">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small text-white-50 fw-bold">已下架</div>
+                        <div class="h3 mb-0 fw-bold">@Model.Count(d => !d.IsActive)</div>
+                    </div>
+                    <i class="fas fa-ban fa-2x text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜尋與篩選區 -->
     <div class="card mb-4 shadow-sm border-0">
-        <!-- 調整佈局：標題-搜尋-分頁 -->
-        <div class="card-header bg-white border-bottom py-3">
-            <div class="row align-items-center g-3">
-                <!-- 左側：標題 -->
-                <div class="col-auto">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fas fa-utensils text-primary fs-5"></i>
-                        <span class="fw-bold fs-5 mb-0">餐點列表</span>
+        <div class="card-body bg-light rounded">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" id="searchInput" class="form-control border-start-0" 
+                               placeholder="搜尋餐點名稱..." oninput="filterCards(true)" />
                     </div>
                 </div>
-
-                <!-- 中間：搜尋與類別過濾 (佔滿中間剩餘空間) -->
-                <div class="col flex-grow-1">
-                    <div class="d-flex justify-content-center gap-2">
-                        <select id="categoryFilter" class="form-select form-select-sm shadow-sm" style="width:140px" onchange="filterCards(true)">
-                            <option value="">所有類別</option>
-                            @foreach (var cat in Model.Select(d => d.CategoryName).Distinct().OrderBy(c => c))
-                            {
-                                <option value="@cat">@cat</option>
-                            }
-                        </select>
-                        <div class="input-group input-group-sm shadow-sm" style="width:250px">
-                            <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted small"></i></span>
-                            <input type="text" id="searchInput" class="form-control border-start-0"
-                                   placeholder="關鍵字搜尋..." oninput="filterCards(true)" />
-                        </div>
-                    </div>
+                <div class="col-md-2">
+                    <select id="categoryFilter" class="form-select shadow-sm" onchange="filterCards(true)">
+                        <option value="">所有類別</option>
+                        @foreach (var cat in Model.Select(d => d.CategoryName).Distinct().OrderBy(c => c))
+                        {
+                            <option value="@cat">@cat</option>
+                        }
+                    </select>
                 </div>
-
-                <!-- 右側：分頁與新增按鈕 -->
-                <div class="col-auto">
-                    <div class="d-flex align-items-center gap-3">
+                <div class="col-md-2">
+                    <select id="statusFilter" class="form-select shadow-sm" onchange="filterCards(true)">
+                        <option value="">所有狀態</option>
+                        <option value="上架中">上架中</option>
+                        <option value="已下架">已下架</option>
+                    </select>
+                </div>
+                <div class="col-md-5 text-end">
+                    <div class="d-flex justify-content-end align-items-center gap-3">
                         <nav id="topPaginationWrapper" class="d-none d-lg-block">
-                            <ul class="pagination pagination-sm mb-0" id="topPagination"></ul>
+                            <ul class="pagination pagination-sm mb-0 shadow-sm" id="topPagination"></ul>
                         </nav>
-                        <a asp-action="Create" class="btn btn-primary btn-sm shadow-sm px-3 fw-bold">
+                        <a asp-action="Create" class="btn btn-primary shadow-sm px-4 rounded-pill">
                             <i class="fas fa-plus me-1"></i>新增餐點
                         </a>
                     </div>
                 </div>
             </div>
         </div>
-        
+    </div>
+
+    <div class="card mb-4 shadow-sm border-0">
+        <!-- 原有的 card-header 移除，因為功能已移至上方搜尋區 -->
         <div class="card-body p-4 bg-light bg-opacity-10">
             <div id="alertBox"></div>
 
@@ -185,14 +221,23 @@
         function filterCards(resetPage = true) {
             const category = document.getElementById("categoryFilter").value;
             const search = document.getElementById("searchInput").value.toLowerCase();
+            const status = document.getElementById("statusFilter").value;
 
             sessionStorage.setItem("dish_category", category);
             sessionStorage.setItem("dish_search", search);
+            sessionStorage.setItem("dish_status", status);
 
             filteredCards = Array.from(document.querySelectorAll(".dish-card")).filter(card => {
                 const matchCategory = !category || card.dataset.category === category;
                 const matchSearch = !search || card.dataset.name.includes(search);
-                return matchCategory && matchSearch;
+                
+                let matchStatus = true;
+                if (status) {
+                    const statusText = card.querySelector("#active-badge-" + card.querySelector(".badge").id.split("-")[2]).textContent.trim();
+                    matchStatus = (statusText === status);
+                }
+
+                return matchCategory && matchSearch && matchStatus;
             });
 
             filteredCards.sort((a, b) => parseInt(a.dataset.order) - parseInt(b.dataset.order));

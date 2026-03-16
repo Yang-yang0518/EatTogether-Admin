@@ -37,5 +37,9 @@ public partial class SetMeal
 
     public int DisplayOrder { get; set; }
 
+    public bool IsPopular { get; set; }
+
+    public bool IsRecommended { get; set; }
+
     public virtual ICollection<SetMealItem> SetMealItems { get; set; } = new List<SetMealItem>();
 }
