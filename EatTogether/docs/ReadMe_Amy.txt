@@ -127,10 +127,18 @@
 	static Result Success()
 	static Result Fail(string errorMessage)
 
-[working] JWT 設定（Program.cs）
-	Payload：員工 Id + 角色 Id 清單
-	效期：8 小時
-	儲存：httpOnly Cookie
+[working] JWT 設定
+	Token 效期：8 小時
+	儲存方式：httpOnly Cookie
+	- appsettings.json — JWT 金鑰設定
+	- Program.cs — 註冊 JWT Authentication
+	- Models/DTOs/JwtPayloadDto.cs — 定義 JWT Payload 結構
+				public int UserId { get; set; }
+				public string Name { get; set; } = "";
+				public List<int> RoleIds { get; set; } = new();
+				public List<string> RoleNames { get; set; } = new();
+	- Models/Infra/JwtHelper.cs — 產生 Token (在 Program.cs 中註冊)
+	
 
 [] 自訂 ActionFilter（Models/Infra/RequirePermissionAttribute.cs）
 	[RequirePermission("FunctionName")]
