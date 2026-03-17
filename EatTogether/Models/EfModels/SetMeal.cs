@@ -29,9 +29,9 @@ public partial class SetMeal
 
     public DateOnly? EndDate { get; set; }
 
-    public TimeSpan? StartTime { get; set; }
+    public TimeOnly? StartTime { get; set; }
 
-    public TimeSpan? EndTime { get; set; }
+    public TimeOnly? EndTime { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
 
