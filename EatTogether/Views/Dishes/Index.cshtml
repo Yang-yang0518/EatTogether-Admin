@@ -1,4 +1,4 @@
-﻿@model IEnumerable<EatTogether.Models.ViewModels.DishViewModel>
+@model IEnumerable<EatTogether.Models.ViewModels.DishViewModel>
 @{
     ViewData["Title"] = "餐點管理";
 }
@@ -13,7 +13,7 @@
     <!-- 統計卡片 -->
     <div class="row mb-4">
         <div class="col-xl-4 col-md-4">
-            <div class="card bg-primary text-white mb-4 shadow-sm border-0">
+            <div class="card bg-primary text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('')" title="點擊顯示所有餐點">
                 <div class="card-body d-flex align-items-center">
                     <div class="flex-grow-1">
                         <div class="small text-white-50 fw-bold">總餐點數</div>
@@ -24,7 +24,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-md-4">
-            <div class="card bg-success text-white mb-4 shadow-sm border-0">
+            <div class="card bg-success text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('上架中')" title="點擊篩選上架中餐點">
                 <div class="card-body d-flex align-items-center">
                     <div class="flex-grow-1">
                         <div class="small text-white-50 fw-bold">上架中</div>
@@ -35,7 +35,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-md-4">
-            <div class="card bg-secondary text-white mb-4 shadow-sm border-0">
+            <div class="card bg-secondary text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('已下架')" title="點擊篩選已下架餐點">
                 <div class="card-body d-flex align-items-center">
                     <div class="flex-grow-1">
                         <div class="small text-white-50 fw-bold">已下架</div>
@@ -47,18 +47,20 @@
         </div>
     </div>
 
+    <div id="alertBox"></div>
+
     <!-- 搜尋與篩選區 -->
-    <div class="card mb-4 shadow-sm border-0">
+    <div class="card mb-3 shadow-sm border-0">
         <div class="card-body bg-light rounded">
-            <div class="row g-3">
-                <div class="col-md-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-xl-3 col-lg-2 col-md-4">
                     <div class="input-group shadow-sm">
                         <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
                         <input type="text" id="searchInput" class="form-control border-start-0" 
                                placeholder="搜尋餐點名稱..." oninput="filterCards(true)" />
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-xl-2 col-lg-2 col-md-4">
                     <select id="categoryFilter" class="form-select shadow-sm" onchange="filterCards(true)">
                         <option value="">所有類別</option>
                         @foreach (var cat in Model.Select(d => d.CategoryName).Distinct().OrderBy(c => c))
@@ -67,41 +69,107 @@
                         }
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-xl-2 col-lg-2 col-md-4">
                     <select id="statusFilter" class="form-select shadow-sm" onchange="filterCards(true)">
                         <option value="">所有狀態</option>
                         <option value="上架中">上架中</option>
                         <option value="已下架">已下架</option>
                     </select>
                 </div>
-                <div class="col-md-5 text-end">
-                    <div class="d-flex justify-content-end align-items-center gap-3">
-                        <nav id="topPaginationWrapper" class="d-none d-lg-block">
-                            <ul class="pagination pagination-sm mb-0 shadow-sm" id="topPagination"></ul>
-                        </nav>
-                        <a asp-action="Create" class="btn btn-primary shadow-sm px-4 rounded-pill">
-                            <i class="fas fa-plus me-1"></i>新增餐點
-                        </a>
-                    </div>
+                <div class="col-xl-2 col-lg-2 col-md-6">
+                    <button id="toggleSortBtn" class="btn btn-outline-secondary w-100 shadow-sm" onclick="toggleSortMode()">
+                        <i class="fas fa-arrows-alt me-1"></i>調整排序
+                    </button>
+                </div>
+                <div class="col-xl-3 col-lg-4 col-md-6 text-end d-flex justify-content-end align-items-center gap-2">
+                    <nav id="topPaginationWrapper" class="d-none d-lg-block">
+                        <ul class="pagination pagination-sm mb-0 shadow-sm" id="topPagination"></ul>
+                    </nav>
+                    <a asp-action="Create" class="btn btn-primary shadow-sm px-4 rounded-pill text-nowrap">
+                        <i class="fas fa-plus me-1"></i>新增餐點
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- 【新功能】批次操作列 -->
+    <div id="batchBar" class="alert alert-info border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3 flex-wrap" role="alert">
+        <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="selectAllCheck" onchange="toggleSelectAll(this.checked)">
+            <label class="form-check-label fw-bold" for="selectAllCheck">全選</label>
+        </div>
+        <span class="text-muted">已選 <strong id="selectedCount">0</strong> 筆</span>
+        <div class="ms-auto d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="batchEnable()">
+                <i class="fas fa-check-circle me-1"></i>批次上架
+            </button>
+            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="batchDisable()">
+                <i class="fas fa-power-off me-1"></i>批次下架
+            </button>
+            <button class="btn btn-sm btn-danger rounded-pill px-3" onclick="batchDelete()">
+                <i class="fas fa-trash me-1"></i>批次刪除
+            </button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="exitBatchMode()">
+                取消
+            </button>
+        </div>
+    </div>
+
+    <!-- 排序模式提示列 -->
+    <div id="sortModeBar" class="alert alert-warning border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3" role="alert">
+        <i class="fas fa-info-circle fa-lg"></i>
+        <div>
+            <strong>排序模式已開啟</strong>：請拖曳卡片調整順序，完成後點擊右側儲存按鈕。
+        </div>
+        <div class="ms-auto d-flex gap-2">
+            <button class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" onclick="saveOrder()">
+                <i class="fas fa-save me-1"></i>儲存排序
+            </button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="toggleSortMode()">
+                取消
+            </button>
+        </div>
+    </div>
+
     <div class="card mb-4 shadow-sm border-0">
-        <!-- 原有的 card-header 移除，因為功能已移至上方搜尋區 -->
         <div class="card-body p-4 bg-light bg-opacity-10">
-            <div id="alertBox"></div>
+            
+            <!-- 操作模式切換按鈕 -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <span>點擊「批次操作」可多選進行大量狀態變更</span>
+                </small>
+                <button id="batchModeBtn" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="enterBatchMode()">
+                    <i class="fas fa-tasks me-1"></i>批次操作
+                </button>
+            </div>
 
             <!-- 餐點展示區域 -->
             <div class="row g-4" id="dishCardContainer">
                 @foreach (var item in Model)
                 {
                     <div class="col-6 col-md-4 col-lg-3 dish-card"
+                         data-id="@item.Id"
                          data-category="@item.CategoryName"
                          data-name="@item.DishName.ToLower()"
                          data-order="@item.DisplayOrder">
-                        <div class="card h-100 border-0 shadow-sm dish-card-inner">
+                        <div class="card h-100 border-0 shadow-sm dish-card-inner position-relative">
+                            
+                            <!-- 拖曳把手 -->
+                            <div class="drag-handle position-absolute top-0 end-0 p-2 d-none" style="z-index:20; cursor:move;">
+                                <i class="fas fa-grip-vertical fa-lg text-secondary opacity-50"></i>
+                            </div>
+
+                            <!-- 批次勾選框 -->
+                            <div class="batch-check position-absolute top-0 start-0 p-2 d-none" style="z-index:20;">
+                                <div class="form-check">
+                                    <input class="form-check-input card-checkbox shadow" type="checkbox" 
+                                           data-id="@item.Id" onchange="updateSelectedCount()">
+                                </div>
+                            </div>
+
                             <div class="position-relative overflow-hidden" style="padding-top:75%; background:#fff;">
                                 @if (!string.IsNullOrEmpty(item.ImageUrl))
                                 {
@@ -192,27 +260,56 @@
 
 @section Styles {
     <style>
+        .stat-card {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+        }
         .dish-card-inner { transition: all 0.2s ease-in-out; border: 1px solid transparent !important; }
         .dish-card-inner:hover { transform: translateY(-8px); box-shadow: 0 1rem 2rem rgba(0,0,0,0.12) !important; border-color: #0d6efd !important; }
         .page-link { cursor: pointer; color: #495057; border-radius: 4px !important; margin: 0 2px; }
         .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: #fff; }
         .badge { font-weight: 600; font-size: 0.7rem; }
+
+        /* 批次模式 */
+        #dishCardContainer.batch-mode .batch-check { display: block !important; }
+        #dishCardContainer.batch-mode .dish-card-inner { cursor: pointer; }
+        #dishCardContainer.batch-mode .dish-card.selected .dish-card-inner {
+            border: 2px solid #0d6efd !important;
+            box-shadow: 0 0 0 3px rgba(13,110,253,.18) !important;
+        }
+        .card-checkbox { width: 1.2em; height: 1.2em; cursor: pointer; }
+
+        /* 排序模式 */
+        #dishCardContainer.sort-mode .drag-handle { display: block !important; }
+        #dishCardContainer.sort-mode .dish-card-inner { border: 1px dashed #ffc107 !important; }
+        .sortable-ghost { opacity: 0.4; background: #fff3cd !important; border: 2px dashed #ffc107 !important; }
+        .sortable-chosen { box-shadow: 0 1rem 3rem rgba(0,0,0,0.175) !important; }
     </style>
 }
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
         const PAGE_SIZE = 12;
         let currentPage = 1;
         let filteredCards = [];
+        let isBatchMode = false;
+        let isSortMode = false;
+        let sortableInstance = null;
 
         document.addEventListener("DOMContentLoaded", () => {
             const savedPage = sessionStorage.getItem("dish_currentPage");
             const savedCategory = sessionStorage.getItem("dish_category");
             const savedSearch = sessionStorage.getItem("dish_search");
+            const savedStatus = sessionStorage.getItem("dish_status");
 
             if (savedCategory) document.getElementById("categoryFilter").value = savedCategory;
             if (savedSearch) document.getElementById("searchInput").value = savedSearch;
+            if (savedStatus) document.getElementById("statusFilter").value = savedStatus;
             if (savedPage) currentPage = parseInt(savedPage);
 
             filterCards(false);
@@ -233,7 +330,7 @@
                 
                 let matchStatus = true;
                 if (status) {
-                    const statusText = card.querySelector("#active-badge-" + card.querySelector(".badge").id.split("-")[2]).textContent.trim();
+                    const statusText = card.querySelector("#active-badge-" + card.dataset.id).textContent.trim();
                     matchStatus = (statusText === status);
                 }
 
@@ -265,6 +362,12 @@
 
             renderPaginationButtons("pagination", totalPages);
             renderPaginationButtons("topPagination", totalPages);
+
+            // 如果只有一頁，隱藏上方分頁
+            const topPaginationWrapper = document.getElementById("topPaginationWrapper");
+            if (topPaginationWrapper) {
+                topPaginationWrapper.classList.toggle("d-none", totalPages <= 1);
+            }
         }
 
         function renderPaginationButtons(elementId, totalPages) {
@@ -276,7 +379,6 @@
             prevLi.innerHTML = `<a class="page-link shadow-none" onclick="goToPage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></a>`;
             container.appendChild(prevLi);
 
-            // 頁碼顯示邏輯：若總頁數過多則簡化 (目前全部顯示，若有需要可加 ...)
             for (let i = 1; i <= totalPages; i++) {
                 const li = document.createElement("li");
                 li.className = `page-item ${i === currentPage ? "active" : ""}`;
@@ -298,19 +400,185 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        function filterByStatus(status) {
+            document.getElementById("statusFilter").value = status;
+            filterCards(true);
+            document.getElementById("dishCardContainer").scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const statusLabel = status === "" ? "所有" : status;
+            showAlert("info", `已篩選：${statusLabel} 餐點`);
+        }
+
+        function showAlert(type, message) {
+            const box = document.getElementById("alertBox");
+            box.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible border-0 shadow-sm fade show" role="alert">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2"></i>${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
+            setTimeout(() => {
+                const el = box.querySelector(".alert");
+                if (el) { el.classList.remove("show"); setTimeout(() => box.innerHTML = "", 400); }
+            }, 3000);
+        }
+
+        /* 批次操作 JS */
+        function enterBatchMode() {
+            isBatchMode = true;
+            document.getElementById("dishCardContainer").classList.add("batch-mode");
+            document.getElementById("batchBar").classList.remove("d-none");
+            document.getElementById("batchModeBtn").classList.add("d-none");
+            document.querySelectorAll(".dish-card").forEach(card => card.addEventListener("click", onCardClick));
+        }
+
+        function exitBatchMode() {
+            isBatchMode = false;
+            document.getElementById("dishCardContainer").classList.remove("batch-mode");
+            document.getElementById("batchBar").classList.add("d-none");
+            document.getElementById("batchModeBtn").classList.remove("d-none");
+            document.getElementById("selectAllCheck").checked = false;
+            document.querySelectorAll(".card-checkbox").forEach(cb => cb.checked = false);
+            document.querySelectorAll(".dish-card.selected").forEach(c => c.classList.remove("selected"));
+            document.getElementById("selectedCount").textContent = "0";
+            document.querySelectorAll(".dish-card").forEach(card => card.removeEventListener("click", onCardClick));
+        }
+
+        function onCardClick(e) {
+            if (e.target.closest("a, button")) return;
+            const cb = this.querySelector(".card-checkbox");
+            cb.checked = !cb.checked;
+            this.classList.toggle("selected", cb.checked);
+            updateSelectedCount();
+        }
+
+        function toggleSelectAll(checked) {
+            document.querySelectorAll(".dish-card").forEach(card => {
+                if (card.style.display === "none") return;
+                const cb = card.querySelector(".card-checkbox");
+                cb.checked = checked;
+                card.classList.toggle("selected", checked);
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const count = document.querySelectorAll(".card-checkbox:checked").length;
+            document.getElementById("selectedCount").textContent = count;
+            const visibleCbs = Array.from(document.querySelectorAll(".dish-card:not([style*='display: none']) .card-checkbox"));
+            document.getElementById("selectAllCheck").checked = visibleCbs.length > 0 && visibleCbs.every(cb => cb.checked);
+        }
+
+        function getSelectedIds() {
+            return Array.from(document.querySelectorAll(".card-checkbox:checked")).map(cb => parseInt(cb.dataset.id));
+        }
+
+        /* 排序模式 JS */
+        function toggleSortMode() {
+            if (isBatchMode) exitBatchMode();
+            
+            isSortMode = !isSortMode;
+            const container = document.getElementById("dishCardContainer");
+            const bar       = document.getElementById("sortModeBar");
+            const btn       = document.getElementById("toggleSortBtn");
+
+            if (isSortMode) {
+                container.classList.add("sort-mode");
+                bar.classList.remove("d-none");
+                btn.classList.replace("btn-outline-secondary", "btn-warning");
+                btn.innerHTML = '<i class="fas fa-times me-1"></i>取消排序';
+
+                // 初始化 SortableJS
+                sortableInstance = Sortable.create(container, {
+                    animation: 180,
+                    ghostClass: "sortable-ghost",
+                    chosenClass: "sortable-chosen",
+                    handle: ".drag-handle",
+                    draggable: ".dish-card",
+                    onEnd: updateOrderBadges
+                });
+            } else {
+                container.classList.remove("sort-mode");
+                bar.classList.add("d-none");
+                btn.classList.replace("btn-warning", "btn-outline-secondary");
+                btn.innerHTML = '<i class="fas fa-arrows-alt me-1"></i>調整排序';
+
+                if (sortableInstance) { sortableInstance.destroy(); sortableInstance = null; }
+            }
+        }
+
+        function updateOrderBadges() {
+            // 拖曳後更新各卡片的 data-order（視覺用）
+            document.querySelectorAll(".dish-card").forEach((card, idx) => {
+                card.dataset.order = idx + 1;
+            });
+        }
+
+        async function saveOrder() {
+            const ids = Array.from(document.querySelectorAll(".dish-card")).map(c => parseInt(c.dataset.id));
+
+            try {
+                const res = await fetch("/Dishes/UpdateOrder", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ orderedIds: ids })
+                });
+
+                if (res.ok) {
+                    showAlert("success", "排序已儲存 ✓");
+                    toggleSortMode();
+                } else {
+                    showAlert("danger", "儲存失敗，請稍後再試");
+                }
+            } catch {
+                showAlert("danger", "發生錯誤，請稍後再試");
+            }
+        }
+
+        async function batchDisable() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) { showAlert("warning", "請先勾選項目"); return; }
+            if (!confirm(`確定要下架這 ${ids.length} 個餐點嗎？`)) return;
+            const res = await fetch("/Dishes/BatchDisable", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids })
+            });
+            if (res.ok) { showAlert("success", "操作成功"); setTimeout(() => location.reload(), 1000); }
+        }
+
+        async function batchEnable() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) { showAlert("warning", "請先勾選項目"); return; }
+            if (!confirm(`確定要上架這 ${ids.length} 個餐點嗎？`)) return;
+            const res = await fetch("/Dishes/BatchEnable", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids })
+            });
+            if (res.ok) { showAlert("success", "操作成功"); setTimeout(() => location.reload(), 1000); }
+        }
+
+        async function batchDelete() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) { showAlert("warning", "請先勾選項目"); return; }
+            if (!confirm("⚠️ 確定要永久刪除嗎？此操作無法還原！")) return;
+            const res = await fetch("/Dishes/BatchDelete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids })
+            });
+            if (res.ok) { showAlert("success", "操作成功"); setTimeout(() => location.reload(), 1000); }
+        }
+
         async function disableDish(id) {
             if (!confirm("確定要將此餐點下架嗎？")) return;
             const res = await fetch(`/Dishes/Disable/${id}`, { method: "POST" });
-            if (res.ok) {
-                location.reload();
-            }
+            if (res.ok) { showAlert("success", "操作成功"); setTimeout(() => location.reload(), 1000); }
         }
 
         async function toggleFeature(id, type) {
             const res = await fetch(`/Dishes/Toggle${type}/${id}`, { method: "POST" });
             if (res.ok) {
                 const data = await res.json();
-                
                 if (type === 'Active') {
                     const badge = document.getElementById(`active-badge-${id}`);
                     if (data.isActive) {
@@ -320,21 +588,8 @@
                         badge.className = "badge rounded-pill bg-secondary-subtle text-secondary px-2 border border-secondary";
                         badge.textContent = "已下架";
                     }
-                } else {
-                    // 更新圓圈按鈕圖示顏色
-                    const btn = event.currentTarget;
-                    const icon = btn.querySelector("i");
-                    const isNewActive = type === 'Recommend' ? data.isRecommended : data.isPopular;
-                    
-                    if (isNewActive) {
-                        icon.classList.replace("text-muted", type === 'Recommend' ? "text-primary" : "text-danger");
-                        btn.classList.add("active");
-                    } else {
-                        icon.classList.remove("text-primary", "text-danger");
-                        icon.classList.add("text-muted");
-                        btn.classList.remove("active");
-                    }
                 }
+                showAlert("success", "狀態已更新");
             }
         }
     </script>

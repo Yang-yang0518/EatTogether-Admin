@@ -1,7 +1,9 @@
 using EatTogether.Models.Services;
 using EatTogether.Models.ViewModels;
+using EatTogether.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using EatTogether.Models.DTOs;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -73,6 +75,37 @@ namespace EatTogether.Controllers
 			return Ok(new { message = "已停用" });
 		}
 
+		[HttpPost]
+		public async Task<IActionResult> BatchDisable([FromBody] BatchRequestDto request)
+		{
+			if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
+			await _categoryService.BatchDisableAsync(request.Ids);
+			return Ok();
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> Enable(int id)
+		{
+			await _categoryService.EnableAsync(id);
+			return Ok();
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> BatchEnable([FromBody] BatchRequestDto request)
+		{
+			if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
+			await _categoryService.BatchEnableAsync(request.Ids);
+			return Ok();
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> BatchDelete([FromBody] BatchRequestDto request)
+		{
+			if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
+			await _categoryService.BatchDeleteAsync(request.Ids);
+			return Ok();
+		}
+
 		private async Task<List<SelectListItem>> GetParentCategoryOptionsAsync(int excludeId = 0)
 		{
 			var allCategories = await _categoryService.GetAllAsync();
@@ -90,5 +123,48 @@ namespace EatTogether.Controllers
 
 			return options;
 		}
+		// ── 圖片上傳 ──────────────────────────────────────
+		// 接收前端裁切後的 base64，存到 wwwroot/images/categories/
+		// 回傳可直接使用的相對路徑 /images/categories/xxx.jpg
+
+		[HttpPost]
+		public async Task<IActionResult> UploadImage([FromBody] CategoryImageUploadRequest request)
+		{
+			if (string.IsNullOrEmpty(request?.Base64Data))
+				return BadRequest("未提供圖片資料");
+
+			var imageUrl = await SaveCategoryImageAsync(request.Base64Data, request.CategoryName);
+			return Ok(new { imageUrl });
+		}
+
+		// ── 私有存檔方法（與 SetMealsController 邏輯相同）──
+		private async Task<string> SaveCategoryImageAsync(string base64Data, string fileNamePrefix)
+		{
+			if (string.IsNullOrEmpty(base64Data)) return null;
+
+			var base64 = base64Data.Contains(",") ? base64Data.Split(',')[1] : base64Data;
+			var bytes = Convert.FromBase64String(base64);
+
+			// 以分類名稱命名檔案
+			string fileName = $"{fileNamePrefix}.jpg";
+			foreach (char c in Path.GetInvalidFileNameChars())
+				fileName = fileName.Replace(c, '_');
+
+			var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "categories");
+			if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+			var savePath = Path.Combine(folderPath, fileName);
+			await System.IO.File.WriteAllBytesAsync(savePath, bytes);
+
+			return "/images/categories/" + fileName;
+		}
+		//[HttpPost]
+		//public async Task<IActionResult> UpdateOrder([FromBody] UpdateOrderRequest request)
+		//{
+		//	if (request?.OrderedIds == null || !request.OrderedIds.Any())
+		//		return BadRequest();
+		//	await _categoryService.UpdateOrderAsync(request.OrderedIds);
+		//	return Ok();
+		//}
 	}
 }

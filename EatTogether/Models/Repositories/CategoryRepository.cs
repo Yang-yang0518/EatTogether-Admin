@@ -50,11 +50,32 @@ namespace EatTogether.Models.Repositories
 				.ToListAsync();
 		}
 
+		public async Task<IEnumerable<CategoryDto>> GetAllActiveAsync()
+		{
+			return await _context.Categories
+				.Where(c => c.IsActive)
+				.OrderBy(c => c.DisplayOrder)
+				.Select(c => new CategoryDto
+				{
+					Id = c.Id,
+					CategoryName = c.CategoryName,
+					IsActive = c.IsActive,
+					ParentCategoryId = c.ParentCategoryId,
+					ParentCategoryName = c.ParentCategory != null ? c.ParentCategory.CategoryName : null,
+					DisplayOrder = c.DisplayOrder,
+					ImageUrl = c.ImageUrl,
+					CreatedAt = c.CreatedAt,
+					UpdatedAt = c.UpdatedAt,
+					DishCount = c.Dishes.Count()
+				})
+				.ToListAsync();
+		}
+
 
 		public async Task<CategoryDto?> GetByIdAsync(int id)
 		{
 			return await _context.Categories
-				.Where(c => c.Id == id && c.IsActive)
+				.Where(c => c.Id == id)
 				.Select(c => new CategoryDto
 				{
 					Id = c.Id,
@@ -79,6 +100,55 @@ namespace EatTogether.Models.Repositories
 			category.IsActive = false;
 			category.UpdatedAt = DateTime.Now;
 
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task BatchSoftDeleteAsync(IEnumerable<int> ids)
+		{
+			var categories = await _context.Categories.Where(c => ids.Contains(c.Id)).ToListAsync();
+			foreach (var c in categories)
+			{
+				c.IsActive = false;
+				c.UpdatedAt = DateTime.Now;
+			}
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task EnableAsync(int id)
+		{
+			var category = await _context.Categories.FindAsync(id);
+			if (category == null) return;
+
+			category.IsActive = true;
+			category.UpdatedAt = DateTime.Now;
+
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task BatchEnableAsync(IEnumerable<int> ids)
+		{
+			var categories = await _context.Categories.Where(c => ids.Contains(c.Id)).ToListAsync();
+			foreach (var c in categories)
+			{
+				c.IsActive = true;
+				c.UpdatedAt = DateTime.Now;
+			}
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task DeleteAsync(int id)
+		{
+			var category = await _context.Categories.FindAsync(id);
+			if (category == null) return;
+
+			_context.Categories.Remove(category);
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task BatchDeleteAsync(IEnumerable<int> ids)
+		{
+			var categories = await _context.Categories.Where(c => ids.Contains(c.Id)).ToListAsync();
+			_context.Categories.RemoveRange(categories);
 			await _context.SaveChangesAsync();
 		}
 
