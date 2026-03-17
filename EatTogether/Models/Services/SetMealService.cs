@@ -17,6 +17,11 @@ namespace EatTogether.Models.Services
 			return await _repo.GetAllAsync();
 		}
 
+		public async Task <IEnumerable<Setmealdto>> GetAllActiveAsync()
+		{
+			return await _repo.GetAllActiveAsync();
+		}
+
 		public async Task<Setmealdto?> GetByIdAsync(int id)
 		{
 			return await _repo.GetByIdAsync(id);
@@ -34,6 +39,31 @@ namespace EatTogether.Models.Services
 		public async Task DisableAsync(int id)
 		{
 			await _repo.SoftDeleteAsync(id);
+		}
+
+		public async Task BatchDisableAsync(IEnumerable<int> ids)
+		{
+			await _repo.BatchSoftDeleteAsync(ids);
+		}
+
+		public async Task EnableAsync(int id)
+		{
+			await _repo.EnableAsync(id);
+		}
+
+		public async Task BatchEnableAsync(IEnumerable<int> ids)
+		{
+			await _repo.BatchEnableAsync(ids);
+		}
+
+		public async Task DeleteAsync(int id)
+		{
+			await _repo.DeleteAsync(id);
+		}
+
+		public async Task BatchDeleteAsync(IEnumerable<int> ids)
+		{
+			await _repo.BatchDeleteAsync(ids);
 		}
 
 		public async Task AddItemAsync(SetmealItemDto itemDto)
@@ -64,6 +94,11 @@ namespace EatTogether.Models.Services
 		{
 			// 在這裡可以加入服務層的驗證邏輯，例如檢查總價等，此處暫略
 			await _repo.UpdateItemsAsync(setMealId, itemDtos);
+		}
+
+		public async Task UpdateOrderAsync(IEnumerable<int> orderedIds)
+		{
+			await _repo.UpdateOrderAsync(orderedIds);
 		}
 	}
 }
