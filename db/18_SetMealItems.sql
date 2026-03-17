@@ -9,7 +9,7 @@ DECLARE @BasilId  INT = (SELECT Id FROM Dishes WHERE DishName = N'青醬海鮮�
 DECLARE @TruffleId INT = (SELECT Id FROM Dishes WHERE DishName = N'松露野菇燉飯');
 DECLARE @ChickenId INT = (SELECT Id FROM Dishes WHERE DishName = N'香烤雞腿排');
 DECLARE @SalmonId  INT = (SELECT Id FROM Dishes WHERE DishName = N'香煎鮭魚排');
-DECLARE @KarageId  INT = (SELECT Id FROM Dishes WHERE DishName = N'日式唐揚雞定食');
+DECLARE @KarageId  INT = (SELECT Id FROM Dishes WHERE DishName = N'香烤雞腿排');
 DECLARE @BeefId    INT = (SELECT Id FROM Dishes WHERE DishName = N'紅酒燉牛肉飯');
 DECLARE @BassId    INT = (SELECT Id FROM Dishes WHERE DishName = N'香煎鱸魚排');
 DECLARE @LobsterId INT = (SELECT Id FROM Dishes WHERE DishName = N'龍蝦奶油義大利麵');

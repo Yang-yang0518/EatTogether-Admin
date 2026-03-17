@@ -179,7 +179,7 @@
 =========
 模組一：登入登出
 =========
-[working] add 登入功能
+[V] add 登入功能
 	url: POST /Auth/Login
 
 	[V] DTO（Models/DTOs/LoginDto.cs）
@@ -208,9 +208,10 @@
 			string Account
 			string Password
 
-	[working] AuthController（Controllers/AuthController.cs）
+	[V] AuthController（Controllers/AuthController.cs）
+		GET /Auth/Login => 顯示登入頁面
 		POST /Auth/Login
-			驗證通過且 MustChangePassword=0 → 發行 JWT（httpOnly Cookie）→ Redirect Dashboard
+			驗證通過且 MustChangePassword=0 → 發行 JWT（httpOnly Cookie）→ Redirect 
 			驗證通過且 MustChangePassword=1 → 回傳 { mustChangePassword: true }，前端開強制改密碼 Modal
 			登入後寫入 httpOnly Cookie
 
@@ -227,27 +228,28 @@
 			內場廚師    → chef_zhang
 			工讀生      → part_cai
 
-[] add 強制改密碼功能
+[V] add 強制改密碼功能
 	url: POST /Auth/ForceChangePassword
 	觸發條件：MustChangePassword=1（密碼與員工編號相同）
 
-	[] ViewModel（Models/ViewModels/ForceChangePasswordViewModel.cs）
+	[V] ViewModel（Models/ViewModels/ForceChangePasswordViewModel.cs）
 		ForceChangePasswordViewModel
 			string NewPassword
 			string ConfirmPassword
 
-	[] AuthService（modify）
-		Task<Result> ForceChangePasswordAsync(int userId, string newPassword)
-			// 驗證密碼複雜度（PasswordValidator.IsValid）
-			// 驗證兩次密碼一致
+	[V] AuthService（modify）
+		Task<Result<LoginDto>> ForceChangePasswordAsync(int userId, string newPassword)
+			// 確認使用者存在
 			// 更新 HashedPassword
 			// MustChangePassword → 0
 
-	[] UserRepository（modify）
+	[V] UserRepository（modify）
+		Task<UserDto?> GetByIdAsync(int userId)
 		Task UpdatePasswordAsync(int userId, string hashedPassword)
 		Task SetMustChangePasswordAsync(int userId, bool value)
 
-	[] AuthController（modify）
+	[V] AuthController（modify）
+		GET /Auth/Login => 顯示登入頁面(補上)
 		POST /Auth/ForceChangePassword
 
 	[V] 強制改密碼 Modal（嵌入 Login.cshtml）
@@ -258,19 +260,14 @@
 		成功 → SweetAlert2
 			標題：「密碼重設完成」
 			說明：「即將進入後台系統...」
-			按鈕：「進入系統」，5 秒倒數後自動跳轉 Dashboard
+			按鈕：「進入系統」，5 秒倒數後自動跳轉 Home/Index
 
-[] add 忘記密碼 / 重設密碼功能
+[working] add 忘記密碼 / 重設密碼功能
 	url: POST /Auth/ForgotPassword
 	url: GET  /Auth/ResetPassword?token=xxx
 	url: POST /Auth/ResetPassword
 
-	[] DTO（Models/DTOs/ResetPasswordDto.cs）
-		ResetPasswordDto
-			string Token
-			string NewPassword
-
-	[] IPasswordResetTokenRepository / PasswordResetTokenRepository
+	[V] IPasswordResetTokenRepository / PasswordResetTokenRepository
 		（Models/Repositories/PasswordResetTokenRepository.cs）
 		Task CreateAsync(PasswordResetToken token)
 			// ExpiresAt = 建立時間 +60 分鐘
@@ -278,32 +275,33 @@
 		Task<PasswordResetToken?> GetValidTokenAsync(string token)
 		Task MarkUsedAsync(int tokenId)
 
-	[] AuthService（modify）
+	[V] AuthService（modify）
 		Task<Result> ForgotPasswordAsync(string email)
-			// 查詢 Email 是否存在（不存在仍回傳成功，防枚舉）
+			// 查詢 Email 是否存在（不存在仍回傳成功，防枚舉）=> async Task<UserDto?> GetByEmailAsync (新增 UserRepository 方法)
 			// 產生 32 碼 Guid Token（去除符號）
 			// 寫入 PasswordResetTokens
-			// 呼叫 IEmailService 寄送重設連結
+			// 呼叫 IPasswordResetEmailService 寄送重設連結
 		Task<bool> ValidateResetTokenAsync(string token)
 			// 驗證：存在 + IsUsed=0 + 未逾 ExpiresAt
 		Task<Result> ResetPasswordAsync(string token, string newPassword)
 			// 更新 HashedPassword
 			// IsUsed → 1（一次性，立即失效）
 
-	[] ViewModel（Models/ViewModels/ForgotPasswordViewModel.cs）
+	[V] ViewModel（Models/ViewModels/ForgotPasswordViewModel.cs）
 		ForgotPasswordViewModel
 			string Email
 
-	[] ViewModel（Models/ViewModels/ResetPasswordViewModel.cs）
+	[V] ViewModel（Models/ViewModels/ResetPasswordViewModel.cs）
 		ResetPasswordViewModel
 			string Token
 			string NewPassword
 			string ConfirmPassword
 
-	[] AuthController（modify）
+	[V] AuthController（modify）
 		POST /Auth/ForgotPassword
 		GET  /Auth/ResetPassword?token=xxx → 驗證 Token；無效 → Redirect ResetPasswordInvalid
 		POST /Auth/ResetPassword
+		GET /Auth/ResetPasswordInvalid
 
 	[V] 忘記密碼 Modal（嵌入 Login.cshtml）
 		鑰匙 icon
@@ -327,23 +325,26 @@
 		警告 icon
 		按鈕：「返回登入頁重新申請」（導向 /Auth/Login）
 
-[] add 登出功能
+[V] add 登出功能
 	url: POST /Auth/Logout
 
-	[] AuthController（modify）
+	[V] AuthController（modify）
 		POST /Auth/Logout
 			清除 JWT Cookie
 			Redirect 登入頁（瀏覽器返回自動導向登入頁）
 
-[] Dashboard
-	url: GET /Auth/Dashboard
+[V] 登入成功落地頁
+	url: GET /Home/Index
 
-	[] AuthController（modify）
-		GET /Auth/Dashboard
+	[V] HomeController（modify）
+		GET /Home/Index
 
-	[] Dashboard.cshtml（Views/Auth/Dashboard.cshtml）
+	[V] Home/Index.cshtml（Views/Home/Index.cshtml）
 		登入成功落地頁
 		顯示：「登入成功，請選擇左側功能選單，開始管理」
+
+[V] 頭像顏色由後端處理
+	JwtHelper.GenerateToken() 內根據姓名雜湊計算頭像背景顏色（HashUserIdToColor(int userId)）
 
 =========
 模組二：員工管理（Users）

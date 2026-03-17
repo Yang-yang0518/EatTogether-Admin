@@ -19,11 +19,13 @@ namespace EatTogether.Models.Repositories
 
 		public async Task<List<string>> GetRoleNamesByIdsAsync(List<int> roleIds)
 		{
-			return await _context.Roles
+			var roleNames = await _context.Roles
 				.AsNoTracking()
 				.Where(r => roleIds.Contains(r.Id))
 				.Select(r => r.RoleName)
 				.ToListAsync();
+
+			return roleNames;
 		}
 	}
 }

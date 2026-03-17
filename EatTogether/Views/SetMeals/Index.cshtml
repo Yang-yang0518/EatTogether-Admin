@@ -88,7 +88,7 @@
                 {
                     var now = DateTime.Now;
                     var today = DateOnly.FromDateTime(now);
-                    var currentTime = now.TimeOfDay;
+                    var currentTime = TimeOnly.FromDateTime(now);
 
                     bool isDateValid = (!item.StartDate.HasValue || item.StartDate <= today) &&
                                        (!item.EndDate.HasValue || item.EndDate >= today);
@@ -187,7 +187,7 @@
                                             <i class="far fa-clock me-2 mt-1 small"></i>
                                             <div class="small">
                                                 <div class="fw-bold text-dark-emphasis">每日時段</div>
-                                                @(item.StartTime?.ToString(@"hh\:mm") ?? "不限") ~ @(item.EndTime?.ToString(@"hh\:mm") ?? "不限")
+                                                @(item.StartTime?.ToString("HH:mm") ?? "不限") ~ @(item.EndTime?.ToString("HH:mm") ?? "不限")
                                             </div>
                                         </div>
                                     }

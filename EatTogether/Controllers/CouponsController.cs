@@ -39,7 +39,7 @@ namespace EatTogether.Controllers
 
             if (!result.IsSuccess)
             {
-                ModelState.AddModelError(nameof(vm.Code), result.ErrorMesssage);
+                ModelState.AddModelError(nameof(vm.Code), result.ErrorMessage);
                 return View(vm);
             }
 
@@ -68,7 +68,8 @@ namespace EatTogether.Controllers
                 StatusText = dto.StatusText,
                 StatusBadgeClass = dto.StatusBadgeClass,
                 StartDate = dto.StartDate,
-                EndDate = dto.EndDate
+                EndDate = dto.EndDate,
+                IsDisabled = dto.IsDisabled
             };
             return View(vm);
         }
@@ -88,7 +89,7 @@ namespace EatTogether.Controllers
             var result = await _couponService.EditAsync(vm.Id, vm.Name, vm.AddLimitCount);
             if (!result.IsSuccess)
             {
-                ModelState.AddModelError("", result.ErrorMesssage);
+                ModelState.AddModelError("", result.ErrorMessage);
                 return View(vm);
             }
             TempData["SuccessMessage"] = $"優惠券「{vm.Code}」已更新";
@@ -102,6 +103,36 @@ namespace EatTogether.Controllers
             return View(dtos);
         }
 
+        // POST: /Coupons/IssueToAll/5（一鍵發放給全會員）
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> IssueToAll(int id)
+        {
+            var (issued, skipped) = await _couponService.IssueToAllMembersAsync(id);
+            TempData["SuccessMessage"] = $"發放完成！新增 {issued} 筆，跳過（已領） {skipped} 筆";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: /Coupons/Disable/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Disable(int id)
+        {
+            var result = await _couponService.DisableAsync(id);
+            TempData["SuccessMessage"] = result.IsSuccess ? "優惠券已停用" : result.ErrorMessage;
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: /Coupons/Enable/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Enable(int id)
+        {
+            var result = await _couponService.EnableAsync(id);
+            TempData["SuccessMessage"] = result.IsSuccess ? "優惠券已重新啟用" : result.ErrorMessage;
+            return RedirectToAction(nameof(Index));
+        }
+
         // POST: /Coupons/ApplyCoupon  (AJAX，供結帳頁呼叫)
         [HttpPost]
         public async Task<IActionResult> ApplyCoupon([FromBody] ApplyCouponRequest req)
@@ -113,7 +144,7 @@ namespace EatTogether.Controllers
             {
                 success = result.IsSuccess,
                 discountAmount = discount,
-                message = result.ErrorMesssage ?? ""
+                message = result.ErrorMessage ?? ""
             });
         }
     }
