@@ -1,0 +1,22 @@
+﻿@{
+    ViewData["Title"] = "無存取權限";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex flex-column align-items-center justify-content-center"
+     style="min-height: 60vh;">
+
+    <div class="mt-5" style="color: var(--bs-gray-400); font-size: 6rem; font-weight: 900; line-height: 1;">
+        403
+    </div>
+
+    <h2 class="mt-4 mb-2" style="color: var(--eat-brand-dark);">
+        您沒有存取此頁面的權限
+    </h2>
+
+    <p class="text-muted" style="font-size: 1rem;">
+        您目前的角色「<strong>@ViewBag.RoleName</strong>」
+        沒有執行此操作的權限<br>
+        如有疑問，請洽系統管理員
+    </p>
+</div>
