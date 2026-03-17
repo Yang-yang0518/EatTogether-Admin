@@ -39,7 +39,7 @@ namespace EatTogether.Controllers
 
             if (!result.IsSuccess)
             {
-                ModelState.AddModelError(nameof(vm.TableName), result.ErrorMesssage);
+                ModelState.AddModelError(nameof(vm.TableName), result.ErrorMessage);
                 return View(vm);
             }
 
@@ -84,7 +84,7 @@ namespace EatTogether.Controllers
 
             if (!result.IsSuccess)
             {
-                ModelState.AddModelError(nameof(vm.TableName), result.ErrorMesssage);
+                ModelState.AddModelError(nameof(vm.TableName), result.ErrorMessage);
                 return View(vm);
             }
 
@@ -100,7 +100,7 @@ namespace EatTogether.Controllers
             var result = await _tableService.DeleteAsync(id);
 
             if (!result.IsSuccess)
-                TempData["ErrorMessage"] = result.ErrorMesssage;
+                TempData["ErrorMessage"] = result.ErrorMessage;
             else
                 TempData["SuccessMessage"] = "桌位已刪除";
 
@@ -113,7 +113,7 @@ namespace EatTogether.Controllers
         {
             var result = await _tableService.UpdateStatusAsync(vm.Id, vm.Status);
             if (!result.IsSuccess)
-                return Json(new { success = false, message = result.ErrorMesssage ?? "" });
+                return Json(new { success = false, message = result.ErrorMessage ?? "" });
 
             // 設為保留(2)時儲存說明；空桌/用餐中時 Repository 已自動清除
             if (vm.Status == 2 && vm.Remark != null)

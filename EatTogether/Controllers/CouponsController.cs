@@ -39,7 +39,7 @@ namespace EatTogether.Controllers
 
             if (!result.IsSuccess)
             {
-                ModelState.AddModelError(nameof(vm.Code), result.ErrorMesssage);
+                ModelState.AddModelError(nameof(vm.Code), result.ErrorMessage);
                 return View(vm);
             }
 
@@ -88,7 +88,7 @@ namespace EatTogether.Controllers
             var result = await _couponService.EditAsync(vm.Id, vm.Name, vm.AddLimitCount);
             if (!result.IsSuccess)
             {
-                ModelState.AddModelError("", result.ErrorMesssage);
+                ModelState.AddModelError("", result.ErrorMessage);
                 return View(vm);
             }
             TempData["SuccessMessage"] = $"優惠券「{vm.Code}」已更新";
@@ -113,7 +113,7 @@ namespace EatTogether.Controllers
             {
                 success = result.IsSuccess,
                 discountAmount = discount,
-                message = result.ErrorMesssage ?? ""
+                message = result.ErrorMessage ?? ""
             });
         }
     }

@@ -17,9 +17,15 @@ namespace EatTogether.Controllers
 			_jwtHelper = jwtHelper;
 		}
 
+		// GET /Auth/Login
+		[HttpGet]
+		public IActionResult Login()
+		{
+			return View();
+		}
 
 		// POST /Auth/Login
-		[HttpGet]
+		[HttpPost]
 		public async Task<IActionResult> Login(LoginViewModel vm)
 		{
 			if (!ModelState.IsValid)
@@ -48,27 +54,40 @@ namespace EatTogether.Controllers
 
 			IssueJwtCookie(loginDto);
 
-			return Json(new { success = true, mustChangePassword = false });
+			return Json(new { success = true, mustChangePassword = false, redirectUrl = Url.Action("Index", "Home") });
 		}
 
-		private void IssueJwtCookie(LoginDto loginDto)
+		[HttpPost]
+		public async Task<IActionResult> ForceChangePassword(ForceChangePasswordViewModel vm)
 		{
-			var playloadDto = new JwtPayloadDto
+			// 從 TempData 取出 UserId
+			if (TempData["PendingUserId"] is not int userId)
 			{
-				UserId = loginDto.UserId,
-				RoleIds = loginDto.RoleIds,
-				Name = loginDto.Name,
-				RoleNames = loginDto.RoleNames
-			};
+				return Json(new { success = false, message = "操作逾時，請重新登入" });
+			}
 
-			var token = _jwtHelper.GenerateToken(playloadDto);
-			Response.Cookies.Append("jwt", token, new CookieOptions
+			// 驗證欄位
+			if (!ModelState.IsValid)
 			{
-				HttpOnly = true,
-				Secure = true,
-				SameSite = SameSiteMode.Strict,
-				Expires = DateTimeOffset.UtcNow.AddHours(8)
-			});
+				var error = ModelState.Values
+					.SelectMany(v => v.Errors)
+					.Select(e => e.ErrorMessage)
+					.FirstOrDefault();
+				return Json(new { success = false, message = error });
+			}
+
+			// 呼叫 Service
+			var result = await _authService.ForceChangePasswordAsync(userId, vm.NewPassword);
+
+			if (!result.IsSuccess)
+			{
+				return Json(new { success = false, message = result.ErrorMessage });
+			}
+
+			// 發行 JWT
+			IssueJwtCookie(result.Value!);
+
+			return Json(new { success = true, redirectUrl = Url.Action("Index", "Home") });
 		}
 
 		// GET /Auth/ResetPassword
@@ -85,5 +104,27 @@ namespace EatTogether.Controllers
 		// GET /Auth/ResetPasswordInvalid
 		[HttpGet]
 		public IActionResult ResetPasswordInvalid() => View();
+
+
+		private void IssueJwtCookie(LoginDto loginDto)
+		{
+			var payloadDto = new JwtPayloadDto
+			{
+				UserId = loginDto.UserId,
+				RoleIds = loginDto.RoleIds,
+				Name = loginDto.Name,
+				RoleNames = loginDto.RoleNames
+			};
+
+			var token = _jwtHelper.GenerateToken(payloadDto);
+
+			Response.Cookies.Append("jwt", token, new CookieOptions
+			{
+				HttpOnly = true,
+				Secure = true,
+				SameSite = SameSiteMode.Strict,
+				Expires = DateTimeOffset.UtcNow.AddHours(8)
+			});
+		}
 	}
 }

@@ -179,7 +179,7 @@
 =========
 模組一：登入登出
 =========
-[working] add 登入功能
+[V] add 登入功能
 	url: POST /Auth/Login
 
 	[V] DTO（Models/DTOs/LoginDto.cs）
@@ -208,8 +208,9 @@
 			string Password
 
 	[V] AuthController（Controllers/AuthController.cs）
+		GET /Auth/Login => 顯示登入頁面
 		POST /Auth/Login
-			驗證通過且 MustChangePassword=0 → 發行 JWT（httpOnly Cookie）→ Redirect Dashboard
+			驗證通過且 MustChangePassword=0 → 發行 JWT（httpOnly Cookie）→ Redirect 
 			驗證通過且 MustChangePassword=1 → 回傳 { mustChangePassword: true }，前端開強制改密碼 Modal
 			登入後寫入 httpOnly Cookie
 
@@ -226,27 +227,28 @@
 			內場廚師    → chef_zhang
 			工讀生      → part_cai
 
-[] add 強制改密碼功能
+[working] add 強制改密碼功能
 	url: POST /Auth/ForceChangePassword
 	觸發條件：MustChangePassword=1（密碼與員工編號相同）
 
-	[] ViewModel（Models/ViewModels/ForceChangePasswordViewModel.cs）
+	[V] ViewModel（Models/ViewModels/ForceChangePasswordViewModel.cs）
 		ForceChangePasswordViewModel
 			string NewPassword
 			string ConfirmPassword
 
-	[] AuthService（modify）
-		Task<Result> ForceChangePasswordAsync(int userId, string newPassword)
-			// 驗證密碼複雜度（PasswordValidator.IsValid）
-			// 驗證兩次密碼一致
+	[V] AuthService（modify）
+		Task<Result<LoginDto>> ForceChangePasswordAsync(int userId, string newPassword)
+			// 確認使用者存在
 			// 更新 HashedPassword
 			// MustChangePassword → 0
 
-	[] UserRepository（modify）
+	[V] UserRepository（modify）
+		Task<UserDto?> GetByIdAsync(int userId)
 		Task UpdatePasswordAsync(int userId, string hashedPassword)
 		Task SetMustChangePasswordAsync(int userId, bool value)
 
-	[] AuthController（modify）
+	[V] AuthController（modify）
+		GET /Auth/Login => 顯示登入頁面(補上)
 		POST /Auth/ForceChangePassword
 
 	[V] 強制改密碼 Modal（嵌入 Login.cshtml）
@@ -257,7 +259,7 @@
 		成功 → SweetAlert2
 			標題：「密碼重設完成」
 			說明：「即將進入後台系統...」
-			按鈕：「進入系統」，5 秒倒數後自動跳轉 Dashboard
+			按鈕：「進入系統」，5 秒倒數後自動跳轉 Home/Index
 
 [] add 忘記密碼 / 重設密碼功能
 	url: POST /Auth/ForgotPassword

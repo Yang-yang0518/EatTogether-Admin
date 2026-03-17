@@ -1,12 +1,12 @@
 ﻿using EatTogether.Models.DTOs;
 using EatTogether.Models.Infra;
 using EatTogether.Models.Repositories;
-using MimeKit.Cryptography;
 
 namespace EatTogether.Models.Services
 {
 	public interface IAuthService
 	{
+		Task<Result<LoginDto>> ForceChangePasswordAsync(int userId, string newPassword);
 		Task<Result<LoginDto>> LoginAsync(string account, string password);
 	}
 
@@ -52,6 +52,36 @@ namespace EatTogether.Models.Services
 			};
 
 			return Result<LoginDto>.Success(loginDto);
+		}
+
+		public async Task<Result<LoginDto>> ForceChangePasswordAsync(int userId, string newPassword)
+		{
+			// 先確認使用者存在
+			var user = await _userRepo.GetByIdAsync(userId);
+			if (user == null) return Result<LoginDto>.Fail("使用者不存在");
+
+			// 更新 HashedPassword
+			var hashedPassword = HashUtility.HashPassword(newPassword);
+			await _userRepo.UpdatePasswordAsync(userId, hashedPassword);
+
+			// MustChangePassword 設為 0
+			await _userRepo.SetMustChangePasswordAsync(userId, false);
+
+			// 組裝 LoginDto
+			var roleNames = await _roleRepo.GetRoleNamesByIdsAsync(user.RoleIds);
+
+			var loginDto = new LoginDto
+			{
+				UserId = user.Id,
+				Account = user.Account,
+				Name = user.Name,
+				RoleIds = user.RoleIds,
+				RoleNames = roleNames,
+				MustChangePassword = false
+			};
+
+			return Result<LoginDto>.Success(loginDto);
+
 		}
 	}
 }

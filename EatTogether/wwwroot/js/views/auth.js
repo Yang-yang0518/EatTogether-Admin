@@ -242,7 +242,7 @@ function initLoginPage() {
                                     ?? new bootstrap.Modal(forceModalEl, { backdrop: 'static', keyboard: false });
                     forceModal.show();
                 } else {
-                    window.location.href = data.redirectUrl || '/Dashboard';
+                    window.location.href = data.redirectUrl || '/Home/Index';
                 }
             } else {
                 showAlert('danger', data.message || '帳號或密碼錯誤');
@@ -335,7 +335,7 @@ function initForceChangePasswordModal() {
                     timer: 5000,
                     timerProgressBar: true
                 }).then(() => {
-                    window.location.href = data.redirectUrl || '/Dashboard';
+                    window.location.href = data.redirectUrl || '/Home/Index';
                 });
             } else {
                 showForceModalAlert(data.message || '密碼重設失敗，請再試一次');
