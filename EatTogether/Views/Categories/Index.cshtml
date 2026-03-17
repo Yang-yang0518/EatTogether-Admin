@@ -1,11 +1,10 @@
 @model IEnumerable<EatTogether.Models.ViewModels.CategoryViewModel>
 @{
-    ViewData["Title"] = "分類管理";
-    var parentOptions = ViewBag.ParentCategoryOptions as List<SelectListItem>;
+    ViewData["Title"] = "分類管理系統";
 }
 
 <div class="container-fluid px-4">
-    <h1 class="mt-4">分類管理</h1>
+    <h1 class="mt-4 fw-bold">分類管理</h1>
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">首頁</a></li>
         <li class="breadcrumb-item active">分類管理</li>
@@ -14,7 +13,7 @@
     <!-- 統計卡片 -->
     <div class="row mb-4">
         <div class="col-xl-4 col-md-4">
-            <div class="card bg-primary text-white mb-4 shadow-sm border-0">
+            <div class="card bg-primary text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('')">
                 <div class="card-body d-flex align-items-center">
                     <div class="flex-grow-1">
                         <div class="small text-white-50 fw-bold">總分類數</div>
@@ -25,7 +24,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-md-4">
-            <div class="card bg-success text-white mb-4 shadow-sm border-0">
+            <div class="card bg-success text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('啟用')">
                 <div class="card-body d-flex align-items-center">
                     <div class="flex-grow-1">
                         <div class="small text-white-50 fw-bold">啟用中</div>
@@ -36,7 +35,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-md-4">
-            <div class="card bg-secondary text-white mb-4 shadow-sm border-0">
+            <div class="card bg-secondary text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('停用')">
                 <div class="card-body d-flex align-items-center">
                     <div class="flex-grow-1">
                         <div class="small text-white-50 fw-bold">已停用</div>
@@ -48,25 +47,34 @@
         </div>
     </div>
 
-    <!-- 搜尋區 -->
-    <div class="card mb-4 shadow-sm border-0">
+    <div id="alertBox"></div>
+
+    <!-- 搜尋與篩選 -->
+    <div class="card mb-3 shadow-sm border-0">
         <div class="card-body bg-light rounded">
-            <div class="row g-3">
+            <div class="row g-3 align-items-center">
                 <div class="col-md-4">
-                    <div class="input-group">
+                    <div class="input-group shadow-sm">
                         <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text" id="customSearchInput" class="form-control border-start-0" placeholder="搜尋分類名稱...">
+                        <input type="text" id="searchInput" class="form-control border-start-0"
+                               placeholder="搜尋分類名稱..." oninput="filterCards()">
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <select id="statusFilter" class="form-select">
+                    <select id="statusFilter" class="form-select shadow-sm" onchange="filterCards()">
                         <option value="">所有狀態</option>
                         <option value="啟用">啟用</option>
                         <option value="停用">停用</option>
                     </select>
                 </div>
-                <div class="col-md-5 text-end">
-                    <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                <div class="col-md-2">
+                    <button id="toggleSortBtn" class="btn btn-outline-secondary w-100 shadow-sm" onclick="toggleSortMode()">
+                        <i class="fas fa-arrows-alt me-1"></i>調整排序
+                    </button>
+                </div>
+                <div class="col-md-3 text-end">
+                    <button type="button" class="btn btn-primary shadow-sm px-4 rounded-pill"
+                            data-bs-toggle="modal" data-bs-target="#createCategoryModal">
                         <i class="fas fa-plus me-1"></i>新增分類
                     </button>
                 </div>
@@ -74,306 +82,812 @@
         </div>
     </div>
 
+    <!-- 排序模式提示列 -->
+    <div id="sortModeBar" class="alert alert-warning border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3" role="alert">
+        <i class="fas fa-hand-paper fa-lg"></i>
+        <span class="flex-grow-1 fw-bold">排序模式：拖曳卡片來調整顯示順序</span>
+        <button class="btn btn-sm btn-warning px-3 rounded-pill" onclick="saveOrder()">
+            <i class="fas fa-save me-1"></i>儲存排序
+        </button>
+        <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="toggleSortMode()">取消</button>
+    </div>
+
+    <!-- 批次操作列 -->
+    <div id="batchBar" class="alert alert-info border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3 flex-wrap" role="alert">
+        <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="selectAllCheck" onchange="toggleSelectAll(this.checked)">
+            <label class="form-check-label fw-bold" for="selectAllCheck">全選</label>
+        </div>
+        <span class="text-muted">已選 <strong id="selectedCount">0</strong> 筆</span>
+        <div class="ms-auto d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="batchEnable()">
+                <i class="fas fa-check-circle me-1"></i>批次啟用
+            </button>
+            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="batchDisable()">
+                <i class="fas fa-power-off me-1"></i>批次停用
+            </button>
+            <button class="btn btn-sm btn-danger rounded-pill px-3" onclick="batchDelete()">
+                <i class="fas fa-trash me-1"></i>批次刪除
+            </button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="exitBatchMode()">取消</button>
+        </div>
+    </div>
+
+    <!-- 卡片區 -->
     <div class="card mb-4 shadow-sm border-0">
-        <div class="card-header bg-white py-3">
-            <div class="fw-bold text-primary"><i class="fas fa-table me-1"></i>分類列表</div>
-        </div>
-        <div class="card-body">
-            <div id="alertBox"></div>
-            <div class="table-responsive">
-                <table id="categoryTable" class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>分類名稱</th>
-                            <th>上層分類</th>
-                            <th class="text-center">餐點數量</th>
-                            <th class="text-center" style="width: 100px;">顯示順序</th>
-                            <th class="text-center" style="width: 100px;">狀態</th>
-                            <th>建立時間</th>
-                            <th class="text-center" style="width: 150px;">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            <tr>
-                                <td class="fw-bold">@item.CategoryName</td>
-                                <td>@(item.ParentCategoryName ?? "—")</td>
-                                <td class="text-center">
-                                    <span class="badge bg-info-subtle text-info border border-info-subtle px-3">@item.DishCount</span>
-                                </td>
-                                <td class="text-center">@item.DisplayOrder</td>
-                                <td class="text-center">
-                                    @if (item.IsActive)
-                                    {
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3">啟用</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3">停用</span>
-                                    }
-                                </td>
-                                <td class="small text-muted">@item.CreatedAt.ToString("yyyy-MM-dd")</td>
-                                <td class="text-center">
-                                    <div class="btn-group">
-                                        <button class="btn btn-outline-warning btn-sm" onclick="openEditModal(@item.Id, '@item.CategoryName', '@item.ParentCategoryId', @item.DisplayOrder, @(item.IsActive.ToString().ToLower()))" title="編輯">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger btn-sm" onclick="disableCategory(@item.Id)" title="停用" @(!item.IsActive ? "disabled" : "")>
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>點擊「調整排序」可拖曳；點擊「批次操作」可多選
+                </small>
+                <button id="batchModeBtn" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="enterBatchMode()">
+                    <i class="fas fa-tasks me-1"></i>批次操作
+                </button>
+            </div>
+
+            <div class="row g-4" id="category-card-container">
+                @foreach (var item in Model)
+                {
+                    string statusText = item.IsActive ? "啟用" : "停用";
+                    string statusClass = item.IsActive
+                    ? "bg-success-subtle text-success border-success"
+                    : "bg-secondary-subtle text-secondary border-secondary";
+
+                    <div class="col-md-6 col-lg-4 col-xl-3 category-card"
+                         data-id="@item.Id"
+                         data-name="@item.CategoryName.ToLower()"
+                         data-status="@statusText"
+                         data-order="@item.DisplayOrder"
+                         data-active="@item.IsActive.ToString().ToLower()">
+                        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden transition-hover position-relative">
+
+                            <!-- 批次勾選框 -->
+                            <div class="batch-check position-absolute top-0 start-0 p-2 d-none" style="z-index:10;">
+                                <input class="form-check-input card-checkbox shadow" type="checkbox"
+                                       data-id="@item.Id" onchange="updateSelectedCount()" style="width:1.2em;height:1.2em;">
+                            </div>
+
+                            <!-- 排序把手 -->
+                            <div class="drag-handle position-absolute top-0 start-0 p-2 d-none" style="z-index:10; cursor:grab;">
+                                <span class="badge bg-dark bg-opacity-60 p-2 rounded-2 shadow-sm">
+                                    <i class="fas fa-grip-vertical"></i>
+                                </span>
+                            </div>
+
+                            <!-- 圖片區 -->
+                            <div class="position-relative">
+                                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" class="card-img-top" style="height:180px; object-fit:cover;"
+                                         onerror="this.parentElement.innerHTML='<div class=\'bg-light d-flex align-items-center justify-content-center\' style=\'height:180px;\'><i class=\'fas fa-image fa-3x text-muted opacity-25\'></i></div>'" />
+                                }
+                                else
+                                {
+                                    <div class="bg-light d-flex align-items-center justify-content-center" style="height:180px;">
+                                        <i class="fas fa-tags fa-3x text-muted opacity-25"></i>
                                     </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- 新增分類 Modal -->
-<div class="modal fade" id="createCategoryModal" tabindex="-1" aria-labelledby="createCategoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-light border-bottom">
-                <h5 class="modal-title text-dark" id="createCategoryModalLabel"><i class="fas fa-plus-circle me-2 text-primary"></i>新增分類</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body bg-white">
-                <form id="createCategoryForm">
-                    <div class="mb-3">
-                        <label for="createCategoryName" class="form-label fw-bold">分類名稱 <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control border-light-subtle shadow-sm" id="createCategoryName" required placeholder="例如：中式料理">
-                        <div class="invalid-feedback" id="createCategoryName-error"></div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="createParentCategoryId" class="form-label fw-bold">上層分類</label>
-                        <select class="form-select border-light-subtle shadow-sm" id="createParentCategoryId">
-                            @if (parentOptions != null)
-                            {
-                                @foreach (var opt in parentOptions)
-                                {
-                                    <option value="@opt.Value">@opt.Text</option>
                                 }
-                            }
-                        </select>
-                    </div>
+                                <!-- 狀態 Badge -->
+                                <div class="position-absolute top-0 end-0 p-2">
+                                    <span class="badge rounded-pill border @statusClass px-3 shadow-sm" style="backdrop-filter:blur(4px);">
+                                        @statusText
+                                    </span>
+                                </div>
+                                <!-- 上層分類 Badge -->
+                                @if (!string.IsNullOrEmpty(item.ParentCategoryName))
+                                {
+                                    <div class="position-absolute bottom-0 start-0 p-2">
+                                        <span class="badge bg-dark bg-opacity-60 text-white shadow-sm">
+                                            <i class="fas fa-level-up-alt me-1"></i>@item.ParentCategoryName
+                                        </span>
+                                    </div>
+                                }
+                            </div>
 
-                    <div class="mb-3">
-                        <label for="createDisplayOrder" class="form-label fw-bold">顯示順序</label>
-                        <input type="number" class="form-control border-light-subtle shadow-sm" id="createDisplayOrder" value="@(Model.Any() ? Model.Max(c => c.DisplayOrder) + 1 : 1)" min="1" max="999">
-                        <div class="invalid-feedback" id="createDisplayOrder-error"></div>
-                    </div>
+                            <!-- 卡片內容 -->
+                            <div class="card-body d-flex flex-column p-4">
+                                <div class="mb-2">
+                                    <h5 class="fw-bold mb-1 text-dark">@item.CategoryName</h5>
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                        <i class="fas fa-utensils me-1"></i>@item.DishCount 道餐點
+                                    </span>
+                                </div>
 
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="createIsActive" checked>
-                            <label class="form-check-label fw-bold text-muted" for="createIsActive">立即啟用此分類</label>
+                                <div class="bg-light rounded-3 p-2 mb-3 small text-muted d-flex align-items-center gap-2">
+                                    <i class="fas fa-sort-numeric-up text-primary"></i>
+                                    <span>顯示順序：<strong class="text-dark">@item.DisplayOrder</strong></span>
+                                </div>
+
+                                <div class="mt-auto">
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <button class="btn btn-outline-warning w-100 rounded-pill btn-sm py-2"
+                                                    onclick="openEditModal(@item.Id, '@item.CategoryName', '@item.ParentCategoryId', @item.DisplayOrder, @(item.IsActive.ToString().ToLower()), '@item.ImageUrl')">
+                                                <i class="fas fa-edit me-1"></i>編輯
+                                            </button>
+                                        </div>
+                                        <div class="col-12">
+                                            @if (item.IsActive)
+                                            {
+                                                <button class="btn btn-light text-danger w-100 rounded-pill btn-sm py-2 border"
+                                                        onclick="disableCategory(@item.Id)">
+                                                    <i class="fas fa-power-off me-1"></i>停用
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-light text-success w-100 rounded-pill btn-sm py-2 border"
+                                                        onclick="enableCategory(@item.Id)">
+                                                    <i class="fas fa-check-circle me-1"></i>啟用
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer bg-light border-top-0">
-                <button type="button" class="btn btn-outline-secondary border-0" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary px-4 shadow-sm" onclick="submitCreateCategory()">
-                    確認新增
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- 編輯分類 Modal -->
-<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-light border-bottom">
-                <h5 class="modal-title text-dark"><i class="fas fa-edit me-2 text-warning"></i>編輯分類</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body bg-white">
-                <form id="editCategoryForm">
-                    <input type="hidden" id="editCategoryId">
-                    <div class="mb-3">
-                        <label for="editCategoryName" class="form-label fw-bold">分類名稱 <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control border-light-subtle shadow-sm" id="editCategoryName" required>
-                        <div class="invalid-feedback" id="editCategoryName-error"></div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="editParentCategoryId" class="form-label fw-bold">上層分類</label>
-                        <select class="form-select border-light-subtle shadow-sm" id="editParentCategoryId">
-                            @if (parentOptions != null)
-                            {
-                                @foreach (var opt in parentOptions)
-                                {
-                                    <option value="@opt.Value">@opt.Text</option>
-                                }
-                            }
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="editDisplayOrder" class="form-label fw-bold">顯示順序</label>
-                        <input type="number" class="form-control border-light-subtle shadow-sm" id="editDisplayOrder" min="1" max="999">
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="editIsActive">
-                            <label class="form-check-label fw-bold text-muted" for="editIsActive">啟用中</label>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer bg-light border-top-0">
-                <button type="button" class="btn btn-outline-secondary border-0" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-warning px-4 shadow-sm" onclick="submitEditCategory()">
-                    儲存變更
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js"></script>
-    <script>
-        const dataTable = new simpleDatatables.DataTable("#categoryTable", {
-            searchable: false, // 關閉預設搜尋，使用自定義搜尋
-            fixedHeight: false,
-            perPage: 10,
-            labels: {
-                placeholder: "搜尋...",
-                perPage: "筆記錄 / 頁",
-                noRows: "找不到符合的記錄",
-                info: "顯示第 {start} 至 {end} 筆，共 {rows} 筆記錄",
-            }
-        });
-
-        // 自定義搜尋與篩選邏輯
-        const customSearchInput = document.getElementById("customSearchInput");
-        const statusFilter = document.getElementById("statusFilter");
-
-        function filterTable() {
-            const searchTerm = customSearchInput.value.toLowerCase();
-            const statusTerm = statusFilter.value;
-
-            const rows = document.querySelectorAll("#categoryTable tbody tr");
-            
-            rows.forEach(row => {
-                const categoryName = row.cells[0].textContent.toLowerCase();
-                const status = row.cells[4].textContent.trim(); // 狀態在第 5 個欄位 (index 4)
-
-                const matchesSearch = categoryName.includes(searchTerm);
-                const matchesStatus = statusTerm === "" || status === statusTerm;
-
-                if (matchesSearch && matchesStatus) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
                 }
-            });
-            
-            // 由於使用 simple-datatables，手動隱藏 tr 可能會影響分頁
-            // 這裡簡單處理，或可重新 render dataTable 資料
+            </div>
+
+            <!-- 空狀態 -->
+            <div id="emptyState" class="text-center py-5 d-none">
+                <i class="fas fa-search fa-3x text-muted opacity-25 mb-3 d-block"></i>
+                <p class="text-muted">沒有符合條件的分類</p>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="clearFilter()">清除篩選</button>
+            </div>
+
+            <!-- 分頁 -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <small class="text-muted" id="pageInfo"></small>
+                <ul class="pagination mb-0" id="pagination"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     新增分類 Modal
+═══════════════════════════════════════ -->
+<div class="modal fade" id="createCategoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>新增分類</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-md-7">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">分類名稱 <span class="text-danger">*</span></label>
+                            <input type="text" id="create_CategoryName" class="form-control shadow-sm" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">上層分類</label>
+                            <select id="create_ParentCategoryId" class="form-select shadow-sm">
+                                @foreach (var opt in ViewBag.ParentCategoryOptions)
+                                {
+                                    <option value="@opt.Value">@opt.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">排序</label>
+                            <input type="number" id="create_DisplayOrder" class="form-control shadow-sm" value="0" min="1" max="999">
+                        </div>
+                    </div>
+                    <div class="col-md-5 border-start border-light-subtle">
+                        <label class="form-label fw-bold d-block mb-2">分類圖片</label>
+                        <div id="create_imageArea"
+                             class="border rounded-4 bg-light overflow-hidden shadow-sm d-flex align-items-center justify-content-center mb-2 position-relative"
+                             style="aspect-ratio:4/3; cursor:pointer;"
+                             onclick="document.getElementById('create_imageInput').click()">
+                            <div id="create_placeholder" class="text-center">
+                                <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2"></i>
+                                <p class="text-secondary small mb-0">點擊或拖曳上傳圖片</p>
+                                <small class="text-muted">建議比例 4:3</small>
+                            </div>
+                            <img id="create_previewImg" src="" class="w-100 h-100 d-none" style="object-fit:cover;" />
+                            <div id="create_editBadge" class="position-absolute bottom-0 end-0 p-2 d-none">
+                                <span class="badge bg-dark bg-opacity-75 p-2 rounded-circle shadow-sm">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <input type="file" id="create_imageInput" class="d-none" accept="image/*"
+                               onchange="handleFileSelect(this, 'create')" />
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 rounded-pill mt-1"
+                                id="create_clearBtn" style="display:none;" onclick="clearImage('create')">
+                            <i class="fas fa-times me-1"></i>移除圖片
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary px-4 rounded-pill" onclick="submitCreate()">
+                    <i class="fas fa-plus me-1"></i>確認新增
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     編輯分類 Modal
+═══════════════════════════════════════ -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>編輯分類</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit_Id">
+                <div class="row g-4">
+                    <div class="col-md-7">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">分類名稱 <span class="text-danger">*</span></label>
+                            <input type="text" id="edit_CategoryName" class="form-control shadow-sm" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">上層分類</label>
+                            <select id="edit_ParentCategoryId" class="form-select shadow-sm">
+                                @foreach (var opt in ViewBag.ParentCategoryOptions)
+                                {
+                                    <option value="@opt.Value">@opt.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">排序</label>
+                            <input type="number" id="edit_DisplayOrder" class="form-control shadow-sm" min="1" max="999">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch mt-1">
+                                <input class="form-check-input" type="checkbox" id="edit_IsActive">
+                                <label class="form-check-label fw-bold text-muted" for="edit_IsActive">是否啟用</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5 border-start border-light-subtle">
+                        <label class="form-label fw-bold d-block mb-2">分類圖片</label>
+                        <div id="edit_imageArea"
+                             class="border rounded-4 bg-light overflow-hidden shadow-sm d-flex align-items-center justify-content-center mb-2 position-relative"
+                             style="aspect-ratio:4/3; cursor:pointer;"
+                             onclick="document.getElementById('edit_imageInput').click()">
+                            <div id="edit_placeholder" class="text-center">
+                                <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2"></i>
+                                <p class="text-secondary small mb-0">點擊或拖曳上傳圖片</p>
+                                <small class="text-muted">建議比例 4:3</small>
+                            </div>
+                            <img id="edit_previewImg" src="" class="w-100 h-100 d-none" style="object-fit:cover;"
+                                 onerror="this.classList.add('d-none'); document.getElementById('edit_placeholder').classList.remove('d-none')" />
+                            <div id="edit_editBadge" class="position-absolute bottom-0 end-0 p-2 d-none">
+                                <span class="badge bg-dark bg-opacity-75 p-2 rounded-circle shadow-sm">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <input type="file" id="edit_imageInput" class="d-none" accept="image/*"
+                               onchange="handleFileSelect(this, 'edit')" />
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 rounded-pill mt-1"
+                                id="edit_clearBtn" style="display:none;" onclick="clearImage('edit')">
+                            <i class="fas fa-times me-1"></i>移除圖片
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-warning px-4 rounded-pill" onclick="submitEdit()">
+                    <i class="fas fa-save me-1"></i>儲存變更
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     Cropper Modal（共用）
+═══════════════════════════════════════ -->
+<div class="modal fade" id="cropperModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-white border-bottom py-3">
+                <h5 class="modal-title fw-bold"><i class="fas fa-crop-alt me-2 text-primary"></i>裁切圖片</h5>
+                <button type="button" class="btn-close" onclick="cancelCrop()"></button>
+            </div>
+            <div class="modal-body p-0 bg-light">
+                <div style="height:420px; width:100%;">
+                    <img id="cropperImage" src="" style="max-width:100%;">
+                </div>
+            </div>
+            <div class="modal-footer bg-white border-0 py-3">
+                <button type="button" class="btn btn-outline-secondary border-0" onclick="cancelCrop()">取消</button>
+                <button type="button" class="btn btn-primary px-5 shadow-sm rounded-pill" onclick="confirmCrop()">確認裁切</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
+    <style>
+        .stat-card {
+            cursor: pointer;
+            transition: transform .2s, box-shadow .2s;
         }
 
-        customSearchInput.addEventListener("input", filterTable);
-        statusFilter.addEventListener("change", filterTable);
+            .stat-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+            }
 
-        async function submitCreateCategory() {
-            const data = {
-                CategoryName:     document.getElementById("createCategoryName").value,
-                ParentCategoryId: document.getElementById("createParentCategoryId").value ? parseInt(document.getElementById("createParentCategoryId").value) : null,
-                DisplayOrder:     parseInt(document.getElementById("createDisplayOrder").value),
-                IsActive:         document.getElementById("createIsActive").checked
+        .transition-hover {
+            transition: all .3s ease;
+        }
+
+        /* 排序模式 */
+        #category-card-container.sort-mode .category-card .card {
+            border: 2px dashed #ffc107 !important;
+            cursor: grab;
+        }
+
+        #category-card-container.sort-mode .drag-handle {
+            display: block !important;
+        }
+
+        #category-card-container.sort-mode .batch-check {
+            display: none !important;
+        }
+
+        .sortable-ghost .card {
+            opacity: .35;
+            background: #e0f0ff !important;
+        }
+
+        .sortable-chosen .card {
+            box-shadow: 0 8px 24px rgba(0,0,0,.2) !important;
+            transform: rotate(1.5deg) scale(1.02);
+        }
+
+        /* 批次模式 */
+        #category-card-container.batch-mode .batch-check {
+            display: block !important;
+        }
+
+        #category-card-container.batch-mode .drag-handle {
+            display: none !important;
+        }
+
+        #category-card-container.batch-mode .category-card.selected .card {
+            border: 2px solid #0d6efd !important;
+            box-shadow: 0 0 0 3px rgba(13,110,253,.18) !important;
+        }
+
+        #create_imageArea:hover, #edit_imageArea:hover {
+            border-color: var(--bs-primary) !important;
+            background-color: #f0f7ff !important;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <script>
+        /* ════════════════════════════════════════
+           分頁 / 篩選
+        ════════════════════════════════════════ */
+        const PAGE_SIZE = 12;
+        let currentPage   = 1;
+        let filteredCards = [];
+        let sortableInstance = null;
+        let isSortMode  = false;
+        let isBatchMode = false;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            filteredCards = Array.from(document.querySelectorAll(".category-card"));
+            filteredCards.sort((a, b) => parseInt(a.dataset.order) - parseInt(b.dataset.order));
+            renderPage();
+        });
+
+        function filterCards() {
+            const search = document.getElementById("searchInput").value.toLowerCase();
+            const status = document.getElementById("statusFilter").value;
+
+            filteredCards = Array.from(document.querySelectorAll(".category-card")).filter(card => {
+                const matchSearch = !search || card.dataset.name.includes(search);
+                const matchStatus = !status || card.dataset.status === status;
+                return matchSearch && matchStatus;
+            });
+            filteredCards.sort((a, b) => parseInt(a.dataset.order) - parseInt(b.dataset.order));
+            currentPage = 1;
+            renderPage();
+        }
+
+        function filterByStatus(status) {
+            document.getElementById("statusFilter").value = status;
+            filterCards();
+            document.getElementById("category-card-container").scrollIntoView({ behavior:'smooth', block:'start' });
+            showAlert("info", `已篩選：${status || "所有"} 分類`);
+        }
+
+        function clearFilter() {
+            document.getElementById("searchInput").value = "";
+            document.getElementById("statusFilter").value = "";
+            filterCards();
+        }
+
+        function renderPage() {
+            const allCards = Array.from(document.querySelectorAll(".category-card"));
+            allCards.forEach(c => c.style.display = "none");
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end   = start + PAGE_SIZE;
+            filteredCards.slice(start, end).forEach(c => c.style.display = "");
+
+            const total      = filteredCards.length;
+            const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+            document.getElementById("emptyState").classList.toggle("d-none", total > 0);
+
+            const pageInfo = document.getElementById("pageInfo");
+            if (pageInfo) pageInfo.textContent = total === 0
+                ? "沒有符合條件的記錄"
+                : `顯示第 ${start + 1} 至 ${Math.min(end, total)} 筆，共 ${total} 筆記錄`;
+
+            const paginationEl = document.getElementById("pagination");
+            if (paginationEl) {
+                paginationEl.innerHTML = "";
+                for (let i = 1; i <= totalPages; i++) {
+                    const li = document.createElement("li");
+                    li.className = `page-item ${i === currentPage ? "active" : ""}`;
+                    li.innerHTML = `<button type="button" class="page-link" onclick="goToPage(${i})">${i}</button>`;
+                    paginationEl.appendChild(li);
+                }
+            }
+        }
+
+        function goToPage(page) { currentPage = page; renderPage(); }
+
+        /* ════════════════════════════════════════
+           排序拖曳
+        ════════════════════════════════════════ */
+        function toggleSortMode() {
+            if (isBatchMode) exitBatchMode();
+            isSortMode = !isSortMode;
+            const container = document.getElementById("category-card-container");
+            const bar = document.getElementById("sortModeBar");
+            const btn = document.getElementById("toggleSortBtn");
+
+            if (isSortMode) {
+                container.classList.add("sort-mode");
+                bar.classList.remove("d-none");
+                btn.classList.replace("btn-outline-secondary", "btn-warning");
+                btn.innerHTML = '<i class="fas fa-times me-1"></i>取消排序';
+                sortableInstance = Sortable.create(container, {
+                    animation: 180,
+                    ghostClass: "sortable-ghost",
+                    chosenClass: "sortable-chosen",
+                    handle: ".drag-handle",
+                    draggable: ".category-card",
+                    onEnd() {
+                        document.querySelectorAll(".category-card").forEach((c, i) => c.dataset.order = i + 1);
+                    }
+                });
+            } else {
+                container.classList.remove("sort-mode");
+                bar.classList.add("d-none");
+                btn.classList.replace("btn-warning", "btn-outline-secondary");
+                btn.innerHTML = '<i class="fas fa-arrows-alt me-1"></i>調整排序';
+                if (sortableInstance) { sortableInstance.destroy(); sortableInstance = null; }
+            }
+        }
+
+        async function saveOrder() {
+            const ids = Array.from(document.querySelectorAll(".category-card")).map(c => parseInt(c.dataset.id));
+            try {
+                const res = await fetch("/Categories/UpdateOrder", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ orderedIds: ids })
+                });
+                if (res.ok) { showAlert("success", "排序已儲存 ✓"); toggleSortMode(); }
+                else showAlert("danger", "儲存失敗，請稍後再試");
+            } catch { showAlert("danger", "發生錯誤，請稍後再試"); }
+        }
+
+        /* ════════════════════════════════════════
+           批次操作
+        ════════════════════════════════════════ */
+        function enterBatchMode() {
+            if (isSortMode) toggleSortMode();
+            isBatchMode = true;
+            document.getElementById("category-card-container").classList.add("batch-mode");
+            document.getElementById("batchBar").classList.remove("d-none");
+            document.getElementById("batchModeBtn").classList.add("d-none");
+            document.querySelectorAll(".category-card").forEach(card => card.addEventListener("click", onCardClick));
+        }
+
+        function exitBatchMode() {
+            isBatchMode = false;
+            document.getElementById("category-card-container").classList.remove("batch-mode");
+            document.getElementById("batchBar").classList.add("d-none");
+            document.getElementById("batchModeBtn").classList.remove("d-none");
+            document.getElementById("selectAllCheck").checked = false;
+            document.querySelectorAll(".card-checkbox").forEach(cb => cb.checked = false);
+            document.querySelectorAll(".category-card.selected").forEach(c => c.classList.remove("selected"));
+            document.getElementById("selectedCount").textContent = "0";
+            document.querySelectorAll(".category-card").forEach(card => card.removeEventListener("click", onCardClick));
+        }
+
+        function onCardClick(e) {
+            if (e.target.closest("a, button")) return;
+            const cb = this.querySelector(".card-checkbox");
+            cb.checked = !cb.checked;
+            this.classList.toggle("selected", cb.checked);
+            updateSelectedCount();
+        }
+
+        function toggleSelectAll(checked) {
+            document.querySelectorAll(".category-card").forEach(card => {
+                if (card.style.display === "none") return;
+                const cb = card.querySelector(".card-checkbox");
+                cb.checked = checked;
+                card.classList.toggle("selected", checked);
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const count = document.querySelectorAll(".card-checkbox:checked").length;
+            document.getElementById("selectedCount").textContent = count;
+            const visibleCbs = Array.from(document.querySelectorAll(".category-card:not([style*='display: none']) .card-checkbox"));
+            document.getElementById("selectAllCheck").checked = visibleCbs.length > 0 && visibleCbs.every(cb => cb.checked);
+        }
+
+        function getSelectedIds() {
+            return Array.from(document.querySelectorAll(".card-checkbox:checked")).map(cb => parseInt(cb.dataset.id));
+        }
+
+        async function batchOperation(url, confirmMsg) {
+            const ids = getSelectedIds();
+            if (ids.length === 0) { showAlert("warning", "請先勾選項目"); return; }
+            if (!confirm(confirmMsg)) return;
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids })
+            });
+            if (res.ok) { showAlert("success", "操作成功"); setTimeout(() => location.reload(), 1000); }
+            else showAlert("danger", "操作失敗，請稍後再試");
+        }
+
+        function batchEnable()  { batchOperation("/Categories/BatchEnable",  "確定要啟用所選分類嗎？"); }
+        function batchDisable() { batchOperation("/Categories/BatchDisable", "確定要停用所選分類嗎？"); }
+        function batchDelete()  { batchOperation("/Categories/BatchDelete",  "⚠️ 確定要永久刪除嗎？此操作無法還原！"); }
+
+        /* ════════════════════════════════════════
+           單筆操作
+        ════════════════════════════════════════ */
+        async function disableCategory(id) {
+            if (!confirm("確定要停用嗎？")) return;
+            const res = await fetch(`/Categories/Disable/${id}`, { method: "POST" });
+            if (res.ok) { showAlert("success", "已停用"); setTimeout(() => location.reload(), 1000); }
+            else showAlert("danger", "操作失敗");
+        }
+
+        async function enableCategory(id) {
+            if (!confirm("確定要啟用嗎？")) return;
+            const res = await fetch(`/Categories/Enable/${id}`, { method: "POST" });
+            if (res.ok) { showAlert("success", "已啟用"); setTimeout(() => location.reload(), 1000); }
+            else showAlert("danger", "操作失敗");
+        }
+
+        /* ════════════════════════════════════════
+           Alert
+        ════════════════════════════════════════ */
+        function showAlert(type, message) {
+            const box = document.getElementById("alertBox");
+            box.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+            setTimeout(() => {
+                const el = box.querySelector(".alert");
+                if (el) { el.classList.remove("show"); setTimeout(() => box.innerHTML = "", 400); }
+            }, 3000);
+        }
+
+        /* ════════════════════════════════════════
+           圖片裁切（新增 / 編輯共用）
+        ════════════════════════════════════════ */
+        let cropper       = null;
+        let activePanelId = null;
+        let croppedBase64 = { create: null, edit: null };
+
+        ['create', 'edit'].forEach(panel => {
+            const area = document.getElementById(`${panel}_imageArea`);
+            area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('border-primary'); });
+            area.addEventListener('dragleave', () => area.classList.remove('border-primary'));
+            area.addEventListener('drop', e => {
+                e.preventDefault();
+                area.classList.remove('border-primary');
+                if (e.dataTransfer.files[0]) openCropper(e.dataTransfer.files[0], panel);
+            });
+        });
+
+        function handleFileSelect(input, panel) {
+            if (!input.files || !input.files[0]) return;
+            openCropper(input.files[0], panel);
+            input.value = "";
+        }
+
+        function openCropper(file, panel) {
+            activePanelId = panel;
+            const reader  = new FileReader();
+            reader.onload = e => {
+                const img = document.getElementById("cropperImage");
+                img.src   = e.target.result;
+                const cropModal = new bootstrap.Modal(document.getElementById("cropperModal"));
+                cropModal.show();
+                document.getElementById("cropperModal").addEventListener("shown.bs.modal", () => {
+                    if (cropper) cropper.destroy();
+                    cropper = new Cropper(img, { aspectRatio: 4/3, viewMode: 1, autoCropArea: 1 });
+                }, { once: true });
             };
+            reader.readAsDataURL(file);
+        }
+
+        function confirmCrop() {
+            if (!cropper) return;
+            const base64 = cropper.getCroppedCanvas({ width: 800, height: 600 }).toDataURL("image/jpeg", 0.9);
+            croppedBase64[activePanelId] = base64;
+
+            const previewImg  = document.getElementById(`${activePanelId}_previewImg`);
+            const placeholder = document.getElementById(`${activePanelId}_placeholder`);
+            const editBadge   = document.getElementById(`${activePanelId}_editBadge`);
+            const clearBtn    = document.getElementById(`${activePanelId}_clearBtn`);
+
+            previewImg.src = base64;
+            previewImg.classList.remove("d-none");
+            placeholder.classList.add("d-none");
+            editBadge.classList.remove("d-none");
+            clearBtn.style.display = "";
+
+            bootstrap.Modal.getInstance(document.getElementById("cropperModal")).hide();
+            cropper.destroy();
+            cropper = null;
+        }
+
+        function cancelCrop() {
+            bootstrap.Modal.getInstance(document.getElementById("cropperModal")).hide();
+            if (cropper) { cropper.destroy(); cropper = null; }
+        }
+
+        function clearImage(panel) {
+            croppedBase64[panel] = null;
+            document.getElementById(`${panel}_previewImg`).src = "";
+            document.getElementById(`${panel}_previewImg`).classList.add("d-none");
+            document.getElementById(`${panel}_placeholder`).classList.remove("d-none");
+            document.getElementById(`${panel}_editBadge`).classList.add("d-none");
+            document.getElementById(`${panel}_clearBtn`).style.display = "none";
+        }
+
+        /* ════════════════════════════════════════
+           新增 Modal
+        ════════════════════════════════════════ */
+        document.getElementById("createCategoryModal").addEventListener("hidden.bs.modal", () => {
+            clearImage('create');
+            document.getElementById("create_CategoryName").value = "";
+            document.getElementById("create_DisplayOrder").value = "0";
+        });
+
+        async function submitCreate() {
+            const name = document.getElementById("create_CategoryName").value.trim();
+            if (!name) { showAlert("warning", "請輸入分類名稱"); return; }
+
+            let imageUrl = null;
+            if (croppedBase64.create) {
+                imageUrl = await uploadImage(croppedBase64.create, name);
+                if (!imageUrl) return;
+            }
 
             const res = await fetch("/Categories/Create", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
+                body: JSON.stringify({
+                    CategoryName:     name,
+                    ParentCategoryId: document.getElementById("create_ParentCategoryId").value
+                                        ? parseInt(document.getElementById("create_ParentCategoryId").value) : null,
+                    DisplayOrder:     parseInt(document.getElementById("create_DisplayOrder").value),
+                    ImageUrl:         imageUrl
+                })
             });
+            if (res.ok) { location.reload(); }
+            else showAlert("danger", "新增失敗，請稍後再試");
+        }
 
-            if (res.ok) {
-                showAlert("success", "新增成功！");
-                bootstrap.Modal.getInstance(document.getElementById('createCategoryModal')).hide();
-                setTimeout(() => location.reload(), 800);
+        /* ════════════════════════════════════════
+           編輯 Modal
+        ════════════════════════════════════════ */
+        function openEditModal(id, name, parentId, order, isActive, imageUrl) {
+            document.getElementById("edit_Id").value               = id;
+            document.getElementById("edit_CategoryName").value     = name;
+            document.getElementById("edit_ParentCategoryId").value = parentId || "";
+            document.getElementById("edit_DisplayOrder").value     = order;
+            document.getElementById("edit_IsActive").checked       = isActive;
+            croppedBase64.edit = null;
+
+            const previewImg  = document.getElementById("edit_previewImg");
+            const placeholder = document.getElementById("edit_placeholder");
+            const editBadge   = document.getElementById("edit_editBadge");
+            const clearBtn    = document.getElementById("edit_clearBtn");
+
+            if (imageUrl) {
+                previewImg.src = imageUrl;
+                previewImg.classList.remove("d-none");
+                placeholder.classList.add("d-none");
+                editBadge.classList.remove("d-none");
+                clearBtn.style.display = "";
             } else {
-                const errors = await res.json();
-                handleErrors(errors, "create");
+                clearImage('edit');
             }
+
+            new bootstrap.Modal(document.getElementById("editCategoryModal")).show();
         }
 
-        function openEditModal(id, name, parentId, order, active) {
-            document.getElementById("editCategoryId").value = id;
-            document.getElementById("editCategoryName").value = name;
-            document.getElementById("editParentCategoryId").value = parentId || "";
-            document.getElementById("editDisplayOrder").value = order;
-            document.getElementById("editIsActive").checked = active;
-            
-            new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
-        }
+        async function submitEdit() {
+            const id   = document.getElementById("edit_Id").value;
+            const name = document.getElementById("edit_CategoryName").value.trim();
+            if (!name) { showAlert("warning", "請輸入分類名稱"); return; }
 
-        async function submitEditCategory() {
-            const id = document.getElementById("editCategoryId").value;
-            const data = {
-                Id:               parseInt(id),
-                CategoryName:     document.getElementById("editCategoryName").value,
-                ParentCategoryId: document.getElementById("editParentCategoryId").value ? parseInt(document.getElementById("editParentCategoryId").value) : null,
-                DisplayOrder:     parseInt(document.getElementById("editDisplayOrder").value),
-                IsActive:         document.getElementById("editIsActive").checked
-            };
+            const previewImg = document.getElementById("edit_previewImg");
+            let imageUrl = previewImg.classList.contains("d-none") ? null : previewImg.src;
+
+            if (croppedBase64.edit) {
+                imageUrl = await uploadImage(croppedBase64.edit, name);
+                if (!imageUrl) return;
+            }
+
+            // 瀏覽器會把相對路徑補成完整 URL，這裡轉回相對路徑
+            if (imageUrl && imageUrl.startsWith("http")) {
+                imageUrl = new URL(imageUrl).pathname;
+            }
 
             const res = await fetch(`/Categories/Edit/${id}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
+                body: JSON.stringify({
+                    Id:               parseInt(id),
+                    CategoryName:     name,
+                    ParentCategoryId: document.getElementById("edit_ParentCategoryId").value
+                                        ? parseInt(document.getElementById("edit_ParentCategoryId").value) : null,
+                    DisplayOrder:     parseInt(document.getElementById("edit_DisplayOrder").value),
+                    IsActive:         document.getElementById("edit_IsActive").checked,
+                    ImageUrl:         imageUrl
+                })
             });
-
-            if (res.ok) {
-                showAlert("success", "更新成功！");
-                bootstrap.Modal.getInstance(document.getElementById('editCategoryModal')).hide();
-                setTimeout(() => location.reload(), 800);
-            } else {
-                const errors = await res.json();
-                handleErrors(errors, "edit");
-            }
+            if (res.ok) { location.reload(); }
+            else showAlert("danger", "儲存失敗，請稍後再試");
         }
 
-        async function disableCategory(id) {
-            if (!confirm("確定要停用此分類嗎？")) return;
-            const res = await fetch(`/Categories/Disable/${id}`, { method: "POST" });
-            if (res.ok) {
-                showAlert("success", "停用成功");
-                setTimeout(() => location.reload(), 800);
-            } else {
-                showAlert("danger", "停用失敗");
+        /* ════════════════════════════════════════
+           圖片上傳 API
+        ════════════════════════════════════════ */
+        async function uploadImage(base64Data, categoryName) {
+            try {
+                const res = await fetch("/Categories/UploadImage", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ base64Data, categoryName })
+                });
+                if (!res.ok) { showAlert("danger", "圖片上傳失敗，請稍後再試"); return null; }
+                return (await res.json()).imageUrl;
+            } catch {
+                showAlert("danger", "圖片上傳發生錯誤");
+                return null;
             }
-        }
-
-        function handleErrors(errors, prefix) {
-            document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
-            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-            for (const key in errors) {
-                const inputId = prefix + key;
-                const input = document.getElementById(inputId);
-                const errorDiv = document.getElementById(inputId + "-error");
-                if (input) input.classList.add('is-invalid');
-                if (errorDiv) errorDiv.textContent = errors[key].join(", ");
-            }
-        }
-
-        function showAlert(type, message) {
-            document.getElementById("alertBox").innerHTML = `
-                <div class="alert alert-${type} alert-dismissible border-0 shadow-sm fade show" role="alert">
-                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2"></i>${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>`;
         }
     </script>
 }
+
