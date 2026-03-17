@@ -161,6 +161,7 @@ CREATE TABLE [dbo].[Coupons](
 	[EndDate] [datetime2](0) NULL,
 	[LimitCount] [int] NULL,
 	[ReceivedCount] [int] NULL,
+	[IsDisabled] [bit] NOT NULL DEFAULT 0,
  CONSTRAINT [PK_Coupons] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
@@ -266,6 +267,7 @@ CREATE TABLE [dbo].[MemberCoupons](
 	[CouponId] [int] NOT NULL,
 	[IsUsed] [bit] NOT NULL,
 	[UsedDate] [datetime2](0) NULL,
+	[ClaimedAt] [datetime2](0) NULL,  
  CONSTRAINT [PK_MemberCoupons] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
@@ -1141,6 +1143,11 @@ ALTER TABLE [dbo].[Products]  WITH CHECK ADD  CONSTRAINT [FK_Products_Dishes] FO
 REFERENCES [dbo].[Dishes] ([Id])
 GO
 ALTER TABLE [dbo].[Products] CHECK CONSTRAINT [FK_Products_Dishes]
+GO
+ALTER TABLE [dbo].[Products]  WITH CHECK ADD  CONSTRAINT [FK_Products_SetMeals] FOREIGN KEY([SetMealId])
+REFERENCES [dbo].[SetMeals] ([Id])
+GO
+ALTER TABLE [dbo].[Products] CHECK CONSTRAINT [FK_Products_SetMeals]
 GO
 ALTER TABLE [dbo].[RoleFunctions]  WITH CHECK ADD  CONSTRAINT [FK_RoleFunctions_Functions] FOREIGN KEY([FunctionId])
 REFERENCES [dbo].[Functions] ([Id])

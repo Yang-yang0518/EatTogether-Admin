@@ -17,7 +17,12 @@ namespace EatTogether.Models.Services
 			return await _repo.GetAllAsync();
 		}
 
-		public async Task<CategoryDto> GetByIdAsync(int id)
+		public async Task<IEnumerable<CategoryDto>> GetAllActiveAsync()
+		{
+			return await _repo.GetAllActiveAsync();
+		}
+
+		public async Task<CategoryDto?> GetByIdAsync(int id)
 		{
 			return await _repo.GetByIdAsync(id);
 		}
@@ -35,6 +40,31 @@ namespace EatTogether.Models.Services
 		public async Task DisableAsync(int id)
 		{
 			await _repo.SoftDeleteAsync(id);
+		}
+
+		public async Task BatchDisableAsync(IEnumerable<int> ids)
+		{
+			await _repo.BatchSoftDeleteAsync(ids);
+		}
+
+		public async Task EnableAsync(int id)
+		{
+			await _repo.EnableAsync(id);
+		}
+
+		public async Task BatchEnableAsync(IEnumerable<int> ids)
+		{
+			await _repo.BatchEnableAsync(ids);
+		}
+
+		public async Task DeleteAsync(int id)
+		{
+			await _repo.DeleteAsync(id);
+		}
+
+		public async Task BatchDeleteAsync(IEnumerable<int> ids)
+		{
+			await _repo.BatchDeleteAsync(ids);
 		}
 	}
 }

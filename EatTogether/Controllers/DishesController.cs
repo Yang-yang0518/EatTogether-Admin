@@ -1,5 +1,6 @@
 ﻿using EatTogether.Models.Services;
 using EatTogether.Models.ViewModels;
+using EatTogether.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
@@ -124,7 +125,46 @@ namespace EatTogether.Controllers
         [HttpPost]
         public async Task<IActionResult> Disable(int id)
         {
-            await _dishService.SoftDeleteAsync(id);
+            await _dishService.DisableAsync(id);
+            return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> BatchDisable([FromBody] BatchRequestDto request)
+        {
+            if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
+            await _dishService.BatchDisableAsync(request.Ids);
+            return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Enable(int id)
+        {
+            await _dishService.EnableAsync(id);
+            return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> BatchEnable([FromBody] BatchRequestDto request)
+        {
+            if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
+            await _dishService.BatchEnableAsync(request.Ids);
+            return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> BatchDelete([FromBody] BatchRequestDto request)
+        {
+            if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
+            await _dishService.BatchDeleteAsync(request.Ids);
+            return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateOrder([FromBody] OrderedIdsDto request)
+        {
+            if (request?.OrderedIds == null || !request.OrderedIds.Any()) return BadRequest("無順序可更新。");
+            await _dishService.UpdateOrderAsync(request.OrderedIds);
             return Ok();
         }
 

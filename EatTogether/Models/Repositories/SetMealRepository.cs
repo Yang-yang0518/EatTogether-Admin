@@ -62,6 +62,16 @@ namespace EatTogether.Models.Repositories
                 public async Task<IEnumerable<Setmealdto>> GetAllAsync()
                 {
                         return await _context.SetMeals
+                                .Include(s => s.SetMealItems)
+                                .ThenInclude(i => i.Dish)
+                                .ThenInclude(d => d.Category)
+                                .Select(s => s.ToDo())
+                                .ToListAsync();
+                }
+
+                public async Task<IEnumerable<Setmealdto>> GetAllActiveAsync()
+                {
+                        return await _context.SetMeals
                                 .Where(s => s.IsActive)
                                 .Include(s => s.SetMealItems)
                                 .ThenInclude(i => i.Dish)
@@ -73,7 +83,7 @@ namespace EatTogether.Models.Repositories
                 public async Task<Setmealdto?> GetByIdAsync(int id)
                 {
                     var setMeal = await _context.SetMeals
-                                    .Where(s => s.Id == id && s.IsActive)
+                                    .Where(s => s.Id == id)
                                     .Include(s => s.SetMealItems)
                                     .ThenInclude(i => i.Dish)
                                     .ThenInclude(d => d.Category)
@@ -98,6 +108,55 @@ namespace EatTogether.Models.Repositories
                         setMeal.IsActive = false;
                         setMeal.UpdatedAt = DateTime.Now;
 
+                        await _context.SaveChangesAsync();
+                }
+
+                public async Task BatchSoftDeleteAsync(IEnumerable<int> ids)
+                {
+                        var setMeals = await _context.SetMeals.Where(s => ids.Contains(s.Id)).ToListAsync();
+                        foreach (var s in setMeals)
+                        {
+                                s.IsActive = false;
+                                s.UpdatedAt = DateTime.Now;
+                        }
+                        await _context.SaveChangesAsync();
+                }
+
+                public async Task EnableAsync(int id)
+                {
+                        var setMeal = await _context.SetMeals.FindAsync(id);
+                        if (setMeal == null) return;
+
+                        setMeal.IsActive = true;
+                        setMeal.UpdatedAt = DateTime.Now;
+
+                        await _context.SaveChangesAsync();
+                }
+
+                public async Task BatchEnableAsync(IEnumerable<int> ids)
+                {
+                        var setMeals = await _context.SetMeals.Where(s => ids.Contains(s.Id)).ToListAsync();
+                        foreach (var s in setMeals)
+                        {
+                                s.IsActive = true;
+                                s.UpdatedAt = DateTime.Now;
+                        }
+                        await _context.SaveChangesAsync();
+                }
+
+                public async Task DeleteAsync(int id)
+                {
+                        var setMeal = await _context.SetMeals.FindAsync(id);
+                        if (setMeal == null) return;
+
+                        _context.SetMeals.Remove(setMeal);
+                        await _context.SaveChangesAsync();
+                }
+
+                public async Task BatchDeleteAsync(IEnumerable<int> ids)
+                {
+                        var setMeals = await _context.SetMeals.Where(s => ids.Contains(s.Id)).ToListAsync();
+                        _context.SetMeals.RemoveRange(setMeals);
                         await _context.SaveChangesAsync();
                 }
 
@@ -157,6 +216,27 @@ namespace EatTogether.Models.Repositories
                         await transaction.RollbackAsync();
                         throw;
                     }
+                }
+
+                public async Task UpdateOrderAsync(IEnumerable<int> orderedIds)
+                {
+                    var setMealsToUpdate = await _context.SetMeals
+                                                         .Where(s => orderedIds.Contains(s.Id))
+                                                         .ToListAsync();
+
+                    var idToOrderMap = orderedIds
+                        .Select((id, index) => new { Id = id, Order = index + 1 })
+                        .ToDictionary(x => x.Id, x => x.Order);
+
+                    foreach (var setMeal in setMealsToUpdate)
+                    {
+                        if (idToOrderMap.TryGetValue(setMeal.Id, out var order))
+                        {
+                            setMeal.DisplayOrder = order;
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
                 }
         }
 }
