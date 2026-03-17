@@ -33,10 +33,10 @@ VALUES
 -- 店長
 ( 1,
   'manager_amy',
-  '$2a$11$rBnqTpOHBLFvFM1yKFVcAuXskO9BWlVjDKRmHHlm5Qo9sVFkNeV5C',
+  '$2a$12$sRRXTcuRbA.gUdoHFgZV8.0N8tga/I7mr5UYJWVCWDEKMEv0SEkCa',
   'EMP2021001',
   N'陳怡伶',
-  'chen.amy.eng@gmail.com',
+  'chen.amy.jap@gmail.com',
   '0912345678',
   '2021-03-01',
   '2021-03-01',

@@ -392,6 +392,8 @@ function initForgotPasswordModal() {
         clearFieldError('forgot-email');
         const alertEl = document.querySelector('#forgot-alert');
         if (alertEl) alertEl.classList.remove('show');
+
+        setButtonLoading('forgot-submit-btn', false, '送出');
     });
 
     // Email 輸入時清除錯誤

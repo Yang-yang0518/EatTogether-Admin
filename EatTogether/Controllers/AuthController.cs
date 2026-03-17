@@ -161,7 +161,7 @@ namespace EatTogether.Controllers
 			Response.Cookies.Delete("jwt");
 
 			// Redirect 登入頁（瀏覽器返回按鈕會自動導向登入頁）
-			return Json(new { success = true, redirectUrl = Url.Action("Login") });
+			return RedirectToAction("Login");
 		}
 
 
