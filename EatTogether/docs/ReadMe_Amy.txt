@@ -202,12 +202,12 @@
 			// 帳號或密碼錯誤 → 一律回傳「帳號或密碼錯誤」（防帳號枚舉）
 			// 驗證通過 → 回傳 LoginDto（含 MustChangePassword 旗標）
 
-	[] ViewModel（Models/ViewModels/LoginViewModel.cs）
+	[V] ViewModel（Models/ViewModels/LoginViewModel.cs）
 		LoginViewModel
 			string Account
 			string Password
 
-	[] AuthController（Controllers/AuthController.cs）
+	[V] AuthController（Controllers/AuthController.cs）
 		POST /Auth/Login
 			驗證通過且 MustChangePassword=0 → 發行 JWT（httpOnly Cookie）→ Redirect Dashboard
 			驗證通過且 MustChangePassword=1 → 回傳 { mustChangePassword: true }，前端開強制改密碼 Modal
