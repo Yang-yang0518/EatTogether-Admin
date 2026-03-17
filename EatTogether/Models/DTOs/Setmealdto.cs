@@ -22,8 +22,8 @@
 		public string? ImageUrl { get; set; }
 		public DateOnly? StartDate { get; set; }
 		public DateOnly? EndDate { get; set; }
-		public TimeSpan? StartTime { get; set; }
-		public TimeSpan? EndTime { get; set; }
+		public TimeOnly? StartTime { get; set; }
+		public TimeOnly? EndTime { get; set; }
 		public DateTime? UpdatedAt { get; set; }
 		public int DisplayOrder { get; set; }
 		public bool IsPopular { get; set; }
