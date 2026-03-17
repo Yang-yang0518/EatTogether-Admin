@@ -1142,6 +1142,11 @@ REFERENCES [dbo].[Dishes] ([Id])
 GO
 ALTER TABLE [dbo].[Products] CHECK CONSTRAINT [FK_Products_Dishes]
 GO
+ALTER TABLE [dbo].[Products]  WITH CHECK ADD  CONSTRAINT [FK_Products_SetMeals] FOREIGN KEY([SetMealId])
+REFERENCES [dbo].[SetMeals] ([Id])
+GO
+ALTER TABLE [dbo].[Products] CHECK CONSTRAINT [FK_Products_SetMeals]
+GO
 ALTER TABLE [dbo].[RoleFunctions]  WITH CHECK ADD  CONSTRAINT [FK_RoleFunctions_Functions] FOREIGN KEY([FunctionId])
 REFERENCES [dbo].[Functions] ([Id])
 GO
