@@ -72,11 +72,20 @@
                     </a>
                 </li>
 
-                <li class="nav-item">
+                @* <li class="nav-item">
                     <a class="btn btn-outline-light"
                        asp-controller="Auth" asp-action="Login" role="button">
                         <i class="fa-solid fa-right-from-bracket me-1"></i>登出
                     </a>
+                </li> *@
+
+                <li class="nav-item">
+                    <form method="post" asp-controller="Auth" asp-action="Logout">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-light">
+                            <i class="fa-solid fa-right-from-bracket me-1"></i>登出
+                        </button>
+                    </form>
                 </li>
             </ul>
         </nav>

@@ -13,15 +13,14 @@
    apiFetch — 統一 API 呼叫封裝
    ============================================================ */
 async function apiFetch(url, options = {}) {
-    const defaults = {
+    const config = {
         credentials: 'include',
+        ...options,
         headers: {
             'Content-Type': 'application/json',
             ...(options.headers || {})
         }
     };
-
-    const config = { ...options, ...defaults };
 
     try {
         const response = await fetch(url, config);
@@ -110,7 +109,8 @@ function showFieldError(inputId, message) {
 
     if (input) input.classList.add('is-invalid');
     if (errorEl) {
-        errorEl.textContent = message;
+        const span = errorEl.querySelector('span');
+        if (span) span.textContent = message;
         errorEl.classList.add('show');
     }
 }
@@ -181,8 +181,14 @@ function initLoginPage() {
             const accountInput  = document.querySelector('#account');
             const passwordInput = document.querySelector('#password');
 
-            if (accountInput)  accountInput.value  = account;
-            if (passwordInput) passwordInput.value = password;
+            if (accountInput) {
+                accountInput.value = account;
+                accountInput.dispatchEvent(new Event('input'));
+            }
+            if (passwordInput) {
+                passwordInput.value = password;
+                passwordInput.dispatchEvent(new Event('input'));
+            }
 
             // 高亮顯示已選擇的按鈕
             document.querySelectorAll('.demo-role-btn').forEach(b => b.style.background = '');
@@ -242,7 +248,7 @@ function initLoginPage() {
                                     ?? new bootstrap.Modal(forceModalEl, { backdrop: 'static', keyboard: false });
                     forceModal.show();
                 } else {
-                    window.location.href = data.redirectUrl || '/Dashboard';
+                    window.location.href = data.redirectUrl || '/Home/Index';
                 }
             } else {
                 showAlert('danger', data.message || '帳號或密碼錯誤');
@@ -335,7 +341,7 @@ function initForceChangePasswordModal() {
                     timer: 5000,
                     timerProgressBar: true
                 }).then(() => {
-                    window.location.href = data.redirectUrl || '/Dashboard';
+                    window.location.href = data.redirectUrl || '/Home/Index';
                 });
             } else {
                 showForceModalAlert(data.message || '密碼重設失敗，請再試一次');
@@ -386,6 +392,8 @@ function initForgotPasswordModal() {
         clearFieldError('forgot-email');
         const alertEl = document.querySelector('#forgot-alert');
         if (alertEl) alertEl.classList.remove('show');
+
+        setButtonLoading('forgot-submit-btn', false, '送出');
     });
 
     // Email 輸入時清除錯誤

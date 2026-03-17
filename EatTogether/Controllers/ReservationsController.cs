@@ -60,7 +60,7 @@ namespace EatTogether.Controllers
 
             if (!result.IsSuccess)
             {
-                ViewBag.ErrorMessage = result.ErrorMesssage;
+                ViewBag.ErrorMessage = result.ErrorMessage;
                 // 建議可用時段 = 衝突時段 + 91 分鐘（超出 ±90 分鐘衝突區）
                 ViewBag.SuggestedTime = vm.ReservationDate != default
                     ? vm.ReservationDate.AddMinutes(91).ToString("yyyy/M/d HH:mm")
@@ -79,7 +79,7 @@ namespace EatTogether.Controllers
         public async Task<IActionResult> UpdateStatus([FromBody] ReservationUpdateStatusViewModel vm)
         {
             var result = await _reservationService.UpdateStatusAsync(vm.Id, vm.Status);
-            return Json(new { success = result.IsSuccess, message = result.ErrorMesssage ?? "" });
+            return Json(new { success = result.IsSuccess, message = result.ErrorMessage ?? "" });
         }
     }
 }

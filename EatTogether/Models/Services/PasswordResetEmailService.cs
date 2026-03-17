@@ -38,6 +38,7 @@ namespace EatTogether.Models.Services
 			await client.AuthenticateAsync(smtp["UserName"], smtp["Password"]);
 			await client.SendAsync(message);
 			await client.DisconnectAsync(true);
+
 		}
 
 		private static string BuildHtml(string resetLink)
