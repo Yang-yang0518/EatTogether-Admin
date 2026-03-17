@@ -324,23 +324,26 @@
 		警告 icon
 		按鈕：「返回登入頁重新申請」（導向 /Auth/Login）
 
-[] add 登出功能
+[V] add 登出功能
 	url: POST /Auth/Logout
 
-	[] AuthController（modify）
+	[V] AuthController（modify）
 		POST /Auth/Logout
 			清除 JWT Cookie
 			Redirect 登入頁（瀏覽器返回自動導向登入頁）
 
-[] Dashboard
-	url: GET /Auth/Dashboard
+[V] 登入成功落地頁
+	url: GET /Home/Index
 
-	[] AuthController（modify）
-		GET /Auth/Dashboard
+	[V] HomeController（modify）
+		GET /Home/Index
 
-	[] Dashboard.cshtml（Views/Auth/Dashboard.cshtml）
+	[V] Home/Index.cshtml（Views/Home/Index.cshtml）
 		登入成功落地頁
 		顯示：「登入成功，請選擇左側功能選單，開始管理」
+
+[V] 頭像顏色由後端處理
+	JwtHelper.GenerateToken() 內根據姓名雜湊計算頭像背景顏色（HashUserIdToColor(int userId)）
 
 =========
 模組二：員工管理（Users）

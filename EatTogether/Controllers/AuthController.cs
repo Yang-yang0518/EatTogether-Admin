@@ -26,7 +26,7 @@ namespace EatTogether.Controllers
 
 		// POST /Auth/Login
 		[HttpPost]
-		public async Task<IActionResult> Login(LoginViewModel vm)
+		public async Task<IActionResult> Login([FromBody] LoginViewModel vm)
 		{
 			if (!ModelState.IsValid)
 			{
@@ -58,7 +58,7 @@ namespace EatTogether.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> ForceChangePassword(ForceChangePasswordViewModel vm)
+		public async Task<IActionResult> ForceChangePassword([FromBody] ForceChangePasswordViewModel vm)
 		{
 			// 從 TempData 取出 UserId
 			if (TempData["PendingUserId"] is not int userId)
@@ -92,7 +92,7 @@ namespace EatTogether.Controllers
 
 		// POST /Auth/ForgotPassword
 		[HttpPost]
-		public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel vm)
+		public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordViewModel vm)
 		{
 			if (!ModelState.IsValid)
 			{
@@ -126,7 +126,7 @@ namespace EatTogether.Controllers
 
 		// POST /Auth/ResetPassword
 		[HttpPost]
-		public async Task<IActionResult> ResetPassword(ResetPasswordViewModel vm)
+		public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordViewModel vm)
 		{
 			if (!ModelState.IsValid)
 			{
@@ -151,6 +151,17 @@ namespace EatTogether.Controllers
 		// GET /Auth/ResetPasswordInvalid
 		[HttpGet]
 		public IActionResult ResetPasswordInvalid() => View();
+
+		// POST /Auth/Logout
+		[HttpPost]
+		public IActionResult Logout()
+		{
+			// 清除 JWT Cookie
+			Response.Cookies.Delete("jwt");
+
+			// Redirect 登入頁（瀏覽器返回按鈕會自動導向登入頁）
+			return Json(new { success = true, redirectUrl = Url.Action("Login") });
+		}
 
 
 		private void IssueJwtCookie(LoginDto loginDto)

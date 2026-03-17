@@ -13,15 +13,14 @@
    apiFetch — 統一 API 呼叫封裝
    ============================================================ */
 async function apiFetch(url, options = {}) {
-    const defaults = {
+    const config = {
         credentials: 'include',
+        ...options,
         headers: {
             'Content-Type': 'application/json',
             ...(options.headers || {})
         }
     };
-
-    const config = { ...options, ...defaults };
 
     try {
         const response = await fetch(url, config);
@@ -110,7 +109,8 @@ function showFieldError(inputId, message) {
 
     if (input) input.classList.add('is-invalid');
     if (errorEl) {
-        errorEl.textContent = message;
+        const span = errorEl.querySelector('span');
+        if (span) span.textContent = message;
         errorEl.classList.add('show');
     }
 }
@@ -181,8 +181,14 @@ function initLoginPage() {
             const accountInput  = document.querySelector('#account');
             const passwordInput = document.querySelector('#password');
 
-            if (accountInput)  accountInput.value  = account;
-            if (passwordInput) passwordInput.value = password;
+            if (accountInput) {
+                accountInput.value = account;
+                accountInput.dispatchEvent(new Event('input'));
+            }
+            if (passwordInput) {
+                passwordInput.value = password;
+                passwordInput.dispatchEvent(new Event('input'));
+            }
 
             // 高亮顯示已選擇的按鈕
             document.querySelectorAll('.demo-role-btn').forEach(b => b.style.background = '');

@@ -119,7 +119,7 @@ namespace EatTogether.Controllers
         public async Task<IActionResult> Disable(int id)
         {
             var result = await _couponService.DisableAsync(id);
-            TempData["SuccessMessage"] = result.IsSuccess ? "優惠券已停用" : result.ErrorMesssage;
+            TempData["SuccessMessage"] = result.IsSuccess ? "優惠券已停用" : result.ErrorMessage;
             return RedirectToAction(nameof(Index));
         }
 
@@ -129,7 +129,7 @@ namespace EatTogether.Controllers
         public async Task<IActionResult> Enable(int id)
         {
             var result = await _couponService.EnableAsync(id);
-            TempData["SuccessMessage"] = result.IsSuccess ? "優惠券已重新啟用" : result.ErrorMesssage;
+            TempData["SuccessMessage"] = result.IsSuccess ? "優惠券已重新啟用" : result.ErrorMessage;
             return RedirectToAction(nameof(Index));
         }
 
