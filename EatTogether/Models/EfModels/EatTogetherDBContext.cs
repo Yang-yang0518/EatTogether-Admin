@@ -529,20 +529,21 @@ public partial class EatTogetherDBContext : DbContext
         modelBuilder.Entity<SetMeal>(entity =>
         {
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(getdate())");
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
             entity.Property(e => e.Description).HasMaxLength(300);
             entity.Property(e => e.DiscountType)
                 .IsRequired()
                 .HasMaxLength(20);
             entity.Property(e => e.DiscountValue).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.ImageUrl).HasMaxLength(300);
+            entity.Property(e => e.DisplayOrder).HasDefaultValue(1);
+            entity.Property(e => e.ImageUrl).HasMaxLength(255);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.SetMealName)
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.SetPrice).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
         });
 
         modelBuilder.Entity<SetMealItem>(entity =>
