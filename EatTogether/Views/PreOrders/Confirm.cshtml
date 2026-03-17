@@ -454,6 +454,7 @@
             <button type="button" class="btn-back" onclick="history.back()">← 繼續點餐</button>
             <button type="submit" class="btn-submit" id="submitBtn">送出訂單 ✓</button>
         </div>
+        <input type="hidden" name="CouponId" id="couponIdInput" value="" />
     </form>
 </div>
 
@@ -481,6 +482,10 @@
         let original = 0;
         qtys.forEach((q, i) => { original += q * unitPrices[i]; });
 
+        // 數量改變時重新驗證優惠券
+        const couponId = document.getElementById('couponIdInput').value;
+        if (couponId) applyCoupon();  // 重新打 API 確認 MinSpend 是否仍符合
+
         const discount = parseInt(document.getElementById('discountAmount').value || 0);
         document.getElementById('originalAmount').textContent = original;
         document.getElementById('totalAmount').textContent    = original - discount;
@@ -491,26 +496,43 @@
         document.getElementById('emptyWarning').style.display  = hasItem ? 'none' : 'block';
     }
 
-    function applyCoupon() {
+    async function applyCoupon() {
         const code     = document.getElementById('couponInput').value.trim();
         const msg      = document.getElementById('couponMsg');
         const original = parseInt(document.getElementById('originalAmount').textContent);
 
-        if (code === 'DISCOUNT10') {
-            const discount = Math.floor(original * 0.1);
-            setDiscount(discount);
-            msg.className   = 'coupon-msg ok';
-            msg.textContent = '✅ 折扣 10% 已套用！';
-            msg.style.display = 'block';
-        } else if (code === '') {
+        if (!code) {
             setDiscount(0);
+            document.getElementById('couponIdInput').value = '';
             msg.style.display = 'none';
-        } else {
-            setDiscount(0);
-            msg.className   = 'coupon-msg err';
-            msg.textContent = '❌ 折扣碼無效';
-            msg.style.display = 'block';
+            return;
         }
+
+        msg.className   = 'coupon-msg';
+        msg.textContent = '驗證中...';
+        msg.style.display = 'block';
+
+        try {
+            const res  = await fetch(`/PreOrders/ValidateCoupon?code=${encodeURIComponent(code)}&originalAmount=${original}`);
+            const data = await res.json();
+
+            if (data.isValid) {
+                setDiscount(data.discount);
+                document.getElementById('couponIdInput').value = data.couponId;
+                msg.className   = 'coupon-msg ok';
+                msg.textContent = data.message;
+            } else {
+                setDiscount(0);
+                document.getElementById('couponIdInput').value = '';
+                msg.className   = 'coupon-msg err';
+                msg.textContent = '❌ ' + data.message;
+            }
+        } catch {
+            msg.className   = 'coupon-msg err';
+            msg.textContent = '❌ 驗證失敗，請稍後再試';
+        }
+
+        msg.style.display = 'block';
     }
 
     function setDiscount(amount) {
@@ -520,7 +542,7 @@
         document.getElementById('totalAmount').textContent     = original - amount;
     }
 
-        function setPayMethod(method) {
+    function setPayMethod(method) {
         document.getElementById('payMethodInput').value = method;
         ['Cash', 'Card', 'Other'].forEach(m => {
             document.getElementById('pay-' + m).classList.toggle('active', m === method);
