@@ -1,8 +1,12 @@
 using EatTogether.Models.EfModels;
 using EatTogether.Models.Extensions;
+using EatTogether.Models.Infra;
 using EatTogether.Models.Repositories;
 using EatTogether.Models.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace EatTogether
 {
@@ -19,8 +23,41 @@ namespace EatTogether
 			builder.Services.AddDbContext<EatTogetherDBContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+			// 新增 JWT Authentication
+			var jwtSettings = builder.Configuration.GetSection("Jwt");
+			var secretKey = jwtSettings["SecretKey"]!;
 
-        
+			builder.Services.AddAuthentication(options =>
+			{
+				options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+				options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+			})
+			.AddJwtBearer(options =>
+			{
+				// 從 httpOnly Cookie 讀取 Token
+				options.Events = new JwtBearerEvents
+				{
+					OnMessageReceived = ctx =>
+					{
+						ctx.Token = ctx.Request.Cookies["jwt"];
+						return Task.CompletedTask;
+					}
+				};
+
+				options.TokenValidationParameters = new TokenValidationParameters
+				{
+					ValidateIssuer = true,
+					ValidateAudience = true,
+					ValidateLifetime = true,
+					ValidateIssuerSigningKey = true,
+					ValidIssuer = jwtSettings["Issuer"],
+					ValidAudience = jwtSettings["Audience"],
+					IssuerSigningKey = new SymmetricSecurityKey(
+												  Encoding.UTF8.GetBytes(secretKey)),
+					ClockSkew = TimeSpan.Zero
+				};
+			});
+
 			// 註冊Repository
 			builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 			builder.Services.AddScoped<IDishRepository, DishRepository>();
@@ -41,19 +78,34 @@ namespace EatTogether
             builder.Services.AddScoped<TableService>();
             builder.Services.AddScoped<ReservationService>();
             builder.Services.AddScoped<CouponService>();
+            builder.Services.AddScoped<ReservationEmailService>();
+            builder.Services.AddScoped<BirthdayCouponService>();
+            builder.Services.AddHostedService<BirthdayCouponBackgroundService>();
+            builder.Services.AddHostedService<CouponNotifyBackgroundService>();
 
-            // 欣柔註冊
-            builder.Services.AddScoped<IOrderService, OrderService>();
+			builder.Services.AddScoped<IUserRepository, UserRepository>();
+			builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+			builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+			builder.Services.AddScoped<IFunctionRepository, FunctionRepository>();
+			builder.Services.AddScoped<IMemberRepository, MemberRepository>();
+			builder.Services.AddScoped<IAuthService, AuthService>();
+			builder.Services.AddScoped<IUserService, UserService>();
+			builder.Services.AddScoped<IRoleService, RoleService>();
+			builder.Services.AddScoped<IMemberService, MemberService>();
+			builder.Services.AddScoped<IPasswordResetEmailService, PasswordResetEmailService>();
+
+			// 欣柔註冊
+			builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddScoped<IPreOrderRepository, PreOrderRepository>();
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
-            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-            builder.Services.AddScoped<CouponService>(); ;
-            
+            builder.Services.AddScoped<IOrderRepository, OrderRepository>();           
 
 			builder.Services.AddScoped<IEventRepository, EventRepository>();
 			builder.Services.AddScoped<EventService>();
 
-
+			// 註冊 Infra（需要 DI 的才註冊）
+			builder.Services.AddScoped<JwtHelper>();
+			builder.Services.AddScoped<UserNumberGenerator>();
 
 			var app = builder.Build();
 
@@ -69,16 +121,22 @@ namespace EatTogether
 			if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
+				// The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+				app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
+			// 全域錯誤頁路由
+			app.UseStatusCodePagesWithReExecute("/Error/{0}");
+
+			app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
 
-            app.UseAuthorization();
+			// 新增 Authentication 在 Authorization 之前
+			app.UseAuthentication();
+
+			app.UseAuthorization();
 
             app.MapControllerRoute(
                 name: "default",

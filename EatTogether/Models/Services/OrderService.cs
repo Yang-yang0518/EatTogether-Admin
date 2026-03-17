@@ -273,7 +273,7 @@ namespace EatTogether.Models.Services
                 PreOrderId = p.Id,
                 OrderNumber = p.OrderNumber,
                 InOrOut = p.InOrOut,
-                TableName = p.Table != null ? p.Table.TableName : "外帶",
+                TableName = p.Table?.TableName ?? "",
                 UserName = p.User != null ? p.User.Name : null,
                 MemberName = p.Member != null ? MaskName(p.Member.Name) : "訪客",
                 OrderAt = p.OrderAt,
