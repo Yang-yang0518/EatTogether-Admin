@@ -82,6 +82,22 @@ namespace EatTogether.Models.Repositories
             coupon.LimitCount = (coupon.LimitCount ?? 0) + amount;
             await _context.SaveChangesAsync();
         }
+
+        public async Task DisableAsync(int id)
+        {
+            var coupon = await _context.Coupons.FindAsync(id);
+            if (coupon == null) return;
+            coupon.IsDisabled = true;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task EnableAsync(int id)
+        {
+            var coupon = await _context.Coupons.FindAsync(id);
+            if (coupon == null) return;
+            coupon.IsDisabled = false;
+            await _context.SaveChangesAsync();
+        }
     }
 
     public class MemberCouponRepository : IMemberCouponRepository
@@ -112,7 +128,8 @@ namespace EatTogether.Models.Repositories
                     DiscountValue = mc.Coupon.DiscountValue,
                     EndDate = mc.Coupon.EndDate,
                     IsUsed = mc.IsUsed,
-                    UsedDate = mc.UsedDate
+                    UsedDate = mc.UsedDate,
+                    ClaimedAt = mc.ClaimedAt
                 })
                 .ToListAsync();
         }
@@ -139,7 +156,8 @@ namespace EatTogether.Models.Repositories
                 DiscountValue = mc.Coupon.DiscountValue,
                 EndDate = mc.Coupon.EndDate,
                 IsUsed = mc.IsUsed,
-                UsedDate = mc.UsedDate
+                UsedDate = mc.UsedDate,
+                ClaimedAt = mc.ClaimedAt
             };
         }
 
@@ -162,7 +180,8 @@ namespace EatTogether.Models.Repositories
                     DiscountValue = mc.Coupon.DiscountValue,
                     EndDate = mc.Coupon.EndDate,
                     IsUsed = mc.IsUsed,
-                    UsedDate = mc.UsedDate
+                    UsedDate = mc.UsedDate,
+                    ClaimedAt = mc.ClaimedAt
                 })
                 .ToListAsync();
         }
@@ -173,7 +192,8 @@ namespace EatTogether.Models.Repositories
             {
                 MemberId = memberId,
                 CouponId = couponId,
-                IsUsed = false
+                IsUsed = false,
+                ClaimedAt = DateTime.Now
             };
             _context.MemberCoupons.Add(mc);
             await _context.SaveChangesAsync();

@@ -68,7 +68,8 @@ namespace EatTogether.Controllers
                 StatusText = dto.StatusText,
                 StatusBadgeClass = dto.StatusBadgeClass,
                 StartDate = dto.StartDate,
-                EndDate = dto.EndDate
+                EndDate = dto.EndDate,
+                IsDisabled = dto.IsDisabled
             };
             return View(vm);
         }
@@ -100,6 +101,36 @@ namespace EatTogether.Controllers
         {
             var dtos = await _couponService.GetAllMemberCouponsAsync();
             return View(dtos);
+        }
+
+        // POST: /Coupons/IssueToAll/5（一鍵發放給全會員）
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> IssueToAll(int id)
+        {
+            var (issued, skipped) = await _couponService.IssueToAllMembersAsync(id);
+            TempData["SuccessMessage"] = $"發放完成！新增 {issued} 筆，跳過（已領） {skipped} 筆";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: /Coupons/Disable/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Disable(int id)
+        {
+            var result = await _couponService.DisableAsync(id);
+            TempData["SuccessMessage"] = result.IsSuccess ? "優惠券已停用" : result.ErrorMesssage;
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: /Coupons/Enable/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Enable(int id)
+        {
+            var result = await _couponService.EnableAsync(id);
+            TempData["SuccessMessage"] = result.IsSuccess ? "優惠券已重新啟用" : result.ErrorMesssage;
+            return RedirectToAction(nameof(Index));
         }
 
         // POST: /Coupons/ApplyCoupon  (AJAX，供結帳頁呼叫)
