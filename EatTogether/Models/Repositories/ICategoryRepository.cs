@@ -6,10 +6,16 @@ namespace EatTogether.Models.Repositories
     public interface ICategoryRepository
         {
             Task<IEnumerable<CategoryDto>> GetAllAsync();
+            Task<IEnumerable<CategoryDto>> GetAllActiveAsync();
             Task<CategoryDto?> GetByIdAsync(int id);
             Task CreateAsync(CategoryDto dto);
             Task UpdateAsync(CategoryDto dto);
             Task SoftDeleteAsync(int id);
+            Task BatchSoftDeleteAsync(IEnumerable<int> ids);
+            Task EnableAsync(int id);
+            Task BatchEnableAsync(IEnumerable<int> ids);
+            Task DeleteAsync(int id);
+            Task BatchDeleteAsync(IEnumerable<int> ids);
         }
     
 }

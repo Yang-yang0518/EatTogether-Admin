@@ -7,6 +7,7 @@
         public string PayMethod { get; set; }
         public string? Note { get; set; }
         public int DiscountAmount { get; set; }
+        public int? CouponId { get; set; }
         public List<PreOrderDetailDto> Items { get; set; } = new();
     }
 }

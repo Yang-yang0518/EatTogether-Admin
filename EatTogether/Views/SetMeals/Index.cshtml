@@ -13,7 +13,7 @@
     <!-- 統計卡片 -->
     <div class="row mb-4">
         <div class="col-xl-4 col-md-4">
-            <div class="card bg-primary text-white mb-4 shadow-sm border-0">
+            <div class="card bg-primary text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('')" title="點擊顯示所有套餐">
                 <div class="card-body d-flex align-items-center">
                     <div class="flex-grow-1">
                         <div class="small text-white-50 fw-bold">總套餐數</div>
@@ -24,7 +24,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-md-4">
-            <div class="card bg-success text-white mb-4 shadow-sm border-0">
+            <div class="card bg-success text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('熱烈供應中')" title="點擊篩選供應中套餐">
                 <div class="card-body d-flex align-items-center">
                     <div class="flex-grow-1">
                         <div class="small text-white-50 fw-bold">啟用中</div>
@@ -35,7 +35,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-md-4">
-            <div class="card bg-secondary text-white mb-4 shadow-sm border-0">
+            <div class="card bg-secondary text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('已停用')" title="點擊篩選已停用套餐">
                 <div class="card-body d-flex align-items-center">
                     <div class="flex-grow-1">
                         <div class="small text-white-50 fw-bold">已停用</div>
@@ -50,17 +50,17 @@
     <div id="alertBox"></div>
 
     <!-- 搜尋與篩選區 -->
-    <div class="card mb-4 shadow-sm border-0">
+    <div class="card mb-3 shadow-sm border-0">
         <div class="card-body bg-light rounded">
-            <div class="row g-3">
-                <div class="col-md-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-xl-3 col-lg-3 col-md-4">
                     <div class="input-group shadow-sm">
                         <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text" id="searchInput" class="form-control border-start-0" 
+                        <input type="text" id="searchInput" class="form-control border-start-0"
                                placeholder="搜尋套餐名稱..." oninput="filterCards()" />
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-xl-3 col-lg-2 col-md-4">
                     <select id="statusFilter" class="form-select shadow-sm" onchange="filterCards()">
                         <option value="">所有狀態</option>
                         <option value="熱烈供應中">供應中</option>
@@ -70,18 +70,77 @@
                         <option value="活動結束">活動結束</option>
                     </select>
                 </div>
-                <div class="col-md-5 text-end">
-                    <a asp-action="Create" class="btn btn-primary shadow-sm px-4 rounded-pill">
-                        <i class="fas fa-plus me-1"></i>新增套餐
-                    </a>
+
+                <!-- 【新功能】排序模式切換 -->
+                <div class="col-xl-2 col-lg-2 col-md-4">
+                    <button id="toggleSortBtn" class="btn btn-outline-secondary w-100 shadow-sm" onclick="toggleSortMode()">
+                        <i class="fas fa-arrows-alt me-1"></i>調整排序
+                    </button>
+                </div>
+
+                <div class="col-xl-4 col-lg-5 col-md-12">
+                    <div class="d-flex justify-content-md-end align-items-center gap-2">
+                        <nav id="topPaginationWrapper" class="d-none d-lg-block">
+                            <ul class="pagination pagination-sm mb-0 shadow-sm" id="topPagination"></ul>
+                        </nav>
+                        <a asp-action="Create" class="btn btn-primary shadow-sm px-4 rounded-pill text-nowrap">
+                            <i class="fas fa-plus me-1"></i>新增套餐
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- 【新功能】排序模式提示列 -->
+    <div id="sortModeBar" class="alert alert-warning border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3" role="alert">
+        <i class="fas fa-hand-paper fa-lg"></i>
+        <span class="flex-grow-1 fw-bold">排序模式：拖曳卡片來調整顯示順序</span>
+        <button class="btn btn-sm btn-warning px-3 rounded-pill" onclick="saveOrder()">
+            <i class="fas fa-save me-1"></i>儲存排序
+        </button>
+        <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="toggleSortMode()">
+            取消
+        </button>
+    </div>
+
+    <!-- 【新功能】批次操作列 -->
+    <div id="batchBar" class="alert alert-info border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3 flex-wrap" role="alert">
+        <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="selectAllCheck" onchange="toggleSelectAll(this.checked)">
+            <label class="form-check-label fw-bold" for="selectAllCheck">全選</label>
+        </div>
+        <span class="text-muted">已選 <strong id="selectedCount">0</strong> 筆</span>
+        <div class="ms-auto d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="batchEnable()">
+                <i class="fas fa-check-circle me-1"></i>批次啟用
+            </button>
+            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="batchDisable()">
+                <i class="fas fa-power-off me-1"></i>批次停用
+            </button>
+            <button class="btn btn-sm btn-danger rounded-pill px-3" onclick="batchDelete()">
+                <i class="fas fa-trash me-1"></i>批次刪除
+            </button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="exitBatchMode()">
+                取消
+            </button>
+        </div>
+    </div>
+
     <div class="card mb-4 shadow-sm border-0">
-        <!-- 移除原本內部的搜尋列 -->
         <div class="card-body p-4">
+
+            <!-- 操作模式切換按鈕（卡片區上方） -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <span id="modeHint">點擊「調整排序」可拖曳卡片；點擊「批次操作」可多選</span>
+                </small>
+                <button id="batchModeBtn" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="enterBatchMode()">
+                    <i class="fas fa-tasks me-1"></i>批次操作
+                </button>
+            </div>
+
             <!-- 套餐卡片區 -->
             <div class="row g-4" id="setmeal-card-container">
                 @foreach (var item in Model)
@@ -91,35 +150,62 @@
                     var currentTime = TimeOnly.FromDateTime(now);
 
                     bool isDateValid = (!item.StartDate.HasValue || item.StartDate <= today) &&
-                                       (!item.EndDate.HasValue || item.EndDate >= today);
+                    (!item.EndDate.HasValue || item.EndDate >= today);
 
                     bool isTimeValid = (!item.StartTime.HasValue || item.StartTime <= currentTime) &&
-                                       (!item.EndTime.HasValue || item.EndTime >= currentTime);
+                    (!item.EndTime.HasValue || item.EndTime >= currentTime);
 
                     string statusText;
                     string statusClass;
 
-                    if (!item.IsActive) {
+                    if (!item.IsActive)
+                    {
                         statusText = "已停用";
                         statusClass = "bg-secondary-subtle text-secondary border-secondary";
-                    } else if (item.StartDate.HasValue && item.StartDate > today) {
+                    }
+                    else if (item.StartDate.HasValue && item.StartDate > today)
+                    {
                         statusText = "即將開始";
                         statusClass = "bg-info-subtle text-info border-info";
-                    } else if (item.EndDate.HasValue && item.EndDate < today) {
+                    }
+                    else if (item.EndDate.HasValue && item.EndDate < today)
+                    {
                         statusText = "活動結束";
                         statusClass = "bg-danger-subtle text-danger border-danger";
-                    } else if (!isTimeValid) {
+                    }
+                    else if (!isTimeValid)
+                    {
                         statusText = "非供應時段";
                         statusClass = "bg-warning-subtle text-warning-emphasis border-warning";
-                    } else {
+                    }
+                    else
+                    {
                         statusText = "熱烈供應中";
                         statusClass = "bg-success-subtle text-success border-success";
                     }
 
                     <div class="col-md-6 col-lg-4 col-xl-3 setmeal-card"
+                         data-id="@item.Id"
                          data-name="@item.SetMealName.ToLower()"
-                         data-order="@item.DisplayOrder">
-                        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden transition-hover">
+                         data-order="@item.DisplayOrder"
+                         data-active="@item.IsActive.ToString().ToLower()">
+                        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden transition-hover position-relative">
+
+                            <!-- 【新功能】批次勾選框 -->
+                            <div class="batch-check position-absolute top-0 start-0 p-2 d-none" style="z-index:10;">
+                                <div class="form-check">
+                                    <input class="form-check-input card-checkbox shadow" type="checkbox"
+                                           data-id="@item.Id" onchange="updateSelectedCount()">
+                                </div>
+                            </div>
+
+                            <!-- 【新功能】排序拖曳把手 -->
+                            <div class="drag-handle position-absolute top-0 start-0 p-2 d-none" style="z-index:10; cursor:grab;">
+                                <span class="badge bg-dark bg-opacity-60 p-2 rounded-2 shadow-sm">
+                                    <i class="fas fa-grip-vertical"></i>
+                                </span>
+                            </div>
+
                             <div class="position-relative">
                                 @if (!string.IsNullOrEmpty(item.ImageUrl))
                                 {
@@ -143,12 +229,12 @@
                                     </div>
                                 }
                             </div>
-                            
+
                             <div class="card-body d-flex flex-column p-4">
                                 <div class="mb-2">
                                     <h5 class="fw-bold mb-1 text-dark">@item.SetMealName</h5>
                                     <div class="d-flex align-items-center gap-2">
-                                        <span class="text-danger fw-bold fs-5">$@(item.SetPrice.HasValue ? item.SetPrice.Value.ToString("N0") : "0")</span>
+                                        <span class="text-danger fw-bold fs-5">$@(item.SetPrice.HasValue? item.SetPrice.Value.ToString("N0") : "0")</span>
                                         @if (item.DiscountValue > 0)
                                         {
                                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">
@@ -162,14 +248,14 @@
                                 <p class="text-muted small mb-3 text-truncate-2" style="height: 40px; line-height: 1.4;">
                                     @item.Description
                                 </p>
-                                
+
                                 <div class="bg-primary-subtle bg-opacity-10 rounded-4 p-3 mb-4 border border-primary border-opacity-10">
                                     <div class="d-flex align-items-center mb-2 text-primary-emphasis">
                                         <i class="fas fa-ticket-alt me-2 small"></i>
                                         <span class="small fw-bold">優惠券可用：</span>
                                         <span class="ms-auto small">@(item.IsActive ? "啟用中" : "未啟用")</span>
                                     </div>
-                                    
+
                                     @if (item.StartDate.HasValue || item.EndDate.HasValue)
                                     {
                                         <div class="d-flex align-items-start mb-2 text-muted">
@@ -180,7 +266,7 @@
                                             </div>
                                         </div>
                                     }
-                                    
+
                                     @if (item.StartTime.HasValue || item.EndTime.HasValue)
                                     {
                                         <div class="d-flex align-items-start text-muted">
@@ -216,12 +302,29 @@
                                                 </button>
                                             </div>
                                         }
+                                        else
+                                        {
+                                            <!-- 【新功能】已停用的套餐顯示「重新上架」 -->
+                                            <div class="col-12 mt-2">
+                                                <button class="btn btn-light text-success w-100 rounded-pill btn-sm py-2 border"
+                                                        onclick="enableSetMeal(@item.Id)">
+                                                    <i class="fas fa-check-circle me-1"></i>重新上架
+                                                </button>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 }
+            </div>
+
+            <!-- 空狀態提示 -->
+            <div id="emptyState" class="text-center py-5 d-none">
+                <i class="fas fa-search fa-3x text-muted opacity-25 mb-3"></i>
+                <p class="text-muted">沒有符合條件的套餐</p>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="clearFilter()">清除篩選</button>
             </div>
 
             <!-- 分頁 -->
@@ -233,9 +336,9 @@
     </div>
 </div>
 
-<!-- 查看餐點 Modal -->
+<!-- ===== 查看餐點 Modal ===== -->
 <div class="modal fade" id="viewSetMealItemsModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-bottom">
                 <h5 class="modal-title fw-bold">
@@ -244,7 +347,20 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="viewSetMealItemsSummary"></div>
+            <div class="modal-body">
+                <!-- 【新功能】圖片 URL 即時預覽區 -->
+                <div id="detailImageWrap" class="mb-4 d-none">
+                    <img id="detailImage" src="" alt="套餐圖片"
+                         class="w-100 rounded-3 shadow-sm"
+                         style="max-height:240px; object-fit:cover;"
+                         onerror="this.closest('#detailImageWrap').classList.add('d-none')" />
+                </div>
+
+                <!-- 套餐基本資訊 -->
+                <div id="detailMeta" class="mb-3 p-3 bg-light rounded-3 small"></div>
+
+                <div id="viewSetMealItemsSummary"></div>
+            </div>
             <div class="modal-footer border-0">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
             </div>
@@ -252,141 +368,520 @@
     </div>
 </div>
 
+@section Styles {
+    <style>
+        .stat-card {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+            }
+
+        .transition-hover {
+            transition: all 0.3s ease;
+        }
+
+        /* ── 排序模式 ── */
+        #setmeal-card-container.sort-mode .setmeal-card .card {
+            border: 2px dashed #ffc107 !important;
+            cursor: grab;
+        }
+
+            #setmeal-card-container.sort-mode .setmeal-card .card:active {
+                cursor: grabbing;
+            }
+
+        #setmeal-card-container.sort-mode .drag-handle {
+            display: block !important;
+        }
+
+        #setmeal-card-container.sort-mode .batch-check {
+            display: none !important;
+        }
+
+        /* SortableJS 拖曳中的樣式 */
+        .sortable-ghost .card {
+            opacity: 0.35;
+            background: #e0f0ff !important;
+        }
+
+        .sortable-chosen .card {
+            box-shadow: 0 8px 24px rgba(0,0,0,.2) !important;
+            transform: rotate(1.5deg) scale(1.02);
+        }
+
+        /* ── 批次模式 ── */
+        #setmeal-card-container.batch-mode .batch-check {
+            display: block !important;
+        }
+
+        #setmeal-card-container.batch-mode .drag-handle {
+            display: none !important;
+        }
+
+        #setmeal-card-container.batch-mode .setmeal-card .card {
+            cursor: pointer;
+        }
+
+        #setmeal-card-container.batch-mode .setmeal-card.selected .card {
+            border: 2px solid #0d6efd !important;
+            box-shadow: 0 0 0 3px rgba(13,110,253,.18) !important;
+        }
+
+        /* 勾選框放大一點好點擊 */
+        .card-checkbox {
+            width: 1.2em;
+            height: 1.2em;
+            cursor: pointer;
+        }
+    </style>
+}
+
 @section Scripts {
+    <!-- SortableJS（排序拖曳） -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script>
+        /* ════════════════════════════════════════
+           基礎變數
+        ════════════════════════════════════════ */
         const PAGE_SIZE = 12;
         let currentPage = 1;
         let filteredCards = [];
+        let sortableInstance = null;
+        let isSortMode  = false;
+        let isBatchMode = false;
+
         const allSetMeals = @Html.Raw(Json.Serialize(Model));
 
-        function filterCards() {
+        /* ════════════════════════════════════════
+           搜尋 / 篩選 / 分頁（原有功能）
+        ════════════════════════════════════════ */
+        function filterCards(resetPage = true) {
             const search = document.getElementById("searchInput").value.toLowerCase();
             const status = document.getElementById("statusFilter").value;
 
+            sessionStorage.setItem("setmeal_search", search);
+            sessionStorage.setItem("setmeal_status", status);
+
             filteredCards = Array.from(document.querySelectorAll(".setmeal-card")).filter(card => {
                 const matchSearch = !search || card.dataset.name.includes(search);
-                
                 let matchStatus = true;
                 if (status) {
-                    const statusBadge = card.querySelector(".badge.rounded-pill");
-                    const statusText = statusBadge ? statusBadge.textContent.trim() : "";
-                    matchStatus = (statusText === status);
+                    const badge = card.querySelector(".badge.rounded-pill");
+                    matchStatus = badge && badge.textContent.trim() === status;
                 }
-
                 return matchSearch && matchStatus;
             });
 
             filteredCards.sort((a, b) => parseInt(a.dataset.order) - parseInt(b.dataset.order));
-
-            currentPage = 1;
+            if (resetPage) currentPage = 1;
             renderPage();
+        }
+
+        function filterByStatus(status) {
+            document.getElementById("statusFilter").value = status;
+            filterCards();
+            document.getElementById("setmeal-card-container").scrollIntoView({ behavior: 'smooth', block: 'start' });
+            showAlert("info", `已篩選：${status === "" ? "所有" : status} 套餐`);
+        }
+
+        function clearFilter() {
+            document.getElementById("searchInput").value = "";
+            document.getElementById("statusFilter").value = "";
+            filterCards();
         }
 
         function renderPage() {
             const allCards = Array.from(document.querySelectorAll(".setmeal-card"));
-
             allCards.forEach(c => c.style.display = "none");
 
+            sessionStorage.setItem("setmeal_currentPage", currentPage);
+
             const start = (currentPage - 1) * PAGE_SIZE;
-            const end = start + PAGE_SIZE;
+            const end   = start + PAGE_SIZE;
             filteredCards.slice(start, end).forEach(c => c.style.display = "");
 
-            const total = filteredCards.length;
+            const total      = filteredCards.length;
             const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
 
-            const pageInfoElement = document.getElementById("pageInfo");
-            if (pageInfoElement) {
-                pageInfoElement.textContent =
-                    `顯示第 ${total === 0 ? 0 : start + 1} 至 ${Math.min(end, total)} 筆，共 ${total} 筆記錄`;
+            // 空狀態
+            document.getElementById("emptyState").classList.toggle("d-none", total > 0);
+
+            const pageInfo = document.getElementById("pageInfo");
+            if (pageInfo) {
+                pageInfo.textContent = total === 0
+                    ? "沒有符合條件的記錄"
+                    : `顯示第 ${start + 1} 至 ${Math.min(end, total)} 筆，共 ${total} 筆記錄`;
             }
 
-            const paginationElement = document.getElementById("pagination");
-            if (paginationElement) {
-                paginationElement.innerHTML = "";
+            renderPaginationButtons("pagination", totalPages);
+            renderPaginationButtons("topPagination", totalPages);
+            
+            // 如果只有一頁且是第一頁，隱藏上方分頁以節省空間
+            document.getElementById("topPaginationWrapper").classList.toggle("d-none", totalPages <= 1);
+        }
 
-                for (let i = 1; i <= totalPages; i++) {
-                    const li = document.createElement("li");
-                    li.className = `page-item ${i === currentPage ? "active" : ""}`;
-                    li.innerHTML = `<button type="button" class="page-link" onclick="goToPage(${i})">${i}</button>`;
-                    paginationElement.appendChild(li);
-                }
+        function renderPaginationButtons(elementId, totalPages) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+            
+            container.innerHTML = "";
+            
+            const prevLi = document.createElement("li");
+            prevLi.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
+            prevLi.innerHTML = `<button type="button" class="page-link shadow-none" onclick="goToPage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+            container.appendChild(prevLi);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const li = document.createElement("li");
+                li.className = `page-item ${i === currentPage ? "active" : ""}`;
+                li.innerHTML = `<button type="button" class="page-link" onclick="goToPage(${i})">${i}</button>`;
+                container.appendChild(li);
             }
+
+            const nextLi = document.createElement("li");
+            nextLi.className = `page-item ${currentPage === totalPages ? "disabled" : ""}`;
+            nextLi.innerHTML = `<button type="button" class="page-link shadow-none" onclick="goToPage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+            container.appendChild(nextLi);
         }
 
         function goToPage(page) {
+            const totalPages = Math.ceil(filteredCards.length / PAGE_SIZE) || 1;
+            if (page < 1 || page > totalPages) return;
             currentPage = page;
             renderPage();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        async function disableSetMeal(id) {
-            if (!confirm("確定要停用此套餐嗎？")) return;
+        /* ════════════════════════════════════════
+           【新功能①】排序拖曳
+        ════════════════════════════════════════ */
+        function toggleSortMode() {
+            if (isBatchMode) exitBatchMode();
+
+            isSortMode = !isSortMode;
+            const container = document.getElementById("setmeal-card-container");
+            const bar       = document.getElementById("sortModeBar");
+            const btn       = document.getElementById("toggleSortBtn");
+
+            if (isSortMode) {
+                container.classList.add("sort-mode");
+                bar.classList.remove("d-none");
+                btn.classList.replace("btn-outline-secondary", "btn-warning");
+                btn.innerHTML = '<i class="fas fa-times me-1"></i>取消排序';
+
+                // 初始化 SortableJS
+                sortableInstance = Sortable.create(container, {
+                    animation: 180,
+                    ghostClass: "sortable-ghost",
+                    chosenClass: "sortable-chosen",
+                    handle: ".drag-handle",   // 只能從把手拖
+                    draggable: ".setmeal-card",
+                    onEnd: updateOrderBadges
+                });
+            } else {
+                container.classList.remove("sort-mode");
+                bar.classList.add("d-none");
+                btn.classList.replace("btn-warning", "btn-outline-secondary");
+                btn.innerHTML = '<i class="fas fa-arrows-alt me-1"></i>調整排序';
+
+                if (sortableInstance) { sortableInstance.destroy(); sortableInstance = null; }
+            }
+        }
+
+        function updateOrderBadges() {
+            // 拖曳後更新各卡片的 data-order（視覺用），實際順序以 DOM 位置為準
+            document.querySelectorAll(".setmeal-card").forEach((card, idx) => {
+                card.dataset.order = idx + 1;
+            });
+        }
+
+        async function saveOrder() {
+            const ids = Array.from(document.querySelectorAll(".setmeal-card"))
+                             .map(c => parseInt(c.dataset.id));
 
             try {
-                const res = await fetch(`/SetMeals/Disable/${id}`, { method: "POST" });
+                const res = await fetch("/SetMeals/UpdateOrder", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ orderedIds: ids })
+                });
 
                 if (res.ok) {
-                    showAlert("success", "停用成功");
-                    setTimeout(() => location.reload(), 1000);
+                    showAlert("success", "排序已儲存 ✓");
+                    toggleSortMode();
                 } else {
-                    showAlert("danger", "停用失敗，請稍後再試");
+                    showAlert("danger", "儲存失敗，請稍後再試");
                 }
-            } catch (error) {
+            } catch {
                 showAlert("danger", "發生錯誤，請稍後再試");
             }
         }
 
+        /* ════════════════════════════════════════
+           【新功能②】批次操作
+        ════════════════════════════════════════ */
+        function enterBatchMode() {
+            if (isSortMode) toggleSortMode();
+
+            isBatchMode = true;
+            const container = document.getElementById("setmeal-card-container");
+            container.classList.add("batch-mode");
+            document.getElementById("batchBar").classList.remove("d-none");
+            document.getElementById("batchModeBtn").classList.add("d-none");
+
+            // 卡片點擊 = 勾選
+            document.querySelectorAll(".setmeal-card").forEach(card => {
+                card.addEventListener("click", onCardClick);
+            });
+        }
+
+        function exitBatchMode() {
+            isBatchMode = false;
+            const container = document.getElementById("setmeal-card-container");
+            container.classList.remove("batch-mode");
+            document.getElementById("batchBar").classList.add("d-none");
+            document.getElementById("batchModeBtn").classList.remove("d-none");
+            document.getElementById("selectAllCheck").checked = false;
+
+            // 清除勾選
+            document.querySelectorAll(".card-checkbox").forEach(cb => cb.checked = false);
+            document.querySelectorAll(".setmeal-card.selected").forEach(c => c.classList.remove("selected"));
+            document.getElementById("selectedCount").textContent = "0";
+
+            document.querySelectorAll(".setmeal-card").forEach(card => {
+                card.removeEventListener("click", onCardClick);
+            });
+        }
+
+        function onCardClick(e) {
+            // 若點到按鈕或連結不觸發
+            if (e.target.closest("a, button")) return;
+            const cb = this.querySelector(".card-checkbox");
+            cb.checked = !cb.checked;
+            this.classList.toggle("selected", cb.checked);
+            updateSelectedCount();
+        }
+
+        function toggleSelectAll(checked) {
+            document.querySelectorAll(".setmeal-card").forEach(card => {
+                if (card.style.display === "none") return; // 只選可見的
+                const cb = card.querySelector(".card-checkbox");
+                cb.checked = checked;
+                card.classList.toggle("selected", checked);
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const count = document.querySelectorAll(".card-checkbox:checked").length;
+            document.getElementById("selectedCount").textContent = count;
+
+            // 同步「全選」狀態
+            const visibleCbs = Array.from(document.querySelectorAll(".setmeal-card:not([style*='display: none']) .card-checkbox"));
+            document.getElementById("selectAllCheck").checked =
+                visibleCbs.length > 0 && visibleCbs.every(cb => cb.checked);
+        }
+
+        function getSelectedIds() {
+            return Array.from(document.querySelectorAll(".card-checkbox:checked"))
+                        .map(cb => parseInt(cb.dataset.id));
+        }
+
+        async function batchEnable() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) { showAlert("warning", "請先勾選要啟用的套餐"); return; }
+            if (!confirm(`確定要重新上架這 ${ids.length} 個套餐嗎？`)) return;
+
+            try {
+                const res = await fetch("/SetMeals/BatchEnable", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ids })
+                });
+
+                if (res.ok) {
+                    showAlert("success", `已重新上架 ${ids.length} 個套餐`);
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert("danger", "批次啟用失敗，請稍後再試");
+                }
+            } catch {
+                showAlert("danger", "發生錯誤，請稍後再試");
+            }
+        }
+
+        async function batchDisable() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) { showAlert("warning", "請先勾選要停用的套餐"); return; }
+            if (!confirm(`確定要停用這 ${ids.length} 個套餐嗎？`)) return;
+
+            try {
+                const res = await fetch("/SetMeals/BatchDisable", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ids })
+                });
+
+                if (res.ok) {
+                    showAlert("success", `已停用 ${ids.length} 個套餐`);
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert("danger", "批次停用失敗，請稍後再試");
+                }
+            } catch {
+                showAlert("danger", "發生錯誤，請稍後再試");
+            }
+        }
+
+        async function batchDelete() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) { showAlert("warning", "請先勾選要刪除的套餐"); return; }
+            if (!confirm(`⚠️ 確定要永久刪除這 ${ids.length} 個套餐嗎？此操作無法還原！`)) return;
+
+            try {
+                const res = await fetch("/SetMeals/BatchDelete", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ids })
+                });
+
+                if (res.ok) {
+                    showAlert("success", `已刪除 ${ids.length} 個套餐`);
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert("danger", "批次刪除失敗，請稍後再試");
+                }
+            } catch {
+                showAlert("danger", "發生錯誤，請稍後再試");
+            }
+        }
+
+        /* ════════════════════════════════════════
+           停用 / 啟用（單筆，原有 + 新增啟用）
+        ════════════════════════════════════════ */
+        async function disableSetMeal(id) {
+            if (!confirm("確定要停用此套餐嗎？")) return;
+            try {
+                const res = await fetch(`/SetMeals/Disable/${id}`, { method: "POST" });
+                if (res.ok) { showAlert("success", "停用成功"); setTimeout(() => location.reload(), 1000); }
+                else showAlert("danger", "停用失敗，請稍後再試");
+            } catch { showAlert("danger", "發生錯誤，請稍後再試"); }
+        }
+
+        async function enableSetMeal(id) {
+            if (!confirm("確定要重新上架此套餐嗎？")) return;
+            try {
+                const res = await fetch(`/SetMeals/Enable/${id}`, { method: "POST" });
+                if (res.ok) { showAlert("success", "已重新上架"); setTimeout(() => location.reload(), 1000); }
+                else showAlert("danger", "上架失敗，請稍後再試");
+            } catch { showAlert("danger", "發生錯誤，請稍後再試"); }
+        }
+
+        /* ════════════════════════════════════════
+           Alert 提示
+        ════════════════════════════════════════ */
         function showAlert(type, message) {
-            document.getElementById("alertBox").innerHTML = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            const box = document.getElementById("alertBox");
+            box.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert">
                     ${message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>`;
+            // 3 秒後自動消失
+            setTimeout(() => {
+                const el = box.querySelector(".alert");
+                if (el) { el.classList.remove("show"); setTimeout(() => box.innerHTML = "", 400); }
+            }, 3000);
         }
 
+        /* ════════════════════════════════════════
+           【新功能③】詳情 Modal：圖片即時預覽 + 基本資訊
+        ════════════════════════════════════════ */
         function formatItemForDisplay(item) {
             let text = `${item.dishName} ($${item.dishPrice}) x${item.quantity}`;
-
             if (item.isOptional) {
-                // 只保留限選資訊
                 text += ` <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1">限選 ${item.pickLimit ?? ''}</span>`;
             } else {
                 text += ` <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-1">固定</span>`;
             }
-
             return text;
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            // Event listener for "查看餐點" buttons
+
+            /* ── 詳情按鈕 ── */
             document.querySelectorAll(".view-setmeal-items").forEach(button => {
                 button.addEventListener("click", function () {
                     const setMealId = parseInt(this.dataset.setmealId);
-                    const setMeal = allSetMeals.find(sm => sm.id === setMealId);
-
+                    const setMeal   = allSetMeals.find(sm => sm.id === setMealId);
                     if (!setMeal) return;
 
                     document.getElementById("viewSetMealName").textContent = setMeal.setMealName;
 
+                    // 【新功能③】圖片預覽
+                    const imgWrap = document.getElementById("detailImageWrap");
+                    const imgEl   = document.getElementById("detailImage");
+                    if (setMeal.imageUrl) {
+                        imgEl.src = setMeal.imageUrl;
+                        imgWrap.classList.remove("d-none");
+                    } else {
+                        imgWrap.classList.add("d-none");
+                        imgEl.src = "";
+                    }
+
+                    // 基本資訊列
+                    const metaEl = document.getElementById("detailMeta");
+                    const priceStr  = setMeal.setPrice != null ? `$${setMeal.setPrice.toLocaleString()}` : "未設定";
+                    const discount  = setMeal.discountValue > 0
+                        ? (setMeal.discountType === "percent"
+                            ? `${100 - setMeal.discountValue}折`
+                            : `現折 $${setMeal.discountValue}`)
+                        : "無折扣";
+                    const dateRange = (setMeal.startDate || setMeal.endDate)
+                        ? `${setMeal.startDate ?? "不限"} ～ ${setMeal.endDate ?? "不限"}`
+                        : "不限期";
+                    const timeRange = (setMeal.startTime || setMeal.endTime)
+                        ? `${setMeal.startTime ?? "不限"} ～ ${setMeal.endTime ?? "不限"}`
+                        : "全天";
+
+                    metaEl.innerHTML = `
+                        <div class="row g-2 text-center">
+                            <div class="col-6 col-md-3">
+                                <div class="text-muted mb-1">定價</div>
+                                <div class="fw-bold text-danger">${priceStr}</div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="text-muted mb-1">折扣</div>
+                                <div class="fw-bold">${discount}</div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="text-muted mb-1">供應期間</div>
+                                <div class="fw-bold small">${dateRange}</div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="text-muted mb-1">每日時段</div>
+                                <div class="fw-bold small">${timeRange}</div>
+                            </div>
+                        </div>`;
+
+                    // 餐點清單
                     const summaryContainer = document.getElementById("viewSetMealItemsSummary");
                     let summaryHtml = "";
 
                     if (setMeal.items && setMeal.items.length > 0) {
-                        // 將項目分為「固定」與「自選群組」
-                        const fixedItems = setMeal.items.filter(i => !i.isOptional);
+                        const fixedItems    = setMeal.items.filter(i => !i.isOptional);
                         const optionalGroups = {};
 
                         setMeal.items.filter(i => i.isOptional).forEach(item => {
-                            const categoryName = item.categoryName || "其他自選";
-                            if (!optionalGroups[categoryName]) {
-                                optionalGroups[categoryName] = {
-                                    items: [],
-                                    pickLimit: item.pickLimit
-                                };
-                            }
-                            optionalGroups[categoryName].items.push(item);
+                            const cat = item.categoryName || "其他自選";
+                            if (!optionalGroups[cat]) optionalGroups[cat] = { items: [], pickLimit: item.pickLimit };
+                            optionalGroups[cat].items.push(item);
                         });
 
-                        // 渲染固定項目
                         if (fixedItems.length > 0) {
                             summaryHtml += `<h6 class="fw-bold mt-2 text-dark-emphasis"><i class="fas fa-thumbtack me-2"></i>固定餐點</h6>`;
                             summaryHtml += `<ul class="list-group list-group-flush mb-4 rounded-3 border">`;
@@ -396,36 +891,38 @@
                             summaryHtml += `</ul>`;
                         }
 
-                        // 渲染自選群組 (按分類名稱)
                         for (const catName in optionalGroups) {
                             const group = optionalGroups[catName];
-                            summaryHtml += `<div class="mb-4">`;
-                            summaryHtml += `<div class="d-flex align-items-center mb-2">`;
-                            summaryHtml += `<h6 class="fw-bold mb-0 text-primary"><i class="fas fa-utensils me-2"></i>${catName}</h6>`;
-                            summaryHtml += `<span class="badge bg-primary ms-2">限選 ${group.pickLimit}</span>`;
-                            summaryHtml += `</div>`;
-                            summaryHtml += `<ul class="list-group list-group-flush rounded-3 border">`;
+                            summaryHtml += `<div class="mb-4">
+                                <div class="d-flex align-items-center mb-2">
+                                    <h6 class="fw-bold mb-0 text-primary"><i class="fas fa-utensils me-2"></i>${catName}</h6>
+                                    <span class="badge bg-primary ms-2">限選 ${group.pickLimit}</span>
+                                </div>
+                                <ul class="list-group list-group-flush rounded-3 border">`;
                             group.items.forEach(item => {
                                 summaryHtml += `<li class="list-group-item small py-2 border-light">${formatItemForDisplay(item)}</li>`;
                             });
-                            summaryHtml += `</ul>`;
-                            summaryHtml += `</div>`;
+                            summaryHtml += `</ul></div>`;
                         }
                     } else {
                         summaryHtml = `<div class="text-center py-4 text-muted"><i class="fas fa-info-circle me-2"></i>此套餐目前沒有包含任何餐點。</div>`;
                     }
 
                     summaryContainer.innerHTML = summaryHtml;
-
-                    const modal = new bootstrap.Modal(document.getElementById("viewSetMealItemsModal"));
-                    modal.show();
+                    new bootstrap.Modal(document.getElementById("viewSetMealItemsModal")).show();
                 });
             });
 
-            // 初始化分頁和過濾
-            filteredCards = Array.from(document.querySelectorAll(".setmeal-card"));
-            filteredCards.sort((a, b) => parseInt(a.dataset.order) - parseInt(b.dataset.order));
-            renderPage();
+            /* ── 初始化（恢復上次狀態） ── */
+            const savedSearch = sessionStorage.getItem("setmeal_search");
+            const savedStatus = sessionStorage.getItem("setmeal_status");
+            const savedPage   = sessionStorage.getItem("setmeal_currentPage");
+
+            if (savedSearch) document.getElementById("searchInput").value = savedSearch;
+            if (savedStatus) document.getElementById("statusFilter").value = savedStatus;
+            if (savedPage)   currentPage = parseInt(savedPage);
+
+            filterCards(false);
         });
     </script>
 }

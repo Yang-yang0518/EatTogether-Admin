@@ -7,8 +7,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
 
 <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Noto Sans TC', sans-serif; background: #f0f2f5; }
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: 'Noto Sans TC', sans-serif;
+        background: #f0f2f5;
+    }
 
     .page-wrap {
         max-width: 1100px;
@@ -36,7 +44,11 @@
         align-items: flex-end;
     }
 
-    .filter-group { display: flex; flex-direction: column; gap: 5px; }
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
 
     .filter-label {
         font-size: 0.78rem;
@@ -58,11 +70,17 @@
         background: #fff;
     }
 
-    .filter-select:focus, .filter-input:focus { border-color: #c0392b; }
+        .filter-select:focus, .filter-input:focus {
+            border-color: #c0392b;
+        }
 
-    .filter-input { width: 230px; }
+    .filter-input {
+        width: 230px;
+    }
 
-    .filter-input.date { width: 150px; }
+        .filter-input.date {
+            width: 150px;
+        }
 
     .btn-search {
         padding: 9px 24px;
@@ -78,7 +96,9 @@
         align-self: flex-end;
     }
 
-    .btn-search:hover { background: #a93226; }
+        .btn-search:hover {
+            background: #a93226;
+        }
 
     .btn-reset {
         padding: 9px 16px;
@@ -96,7 +116,10 @@
         display: inline-block;
     }
 
-    .btn-reset:hover { border-color: #aaa; color: #555; }
+        .btn-reset:hover {
+            border-color: #aaa;
+            color: #555;
+        }
 
     /* ── 狀態 Tab ── */
     .status-tabs {
@@ -119,12 +142,37 @@
         transition: all 0.15s;
     }
 
-    .status-tab:hover { border-color: #c0392b; color: #c0392b; }
+        .status-tab:hover {
+            border-color: #c0392b;
+            color: #c0392b;
+        }
 
-    .status-tab.active-all    { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
-    .status-tab.active-0      { border-color: #e67e22; background: #fef9f0; color: #e67e22; font-weight: 700; }
-    .status-tab.active-1      { border-color: #27ae60; background: #f0fff4; color: #27ae60; font-weight: 700; }
-    .status-tab.active-2      { border-color: #e74c3c; background: #fff5f5; color: #e74c3c; font-weight: 700; }
+        .status-tab.active-all {
+            border-color: #1a1a1a;
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .status-tab.active-0 {
+            border-color: #e67e22;
+            background: #fef9f0;
+            color: #e67e22;
+            font-weight: 700;
+        }
+
+        .status-tab.active-1 {
+            border-color: #27ae60;
+            background: #f0fff4;
+            color: #27ae60;
+            font-weight: 700;
+        }
+
+        .status-tab.active-2 {
+            border-color: #e74c3c;
+            background: #fff5f5;
+            color: #e74c3c;
+            font-weight: 700;
+        }
 
     /* ── 訂單表格 ── */
     .order-table-wrap {
@@ -140,32 +188,43 @@
         border-collapse: collapse;
     }
 
-    .order-table th {
-        padding: 13px 16px;
-        background: #f8f9fa;
-        font-size: 0.8rem;
-        color: #999;
-        text-align: left;
+        .order-table th {
+            padding: 13px 16px;
+            background: #f8f9fa;
+            font-size: 0.8rem;
+            color: #999;
+            text-align: left;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #f0f0f0;
+            white-space: nowrap;
+        }
+
+            .order-table th:last-child {
+                text-align: center;
+            }
+
+        .order-table td {
+            padding: 13px 16px;
+            font-size: 0.92rem;
+            color: #333;
+            border-bottom: 1px solid #f8f8f8;
+            vertical-align: middle;
+        }
+
+        .order-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .order-table tr:hover td {
+            background: #fafafa;
+        }
+
+    .order-number {
         font-weight: 700;
-        letter-spacing: 0.05em;
-        border-bottom: 1px solid #f0f0f0;
-        white-space: nowrap;
+        color: #1a1a1a;
+        font-size: 0.9rem;
     }
-
-    .order-table th:last-child { text-align: center; }
-
-    .order-table td {
-        padding: 13px 16px;
-        font-size: 0.92rem;
-        color: #333;
-        border-bottom: 1px solid #f8f8f8;
-        vertical-align: middle;
-    }
-
-    .order-table tr:last-child td { border-bottom: none; }
-    .order-table tr:hover td { background: #fafafa; }
-
-    .order-number { font-weight: 700; color: #1a1a1a; font-size: 0.9rem; }
 
     .table-tag {
         font-size: 0.78rem;
@@ -175,8 +234,15 @@
         display: inline-block;
     }
 
-    .tag-dine   { background: #eaf0fb; color: #2c3e50; }
-    .tag-takeout { background: #f0f0f0; color: #666; }
+    .tag-dine {
+        background: #eaf0fb;
+        color: #2c3e50;
+    }
+
+    .tag-takeout {
+        background: #f0f0f0;
+        color: #666;
+    }
 
     .pay-method {
         font-size: 0.82rem;
@@ -193,12 +259,30 @@
         white-space: nowrap;
     }
 
-    .badge-pending  { background: #fff3cd; color: #856404; }
-    .badge-done     { background: #d1f5e0; color: #1a6b3a; }
-    .badge-cancel   { background: #f8d7da; color: #842029; }
+    .badge-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
 
-    .amount-cell { font-weight: 700; color: #1a1a1a; }
-    .discount-cell { font-size: 0.82rem; color: #27ae60; }
+    .badge-done {
+        background: #d1f5e0;
+        color: #1a6b3a;
+    }
+
+    .badge-cancel {
+        background: #f8d7da;
+        color: #842029;
+    }
+
+    .amount-cell {
+        font-weight: 700;
+        color: #1a1a1a;
+    }
+
+    .discount-cell {
+        font-size: 0.82rem;
+        color: #27ae60;
+    }
 
     .btn-detail {
         padding: 6px 16px;
@@ -215,7 +299,9 @@
         display: inline-block;
     }
 
-    .btn-detail:hover { background: #fff5f5; }
+        .btn-detail:hover {
+            background: #fff5f5;
+        }
 
     /* ── 分頁 ── */
     .pagination {
@@ -240,9 +326,22 @@
         display: inline-block;
     }
 
-    .page-btn:hover { border-color: #c0392b; color: #c0392b; }
-    .page-btn.active { background: #c0392b; border-color: #c0392b; color: #fff; font-weight: 700; }
-    .page-btn.disabled { opacity: 0.4; pointer-events: none; }
+        .page-btn:hover {
+            border-color: #c0392b;
+            color: #c0392b;
+        }
+
+        .page-btn.active {
+            background: #c0392b;
+            border-color: #c0392b;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .page-btn.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
 
     /* 空白狀態 */
     .empty-state {
@@ -251,8 +350,14 @@
         color: #bbb;
     }
 
-    .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
-    .empty-state p { font-size: 0.95rem; }
+        .empty-state .icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 0.95rem;
+        }
 
     .result-count {
         font-size: 0.85rem;
@@ -328,6 +433,7 @@
                         <th>會員</th>
                         <th>用餐方式</th>
                         <th>付款方式</th>
+                        <th>優惠券</th>
                         <th>金額</th>
                         <th>狀態</th>
                         <th>明細</th>
@@ -351,13 +457,25 @@
                                 {
                                     <span class="table-tag tag-takeout">🥡 外帶</span>
                                 }
-                            </td>
-                            <td>
-                                <span class="pay-method">
-                                    @(order.PayMethod == "Cash" ? "💵 現金"
-                                    : order.PayMethod == "Card" ? "💳 刷卡"
-                                    : "📱 行動支付")
-                                </span>
+                        </td>
+                        <td>
+                            <span class="pay-method">
+                                @(order.PayMethod == "Cash" ? "💵 現金"
+                                                            : order.PayMethod == "Card" ? "💳 刷卡"
+                                                            : "📱 行動支付")
+                        </span>
+                    </td>
+                    <td style="font-size:0.82rem;">
+                        @if (!string.IsNullOrEmpty(order.CouponName))
+                                {
+                                    <span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff8e1;color:#b7770d;font-weight:600;white-space:nowrap;">
+                                        🎫 @order.CouponName
+                                    </span>
+                                    if (!string.IsNullOrEmpty(order.CouponDesc))
+                                    {
+                                        <div style="color:#aaa;font-size:0.78rem;margin-top:2px;">@order.CouponDesc</div>
+                                    }
+                                }
                             </td>
                             <td>
                                 <div class="amount-cell">NT$ @order.TotalAmount</div>

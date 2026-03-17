@@ -143,6 +143,37 @@ namespace EatTogether.Controllers
             return Ok();
         }
 
+        [HttpPost]
+        public async Task<IActionResult> BatchDisable([FromBody] BatchRequestDto request)
+        {
+            if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
+            await _setMealService.BatchDisableAsync(request.Ids);
+            return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Enable(int id)
+        {
+            await _setMealService.EnableAsync(id);
+            return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> BatchEnable([FromBody] BatchRequestDto request)
+        {
+            if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
+            await _setMealService.BatchEnableAsync(request.Ids);
+            return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> BatchDelete([FromBody] BatchRequestDto request)
+        {
+            if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
+            await _setMealService.BatchDeleteAsync(request.Ids);
+            return Ok();
+        }
+
         private async Task<string> SaveBase64ImageAsync(string base64Data, string fileNamePrefix)
         {
             if (string.IsNullOrEmpty(base64Data)) return null;
@@ -180,6 +211,26 @@ namespace EatTogether.Controllers
             {
                 // Log the exception
                 return BadRequest(new { message = "更新失敗：" + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateOrder([FromBody] OrderedIdsDto dto)
+        {
+            if (dto?.OrderedIds == null || !dto.OrderedIds.Any())
+            {
+                return BadRequest("No IDs provided for reordering.");
+            }
+
+            try
+            {
+                await _setMealService.UpdateOrderAsync(dto.OrderedIds);
+                return Ok(new { message = "Order updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                // In a real app, log this exception
+                return StatusCode(500, "An error occurred while updating the order.");
             }
         }
     }

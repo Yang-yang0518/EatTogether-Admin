@@ -40,7 +40,6 @@ namespace EatTogether.Models.Repositories
 		public async Task<IEnumerable<DishDto>> GetAllAsync()
 		{
 			return await _context.Dishes
-			   .Where(d => d.IsActive) // Add this filter
 			   .Select(d => new DishDto
 			   {
 				   Id = d.Id,
@@ -60,7 +59,37 @@ namespace EatTogether.Models.Repositories
 				   StartDate = d.StartDate,
 				   EndDate = d.EndDate,
 				   CreatedAt = d.CreatedAt,
-				   UpdatedAt = d.UpdatedAt
+				   UpdatedAt = d.UpdatedAt,
+				   DisplayOrder = 0 // 資料庫無此欄位，回傳預設值
+			   })
+			   .ToListAsync();
+		}
+
+		public async Task<IEnumerable<DishDto>> GetAllActiveAsync()
+		{
+			return await _context.Dishes
+			   .Where(d => d.IsActive)
+			   .Select(d => new DishDto
+			   {
+				   Id = d.Id,
+				   DishName = d.DishName,
+				   Description = d.Description,
+				   Price = d.Price,
+				   CategoryId = d.CategoryId,
+				   CategoryName = d.Category != null ? d.Category.CategoryName : null,
+				   ImageUrl = d.ImageUrl,
+				   IsActive = d.IsActive,
+				   IsTakeOut = d.IsTakeOut,
+				   IsLimited = d.IsLimited,
+				   IsRecommended = d.IsRecommended,
+				   IsPopular = d.IsPopular,
+				   IsVegetarian = d.IsVegetarian,
+				   SpicyLevel = d.SpicyLevel,
+				   StartDate = d.StartDate,
+				   EndDate = d.EndDate,
+				   CreatedAt = d.CreatedAt,
+				   UpdatedAt = d.UpdatedAt,
+				   DisplayOrder = 0 // 資料庫無此欄位
 			   })
 			   .ToListAsync();
 		}
@@ -84,7 +113,8 @@ namespace EatTogether.Models.Repositories
                     StartDate = d.StartDate,
                     EndDate = d.EndDate,
                     CreatedAt = d.CreatedAt,
-                    UpdatedAt = d.UpdatedAt
+                    UpdatedAt = d.UpdatedAt,
+                    DisplayOrder = 0 // 資料庫無此欄位
                 })
                 .FirstOrDefaultAsync();
         }
@@ -97,6 +127,55 @@ namespace EatTogether.Models.Repositories
 			dish.IsActive = false;
 			dish.UpdatedAt = DateTime.UtcNow;
 
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task BatchSoftDeleteAsync(IEnumerable<int> ids)
+		{
+			var dishes = await _context.Dishes.Where(d => ids.Contains(d.Id)).ToListAsync();
+			foreach (var d in dishes)
+			{
+				d.IsActive = false;
+				d.UpdatedAt = DateTime.UtcNow;
+			}
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task EnableAsync(int id)
+		{
+			var dish = await _context.Dishes.FindAsync(id);
+			if (dish == null) return;
+
+			dish.IsActive = true;
+			dish.UpdatedAt = DateTime.UtcNow;
+
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task BatchEnableAsync(IEnumerable<int> ids)
+		{
+			var dishes = await _context.Dishes.Where(d => ids.Contains(d.Id)).ToListAsync();
+			foreach (var d in dishes)
+			{
+				d.IsActive = true;
+				d.UpdatedAt = DateTime.UtcNow;
+			}
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task DeleteAsync(int id)
+		{
+			var dish = await _context.Dishes.FindAsync(id);
+			if (dish == null) return;
+
+			_context.Dishes.Remove(dish);
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task BatchDeleteAsync(IEnumerable<int> ids)
+		{
+			var dishes = await _context.Dishes.Where(d => ids.Contains(d.Id)).ToListAsync();
+			_context.Dishes.RemoveRange(dishes);
 			await _context.SaveChangesAsync();
 		}
 
@@ -123,6 +202,12 @@ namespace EatTogether.Models.Repositories
 
 				await _context.SaveChangesAsync();
 			}
+		}
+
+		public async Task UpdateOrderAsync(IEnumerable<int> orderedIds)
+		{
+			// 此功能暫不執行，因為資料庫 Dishes 表目前沒有 DisplayOrder 欄位
+			await Task.CompletedTask;
 		}
 	}
 }

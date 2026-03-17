@@ -3,6 +3,7 @@
     ViewData["Title"] = "編輯分類";
 }
 
+
 <div class="container-fluid px-4">
     <h1 class="mt-4">編輯分類</h1>
     <ol class="breadcrumb mb-4">
@@ -11,84 +12,232 @@
         <li class="breadcrumb-item active">編輯分類</li>
     </ol>
 
-    <div class="card mb-4">
-        <div class="card-header">
-            <i class="fas fa-edit me-1"></i>編輯分類
+    <div id="alertBox"></div>
+
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+            <span class="fw-bold"><i class="fas fa-edit me-1 text-warning"></i>編輯分類資料</span>
+            <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0">
+                <i class="fas fa-arrow-left me-1"></i>返回列表
+            </a>
         </div>
-        <div class="card-body">
-            <div id="alertBox"></div>
+
+        <div class="card-body p-4">
             <input type="hidden" id="Id" value="@Model.Id" />
 
-            <div class="mb-3">
-                <label class="form-label">分類名稱 <span class="text-danger">*</span></label>
-                <input type="text" id="CategoryName" class="form-control" value="@Model.CategoryName" />
-                <div class="text-danger small" id="CategoryName-error"></div>
-            </div>
+            <div class="row">
+                <!-- 左側：表單欄位 -->
+                <div class="col-lg-8">
+                    <div class="row g-4">
 
-            <div class="mb-3">
-                <label class="form-label">上層分類</label>
-                <select id="ParentCategoryId" class="form-select">
-                    @foreach (var option in Model.ParentCategoryOptions)
-                    {
-                        if (option.Value == Model.ParentCategoryId?.ToString())
-                        {
-                            <option value="@option.Value" selected>@option.Text</option>
-                        }
-                        else
-                        {
-                            <option value="@option.Value">@option.Text</option>
-                        }
-                    }
-                </select>
-            </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold text-secondary">
+                                分類名稱 <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="CategoryName"
+                                   class="form-control form-control-lg border-light-subtle shadow-sm"
+                                   placeholder="請輸入分類名稱"
+                                   value="@Model.CategoryName" />
+                            <div class="text-danger small mt-1" id="CategoryName-error"></div>
+                        </div>
 
-            <div class="mb-3">
-                <label class="form-label">顯示順序 <span class="text-danger">*</span></label>
-                <input type="number" id="DisplayOrder" class="form-control"
-                       value="@Model.DisplayOrder" min="1" max="999" />
-                <div class="text-danger small" id="DisplayOrder-error"></div>
-            </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">上層分類</label>
+                            <select id="ParentCategoryId" class="form-select form-select-lg border-light-subtle shadow-sm">
+                                @foreach (var option in Model.ParentCategoryOptions)
+                                {
+                                    if (option.Value == Model.ParentCategoryId?.ToString())
+                                    {
+                                        <option value="@option.Value" selected>@option.Text</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@option.Value">@option.Text</option>
+                                    }
+                                }
+                            </select>
+                        </div>
 
-            <div class="mb-3">
-                <label class="form-label">圖片網址</label>
-                <input type="text" id="ImageUrl" class="form-control" value="@Model.ImageUrl" />
-            </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">
+                                顯示順序 <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" id="DisplayOrder"
+                                   class="form-control form-control-lg border-light-subtle shadow-sm"
+                                   value="@Model.DisplayOrder" min="1" max="999" />
+                            <div class="text-danger small mt-1" id="DisplayOrder-error"></div>
+                        </div>
 
-            <div class="mb-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="IsActive"
-                           @(Model.IsActive ? "checked" : "") />
-                    <label class="form-check-label" for="IsActive">啟用</label>
+                        <!-- 啟用開關 -->
+                        <div class="col-md-12">
+                            <div class="form-check form-switch mt-1">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="IsActive" @(Model.IsActive ? "checked" : "") />
+                                <label class="form-check-label fw-bold text-muted" for="IsActive">
+                                    啟用此分類
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 建立／更新時間 -->
+                        <div class="col-md-12">
+                            <div class="p-3 bg-light rounded-3 small text-muted d-flex gap-4 flex-wrap">
+                                <span><i class="far fa-clock me-1"></i>建立時間：@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span>
+                                @if (Model.UpdatedAt.HasValue)
+                                {
+                                    <span><i class="fas fa-pencil-alt me-1"></i>最後更新：@Model.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 右側：圖片網址 + 即時預覽 -->
+                <div class="col-lg-4 border-start border-light-subtle">
+                    <div class="ps-lg-4">
+                        <label class="form-label fw-bold text-secondary d-block mb-3">分類圖片</label>
+
+                        <!-- 預覽區 -->
+                        <div id="imagePreviewWrap"
+                             class="border rounded-4 bg-light overflow-hidden shadow-sm d-flex align-items-center justify-content-center mb-3"
+                             style="aspect-ratio:4/3;">
+                            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                            {
+                                <img id="previewImg" src="@Model.ImageUrl" alt="分類圖片"
+                                     class="w-100 h-100" style="object-fit:cover;"
+                                     onerror="showPlaceholder()" />
+                                <div id="previewPlaceholder" class="text-center d-none">
+                                    <i class="fas fa-image fa-3x text-muted opacity-25 mb-2"></i>
+                                    <p class="text-muted small mb-0">圖片無法載入</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <img id="previewImg" src="" alt="" class="w-100 h-100 d-none" style="object-fit:cover;"
+                                     onerror="showPlaceholder()" />
+                                <div id="previewPlaceholder" class="text-center">
+                                    <i class="fas fa-image fa-3x text-muted opacity-25 mb-2"></i>
+                                    <p class="text-muted small mb-0">輸入網址後自動預覽</p>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- 網址輸入框 -->
+                        <div class="input-group shadow-sm mb-2">
+                            <span class="input-group-text bg-white border-end-0">
+                                <i class="fas fa-link text-muted small"></i>
+                            </span>
+                            <input type="text" id="ImageUrl"
+                                   class="form-control border-start-0"
+                                   placeholder="貼上圖片網址..."
+                                   value="@Model.ImageUrl"
+                                   oninput="previewImageUrl(this.value)" />
+                            <button class="btn btn-outline-secondary border-start-0" type="button"
+                                    onclick="clearImage()" title="清除圖片">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div class="mt-3 p-3 bg-light rounded-3 small text-muted">
+                            <h6 class="fw-bold text-primary mb-2 small">
+                                <i class="fas fa-info-circle me-1"></i>使用說明
+                            </h6>
+                            <ul class="mb-0 ps-3 lh-base">
+                                <li>貼上完整圖片網址（含 https://）</li>
+                                <li>輸入後自動即時預覽</li>
+                                <li>若網址無效將顯示提示</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="mb-3 text-muted small">
-                建立時間：@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")
-                @if (Model.UpdatedAt.HasValue)
-                {
-                    <span class="ms-3">最後更新：@Model.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
-                }
-            </div>
-
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-primary" onclick="submitEdit()">
-                    <i class="fas fa-save me-1"></i>儲存
+            <!-- 底部按鈕 -->
+            <div class="mt-5 pt-4 border-top d-flex justify-content-end gap-3">
+                <button type="button" class="btn btn-link text-secondary text-decoration-none px-4"
+                        onclick="location.href='@Url.Action("Index")'">
+                    取消
                 </button>
-                <a asp-action="Index" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i>返回列表
-                </a>
+                <button type="button" class="btn btn-primary btn-lg px-5 shadow-sm rounded-pill"
+                        onclick="submitEdit()">
+                    <i class="fas fa-save me-1"></i>儲存變更
+                </button>
             </div>
         </div>
     </div>
 </div>
 
+@section Styles {
+    <style>
+        #imagePreviewWrap {
+            transition: border-color .2s;
+            min-height: 180px;
+        }
+
+            #imagePreviewWrap.url-error {
+                border-color: #dc3545 !important;
+                background-color: #fff5f5 !important;
+            }
+    </style>
+}
+
 @section Scripts {
     <script>
+        /* ── 圖片 URL 即時預覽 ── */
+        let previewTimer = null;
+
+        function previewImageUrl(url) {
+            clearTimeout(previewTimer);
+            const wrap = document.getElementById("imagePreviewWrap");
+            wrap.classList.remove("url-error");
+
+            if (!url.trim()) {
+                showPlaceholder();
+                return;
+            }
+
+            // 300ms 防抖，避免每打一個字就觸發
+            previewTimer = setTimeout(() => {
+                const img = document.getElementById("previewImg");
+                img.src = url.trim();
+                img.classList.remove("d-none");
+                document.getElementById("previewPlaceholder").classList.add("d-none");
+            }, 300);
+        }
+
+        function showPlaceholder() {
+            const img  = document.getElementById("previewImg");
+            const wrap = document.getElementById("imagePreviewWrap");
+            img.classList.add("d-none");
+            img.src = "";
+            document.getElementById("previewPlaceholder").classList.remove("d-none");
+            document.getElementById("previewPlaceholder").innerHTML =
+                '<i class="fas fa-image fa-3x text-muted opacity-25 mb-2"></i><p class="text-muted small mb-0">輸入網址後自動預覽</p>';
+            wrap.classList.remove("url-error");
+        }
+
+        // img onerror — 網址無效時
+        document.getElementById("previewImg").addEventListener("error", function () {
+            if (!this.src || this.src === window.location.href) return;
+            this.classList.add("d-none");
+            const placeholder = document.getElementById("previewPlaceholder");
+            placeholder.classList.remove("d-none");
+            placeholder.innerHTML =
+                '<i class="fas fa-exclamation-circle fa-2x text-danger opacity-50 mb-2"></i><p class="text-danger small mb-0">圖片網址無效</p>';
+            document.getElementById("imagePreviewWrap").classList.add("url-error");
+        });
+
+        function clearImage() {
+            document.getElementById("ImageUrl").value = "";
+            showPlaceholder();
+        }
+
+        /* ── 儲存（原有邏輯不變） ── */
         async function submitEdit() {
             clearErrors();
 
             const id = document.getElementById("Id").value;
-
             const data = {
                 Id:               parseInt(id),
                 CategoryName:     document.getElementById("CategoryName").value,
@@ -126,11 +275,16 @@
         }
 
         function showAlert(type, message) {
-            document.getElementById("alertBox").innerHTML = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            const box = document.getElementById("alertBox");
+            box.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert">
                     ${message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>`;
+            setTimeout(() => {
+                const el = box.querySelector(".alert");
+                if (el) { el.classList.remove("show"); setTimeout(() => box.innerHTML = "", 400); }
+            }, 3000);
         }
     </script>
 }
