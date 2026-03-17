@@ -1,4 +1,5 @@
 ﻿using EatTogether.Models.DTOs;
+using EatTogether.Models.EfModels;
 using EatTogether.Models.Infra;
 using EatTogether.Models.Repositories;
 
@@ -7,18 +8,32 @@ namespace EatTogether.Models.Services
 	public interface IAuthService
 	{
 		Task<Result<LoginDto>> ForceChangePasswordAsync(int userId, string newPassword);
+		Task<Result> ForgotPasswordAsync(string email);
 		Task<Result<LoginDto>> LoginAsync(string account, string password);
+		Task<Result> ResetPasswordAsync(string token, string newPassword);
+		Task<bool> ValidateResetTokenAsync(string token);
 	}
 
 	public class AuthService : IAuthService
 	{
 		private readonly IUserRepository _userRepo;
 		private readonly IRoleRepository _roleRepo;
+		private readonly IPasswordResetTokenRepository _tokenRepo;
+		private readonly IPasswordResetEmailService _emailService;
+		private readonly IHttpContextAccessor _httpContextAccessor;
 
-		public AuthService(IUserRepository userRepo, IRoleRepository roleRepo)
+		public AuthService(
+			IUserRepository userRepo,
+			IRoleRepository roleRepo,
+			IPasswordResetTokenRepository tokenRepo,
+			IPasswordResetEmailService emailService,
+			IHttpContextAccessor httpContextAccessor)
 		{
 			_userRepo = userRepo;
 			_roleRepo = roleRepo;
+			_tokenRepo = tokenRepo;
+			_emailService = emailService;
+			_httpContextAccessor = httpContextAccessor;
 		}
 
 		public async Task<Result<LoginDto>> LoginAsync(string account, string password)
@@ -83,5 +98,62 @@ namespace EatTogether.Models.Services
 			return Result<LoginDto>.Success(loginDto);
 
 		}
+
+		public async Task<Result> ForgotPasswordAsync(string email)
+		{
+			var user = await _userRepo.GetByEmailAsync(email);
+
+			// 查無此 Email 或使用者已刪除或停用 → 一律回傳成功（防帳號枚舉）
+			if (user == null || user.IsDeleted || !user.IsActive) return Result.Success();
+
+			// 將舊 Token 全部失效
+			await _tokenRepo.InvalidatePreviousTokensAsync(user.Id);
+
+			// 產生 32 碼 Token（Guid 去除符號）
+			var tokenString = Guid.NewGuid().ToString("N");
+
+			var tokenEntity = new PasswordResetToken
+			{
+				UserId = user.Id,
+				Token = tokenString,
+				IsUsed = false
+			};
+
+			await _tokenRepo.CreateAsync(tokenEntity);
+
+			// 產生重設連結
+			var request = _httpContextAccessor.HttpContext!.Request;
+			var resetLink = $"{request.Scheme}://{request.Host}/Auth/ResetPassword?token={tokenString}";
+
+			// 寄送 Email
+			await _emailService.SendPasswordResetEmailAsync(email, resetLink);
+
+			return Result.Success();
+		}
+
+		public async Task<bool> ValidateResetTokenAsync(string token)
+		{
+			var tokenEntity = await _tokenRepo.GetValidTokenAsync(token);
+			return tokenEntity != null;
+		}
+
+		public async Task<Result> ResetPasswordAsync(string token, string newPassword)
+		{
+			// 驗證 Token
+			var tokenEntity = await _tokenRepo.GetValidTokenAsync(token);
+			if (tokenEntity == null) return Result.Fail("連結已失效或已使用，請重新申請");
+
+			// 更新密碼
+			var hashedPassword = HashUtility.HashPassword(newPassword);
+			await _userRepo.UpdatePasswordAsync(tokenEntity.UserId, hashedPassword);
+
+			// Token 標記為已使用（一次性）
+			await _tokenRepo.MarkUsedAsync(tokenEntity.Id);
+
+			return Result.Success();
+		}
+
+
+
 	}
 }

@@ -90,15 +90,62 @@ namespace EatTogether.Controllers
 			return Json(new { success = true, redirectUrl = Url.Action("Index", "Home") });
 		}
 
-		// GET /Auth/ResetPassword
+		// POST /Auth/ForgotPassword
+		[HttpPost]
+		public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel vm)
+		{
+			if (!ModelState.IsValid)
+			{
+				var error = ModelState.Values
+					.SelectMany(v => v.Errors)
+					.Select(e => e.ErrorMessage)
+					.FirstOrDefault();
+				return Json(new { success = false, message = error });
+			}
+
+			await _authService.ForgotPasswordAsync(vm.Email);
+
+			// 不論有無此 Email，一律回傳成功（防帳號枚舉）
+			return Json(new { success = true });
+		}
+
+		// GET /Auth/ResetPassword?token=xxx
 		[HttpGet]
-		public IActionResult ResetPassword(string token)
+		public async Task<IActionResult> ResetPassword(string token)
 		{
 			if (string.IsNullOrEmpty(token))
-				return RedirectToAction("ResetPasswordInvalid");
+				return RedirectToAction(nameof(ResetPasswordInvalid));
+
+			// 驗證 Token 是否有效
+			var isValid = await _authService.ValidateResetTokenAsync(token);
+			if (!isValid) return RedirectToAction(nameof(ResetPasswordInvalid));
 
 			ViewBag.Token = token;
 			return View();
+		}
+
+		// POST /Auth/ResetPassword
+		[HttpPost]
+		public async Task<IActionResult> ResetPassword(ResetPasswordViewModel vm)
+		{
+			if (!ModelState.IsValid)
+			{
+				var error = ModelState.Values
+					.SelectMany(v => v.Errors)
+					.Select(e => e.ErrorMessage)
+					.FirstOrDefault();
+
+				return Json(new { success = false, message = error });
+			}
+
+			var result = await _authService.ResetPasswordAsync(vm.Token, vm.NewPassword);
+
+			if (!result.IsSuccess)
+			{
+				return Json(new { success = false, message = result.ErrorMessage });
+			}
+
+			return Json(new { success = true });
 		}
 
 		// GET /Auth/ResetPasswordInvalid

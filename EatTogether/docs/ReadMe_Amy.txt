@@ -227,7 +227,7 @@
 			內場廚師    → chef_zhang
 			工讀生      → part_cai
 
-[working] add 強制改密碼功能
+[V] add 強制改密碼功能
 	url: POST /Auth/ForceChangePassword
 	觸發條件：MustChangePassword=1（密碼與員工編號相同）
 
@@ -261,17 +261,12 @@
 			說明：「即將進入後台系統...」
 			按鈕：「進入系統」，5 秒倒數後自動跳轉 Home/Index
 
-[] add 忘記密碼 / 重設密碼功能
+[working] add 忘記密碼 / 重設密碼功能
 	url: POST /Auth/ForgotPassword
 	url: GET  /Auth/ResetPassword?token=xxx
 	url: POST /Auth/ResetPassword
 
-	[] DTO（Models/DTOs/ResetPasswordDto.cs）
-		ResetPasswordDto
-			string Token
-			string NewPassword
-
-	[] IPasswordResetTokenRepository / PasswordResetTokenRepository
+	[V] IPasswordResetTokenRepository / PasswordResetTokenRepository
 		（Models/Repositories/PasswordResetTokenRepository.cs）
 		Task CreateAsync(PasswordResetToken token)
 			// ExpiresAt = 建立時間 +60 分鐘
@@ -279,32 +274,33 @@
 		Task<PasswordResetToken?> GetValidTokenAsync(string token)
 		Task MarkUsedAsync(int tokenId)
 
-	[] AuthService（modify）
+	[V] AuthService（modify）
 		Task<Result> ForgotPasswordAsync(string email)
-			// 查詢 Email 是否存在（不存在仍回傳成功，防枚舉）
+			// 查詢 Email 是否存在（不存在仍回傳成功，防枚舉）=> async Task<UserDto?> GetByEmailAsync (新增 UserRepository 方法)
 			// 產生 32 碼 Guid Token（去除符號）
 			// 寫入 PasswordResetTokens
-			// 呼叫 IEmailService 寄送重設連結
+			// 呼叫 IPasswordResetEmailService 寄送重設連結
 		Task<bool> ValidateResetTokenAsync(string token)
 			// 驗證：存在 + IsUsed=0 + 未逾 ExpiresAt
 		Task<Result> ResetPasswordAsync(string token, string newPassword)
 			// 更新 HashedPassword
 			// IsUsed → 1（一次性，立即失效）
 
-	[] ViewModel（Models/ViewModels/ForgotPasswordViewModel.cs）
+	[V] ViewModel（Models/ViewModels/ForgotPasswordViewModel.cs）
 		ForgotPasswordViewModel
 			string Email
 
-	[] ViewModel（Models/ViewModels/ResetPasswordViewModel.cs）
+	[V] ViewModel（Models/ViewModels/ResetPasswordViewModel.cs）
 		ResetPasswordViewModel
 			string Token
 			string NewPassword
 			string ConfirmPassword
 
-	[] AuthController（modify）
+	[V] AuthController（modify）
 		POST /Auth/ForgotPassword
 		GET  /Auth/ResetPassword?token=xxx → 驗證 Token；無效 → Redirect ResetPasswordInvalid
 		POST /Auth/ResetPassword
+		GET /Auth/ResetPasswordInvalid
 
 	[V] 忘記密碼 Modal（嵌入 Login.cshtml）
 		鑰匙 icon
