@@ -1,0 +1,597 @@
+@model EatTogether.Models.ViewModels.ReportViewModel
+@{
+    ViewData["Title"] = "銷售報表";
+    var labelsJson = System.Text.Json.JsonSerializer.Serialize(Model.TrendLabels);
+    var revenueJson = System.Text.Json.JsonSerializer.Serialize(Model.RevenueTrendData);
+    var orderCntJson = System.Text.Json.JsonSerializer.Serialize(Model.OrderCountTrendData);
+    var payLabelsJson = System.Text.Json.JsonSerializer.Serialize(Model.PayMethodLabels);
+    var payDataJson = System.Text.Json.JsonSerializer.Serialize(Model.PayMethodData);
+    int maxTopQty = Model.TopProducts.Any() ? Model.TopProducts.Max(p => p.TotalQty) : 1;
+
+    string dateRangeDisplay = Model.Period == "day"
+        ? Model.StartDate?.ToString("yyyy/MM/dd") ?? ""
+        : $"{Model.StartDate?.ToString("yyyy/MM/dd")} ～ {Model.EndDate?.ToString("yyyy/MM/dd")}";
+}
+
+<div class="container-fluid py-4 px-4">
+
+    @* ── 篩選列 ── *@
+    <div class="d-flex align-items-end mb-4 flex-wrap gap-3">
+
+        <form id="filterForm" method="get" action="/Report/Index"
+              class="d-flex flex-wrap gap-3 align-items-end">
+
+            <div>
+                <label class="form-label small mb-1">時間維度</label>
+                <select name="period" id="periodSelect" class="form-select form-select-sm"
+                        style="width:90px;" onchange="onPeriodChange()">
+                    <option value="day" selected="@(Model.Period == "day" ? "selected" : null)">日</option>
+                    <option value="week" selected="@(Model.Period == "week" ? "selected" : null)">週</option>
+                    <option value="month" selected="@(Model.Period == "month" ? "selected" : null)">月</option>
+                    <option value="quarter" selected="@(Model.Period == "quarter" ? "selected" : null)">季</option>
+                    <option value="year" selected="@(Model.Period == "year" ? "selected" : null)">年</option>
+                    <option value="custom" selected="@(Model.Period == "custom" ? "selected" : null)">自訂</option>
+                    <option value="all" selected="@(Model.Period == "all" ? "selected" : null)">全部</option>
+                </select>
+            </div>
+
+            <div id="panel-day" class="d-none">
+                <label class="form-label small mb-1">選擇日期</label>
+                <select class="form-select form-select-sm" style="min-width:220px;"
+                        onchange="submitWithRange(this)">
+                    @foreach (var opt in Model.DayOptions)
+                    {
+                        <option value="@opt.StartDate|@opt.EndDate" selected="@(opt.IsSelected ? "selected" : null)">
+                            @opt.Label
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div id="panel-week" class="d-none">
+                <label class="form-label small mb-1">選擇週次</label>
+                <select class="form-select form-select-sm" style="min-width:260px;"
+                        onchange="submitWithRange(this)">
+                    @foreach (var opt in Model.WeekOptions)
+                    {
+                        <option value="@opt.StartDate|@opt.EndDate" selected="@(opt.IsSelected ? "selected" : null)">
+                            @opt.Label
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div id="panel-month" class="d-none">
+                <label class="form-label small mb-1">選擇月份</label>
+                <select class="form-select form-select-sm" style="min-width:160px;"
+                        onchange="submitWithRange(this)">
+                    @foreach (var opt in Model.MonthOptions)
+                    {
+                        <option value="@opt.StartDate|@opt.EndDate" selected="@(opt.IsSelected ? "selected" : null)">
+                            @opt.Label
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div id="panel-quarter" class="d-none">
+                <label class="form-label small mb-1">選擇季別</label>
+                <select class="form-select form-select-sm" style="min-width:180px;"
+                        onchange="submitWithRange(this)">
+                    @foreach (var opt in Model.QuarterOptions)
+                    {
+                        <option value="@opt.StartDate|@opt.EndDate" selected="@(opt.IsSelected ? "selected" : null)">
+                            @opt.Label
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div id="panel-year" class="d-none">
+                <label class="form-label small mb-1">選擇年度</label>
+                <select class="form-select form-select-sm" style="min-width:130px;"
+                        onchange="submitWithRange(this)">
+                    @foreach (var opt in Model.YearOptions)
+                    {
+                        <option value="@opt.StartDate|@opt.EndDate" selected="@(opt.IsSelected ? "selected" : null)">
+                            @opt.Label
+                        </option>
+                    }
+                </select>
+            </div>
+
+            @* 自訂區間 *@
+            <div id="panel-custom" class="d-none">
+                <div class="d-flex gap-2 align-items-end">
+                    <div>
+                        <label class="form-label small mb-1">開始日期</label>
+                        <input type="date" id="customStart" class="form-control form-control-sm"
+                               style="min-width:150px;"
+                               value="@Model.StartDate?.ToString("yyyy-MM-dd")">
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1">結束日期</label>
+                        <input type="date" id="customEnd" class="form-control form-control-sm"
+                               style="min-width:150px;"
+                               value="@Model.EndDate?.ToString("yyyy-MM-dd")">
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm"
+                            onclick="submitCustomRange()">
+                        套用
+                    </button>
+                </div>
+            </div>
+
+            <input type="hidden" name="startDate" id="hidStartDate"
+                   value="@Model.StartDate?.ToString("yyyy-MM-dd")">
+            <input type="hidden" name="endDate" id="hidEndDate"
+                   value="@Model.EndDate?.ToString("yyyy-MM-dd")">
+        </form>
+
+        <div>
+            <div class="text-muted small mb-1">目前查詢區間</div>
+            <div class="fs-5 fw-semibold">@dateRangeDisplay</div>
+        </div>
+
+    </div>
+
+    @* ── KPI 卡片 ── *@
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-light h-100">
+                <div class="card-body py-3 px-3">
+                    <div class="text-muted small mb-1">總銷售額</div>
+                    <div class="fs-4 fw-semibold">NT$ @Model.TotalRevenue.ToString("N0")</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-light h-100">
+                <div class="card-body py-3 px-3">
+                    <div class="text-muted small mb-1">完成訂單數</div>
+                    <div class="fs-4 fw-semibold">
+                        @Model.TotalOrders <span class="fs-6 fw-normal text-muted">筆</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-light h-100">
+                <div class="card-body py-3 px-3">
+                    <div class="text-muted small mb-1">客單價</div>
+                    <div class="fs-4 fw-semibold">NT$ @Model.AvgOrderValue.ToString("N0")</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 bg-light h-100">
+                <div class="card-body py-3 px-3">
+                    <div class="text-muted small mb-1">取消率</div>
+                    <div class="fs-4 fw-semibold @(Model.CancelRate > 15 ? "text-danger" : "")">
+                        @Model.CancelRate %
+                        <span class="fs-6 fw-normal text-muted">(@Model.CancelledOrders 筆)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── 第一列：趨勢圖 + 熱銷排行 ── *@
+    <div class="row g-3 mb-3">
+        <div class="col-md-8">
+            <div class="card border h-100">
+                <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold small">銷售額趨勢</span>
+                    <div class="btn-group btn-group-sm" id="trendToggle">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="showRevenue()">金額</button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="showOrderCount()">筆數</button>
+                        <button class="btn btn-secondary btn-sm" onclick="showBoth()">兩者</button>
+                    </div>
+                </div>
+                <div class="card-body py-2">
+                    <div style="position:relative;height:240px;min-height:240px;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border h-100">
+                <div class="card-header bg-white border-bottom py-2 px-3">
+                    <span class="fw-semibold small">熱銷商品 TOP 10</span>
+                </div>
+                <div class="card-body py-2 px-3">
+                    @if (Model.TopProducts.Any())
+                    {
+                        int totalQty = Model.TopProducts.Sum(p => p.TotalQty);
+                        <ul class="list-unstyled mb-0">
+                            @{
+                                int rank = 1;
+                            }
+                            @foreach (var p in Model.TopProducts)
+                            {
+                                var barPct = (maxTopQty > 0 ? (double)p.TotalQty / maxTopQty * 100 : 0).ToString("0.#");
+                                var sharePct = (totalQty > 0 ? (double)p.TotalQty / totalQty * 100 : 0).ToString("0.#");
+                                <li class="mb-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="small">
+                                            <span class="badge @(rank <= 3 ? "bg-warning text-dark" : "bg-light text-secondary") me-1">@rank</span>
+                                            @p.ProductName
+                                        </span>
+                                        <span class="small text-muted">@p.TotalQty 份（@sharePct%）</span>
+                                    </div>
+                                    <div class="progress" style="height:4px;">
+                                        <div class="progress-bar bg-primary" style="width:@barPct%"></div>
+                                    </div>
+                                </li>
+                                rank++;
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted small text-center mt-4">此期間無資料</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── 第二列：付款方式 + 內用外帶 + 訂單狀態 ── *@
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="card border h-100">
+                <div class="card-header bg-white border-bottom py-2 px-3">
+                    <span class="fw-semibold small">付款方式</span>
+                </div>
+                <div class="card-body">
+                    <div style="position:relative;height:180px;">
+                        <canvas id="payPieChart"></canvas>
+                    </div>
+                    <ul class="list-unstyled mt-2 mb-0">
+                        @for (int i = 0; i < Model.PayMethodLabels.Count; i++)
+                        {
+                            <li class="d-flex justify-content-between small py-1 border-bottom">
+                                <span>@Model.PayMethodLabels[i]</span>
+                                <span class="text-muted">
+                                    @Model.PayMethodData[i] 筆 ／ NT$ @Model.PayMethodRevenue[i].ToString("N0")
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border h-100">
+                <div class="card-header bg-white border-bottom py-2 px-3">
+                    <span class="fw-semibold small">內用 vs 外帶</span>
+                </div>
+                <div class="card-body">
+                    <div style="position:relative;height:180px;">
+                        <canvas id="dineChart"></canvas>
+                    </div>
+                    <div class="row text-center mt-2">
+                        <div class="col-6">
+                            <div class="text-muted small">內用</div>
+                            <div class="fw-semibold">@Model.DineInCount 筆</div>
+                            <div class="small text-muted">NT$ @Model.DineInRevenue.ToString("N0")</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small">外帶</div>
+                            <div class="fw-semibold">@Model.TakeoutCount 筆</div>
+                            <div class="small text-muted">NT$ @Model.TakeoutRevenue.ToString("N0")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border h-100">
+                <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold small">優惠券使用</span>
+                    <button class="btn btn-outline-secondary btn-sm" id="couponToggleBtn"
+                            onclick="toggleCouponView()">
+                        查看排行
+                    </button>
+                </div>
+                <div class="card-body">
+                    @* 圓餅圖畫面 *@
+                    <div id="couponPieView">
+                        <div style="position:relative;height:180px;">
+                            <canvas id="couponChart"></canvas>
+                        </div>
+                        <div class="row text-center mt-2">
+                            <div class="col-6">
+                                <div class="text-muted small">有使用優惠券</div>
+                                <div class="fw-semibold">@Model.OrdersWithCoupon 筆</div>
+                                <div class="small text-muted">折抵 NT$ @Model.TotalDiscount.ToString("N0")</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted small">無折扣</div>
+                                <div class="fw-semibold">@Model.OrdersNoCoupon 筆</div>
+                                <div class="small text-muted">原價消費</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* 優惠券排行畫面（預設隱藏） *@
+                    <div id="couponRankView" class="d-none">
+                        @if (Model.CouponRanking.Any())
+                        {
+                            int maxCouponCount = Model.CouponRanking.Max(c => c.UsedCount);
+                            int totalCouponUsed = Model.CouponRanking.Sum(c => c.UsedCount);
+                            <ul class="list-unstyled mb-0 mt-1">
+                                @{
+                                    int cr = 1;
+                                }
+                                @foreach (var c in Model.CouponRanking)
+                                {
+                                    var barW = (maxCouponCount > 0 ? (double)c.UsedCount / maxCouponCount * 100 : 0).ToString("0.#");
+                                    var sharePc = (totalCouponUsed > 0 ? (double)c.UsedCount / totalCouponUsed * 100 : 0).ToString("0.#");
+                                    <li class="mb-2">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small text-truncate" style="max-width:160px;">
+                                                <span class="badge @(cr <= 3 ? "bg-warning text-dark" : "bg-light text-secondary") me-1">@cr</span>
+                                                @c.CouponName
+                                            </span>
+                                            <span class="small text-muted text-nowrap">@c.UsedCount 筆（@sharePc%）</span>
+                                        </div>
+                                        <div class="progress" style="height:4px;">
+                                            <div class="progress-bar bg-warning" style="width:@barW%"></div>
+                                        </div>
+                                    </li>
+                                    cr++;
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted small text-center mt-4">此期間無優惠券使用紀錄</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+    <script>
+        // datalabels 只套用在圓餅圖，趨勢圖不需要，所以不全域註冊
+        // 改用 plugins: { datalabels: ... } 區塊搭配個別 Chart 的 register
+        Chart.register(ChartDataLabels);  // 全域註冊後在不需要的圖表裡 disable
+        const trendLabels  = @Html.Raw(labelsJson);
+        const revenueData  = @Html.Raw(revenueJson);
+        const orderCntData = @Html.Raw(orderCntJson);
+        const payLabels    = @Html.Raw(payLabelsJson);
+        const payData      = @Html.Raw(payDataJson);
+        const statusData   = [@Model.StatusDone, @Model.StatusCancelled, @Model.StatusPending];
+        const dineData     = [@Model.DineInCount, @Model.TakeoutCount];
+        const couponData   = [@Model.OrdersWithCoupon, @Model.OrdersNoCoupon];
+        const COLORS       = ['#378ADD','#1D9E75','#EF9F27','#D85A30','#534AB7','#0F6E56','#D4537E'];
+
+        // ── 篩選面板 ──────────────────────────────────────────────────────────────
+        function showPanel(period) {
+            ['day','week','month','quarter','year','custom'].forEach(p => {
+                document.getElementById('panel-' + p).classList.toggle('d-none', p !== period);
+            });
+        }
+        function onPeriodChange() {
+            const period = document.getElementById('periodSelect').value;
+            showPanel(period);
+            if (period === 'custom') {
+                // 自訂：把目前日期預填進去，等使用者按套用才送出
+                const s = document.getElementById('hidStartDate').value;
+                const e = document.getElementById('hidEndDate').value;
+                if (s) document.getElementById('customStart').value = s;
+                if (e) document.getElementById('customEnd').value   = e;
+                return;
+            }
+            document.getElementById('hidStartDate').value = '';
+            document.getElementById('hidEndDate').value   = '';
+            document.getElementById('filterForm').submit();
+        }
+        function submitWithRange(sel) {
+            const parts = sel.value.split('|');
+            document.getElementById('hidStartDate').value = parts[0];
+            document.getElementById('hidEndDate').value   = parts[1];
+            document.getElementById('filterForm').submit();
+        }
+        function submitCustomRange() {
+            const s = document.getElementById('customStart').value;
+            const e = document.getElementById('customEnd').value;
+            if (!s || !e) { alert('請選擇開始及結束日期'); return; }
+            if (s > e)    { alert('開始日期不能晚於結束日期'); return; }
+            document.getElementById('hidStartDate').value = s;
+            document.getElementById('hidEndDate').value   = e;
+            // 自訂期間用 month 的趨勢分組（以天為單位），你也可以改成別的
+            document.getElementById('periodSelect').value = 'custom';
+            document.getElementById('filterForm').submit();
+        }
+        // 頁面載入：顯示對應面板，若是 custom 則預填日期
+        showPanel('@Model.Period');
+        if ('@Model.Period' === 'custom') {
+            document.getElementById('customStart').value = '@Model.StartDate?.ToString("yyyy-MM-dd")';
+            document.getElementById('customEnd').value   = '@Model.EndDate?.ToString("yyyy-MM-dd")';
+        }
+
+        // ── 趨勢圖（雙軸：金額折線 + 筆數長條） ─────────────────────────────────
+        const trendCtx   = document.getElementById('trendChart').getContext('2d');
+        const trendChart = new Chart(trendCtx, {
+            type: 'bar',
+            data: {
+                labels: trendLabels,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: '銷售額 (NT$)',
+                        data: revenueData,
+                        borderColor: '#378ADD',
+                        backgroundColor: 'rgba(55,138,221,0.08)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: trendLabels.length > 30 ? 0 : 3,
+                        yAxisID: 'yRevenue',
+                        order: 1
+                    },
+                    {
+                        type: 'bar',
+                        label: '訂單數（筆）',
+                        data: orderCntData,
+                        backgroundColor: 'rgba(29,158,117,0.25)',
+                        borderColor: 'rgba(29,158,117,0.6)',
+                        borderWidth: 1,
+                        borderRadius: 2,
+                        yAxisID: 'yCount',
+                        order: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    datalabels: { display: false },  // 趨勢圖不需要標籤
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        align: 'end',
+                        labels: { font: { size: 11 }, boxWidth: 12, padding: 12 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ctx.dataset.yAxisID === 'yRevenue'
+                                ? ` 銷售額：NT$ ${ctx.parsed.y.toLocaleString()}`
+                                : ` 訂單數：${ctx.parsed.y} 筆`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { maxTicksLimit: 14, maxRotation: 45, minRotation: 0, font: { size: 11 } },
+                        grid: { display: false }
+                    },
+                    yRevenue: {
+                        type: 'linear',
+                        position: 'left',
+                        min: 0,
+                        ticks: { font: { size: 11 }, callback: v => 'NT$ ' + v.toLocaleString() },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    yCount: {
+                        type: 'linear',
+                        position: 'right',
+                        min: 0,
+                        ticks: { font: { size: 11 }, callback: v => v + ' 筆', stepSize: 1 },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // 金額/筆數切換按鈕改為顯示/隱藏個別資料集
+        function showRevenue() {
+            trendChart.data.datasets[0].hidden = false;
+            trendChart.data.datasets[1].hidden = true;
+            trendChart.update();
+            document.querySelectorAll('#trendToggle button')[0].className = 'btn btn-secondary btn-sm';
+            document.querySelectorAll('#trendToggle button')[1].className = 'btn btn-outline-secondary btn-sm';
+            document.querySelectorAll('#trendToggle button')[2].className = 'btn btn-outline-secondary btn-sm';
+        }
+        function showOrderCount() {
+            trendChart.data.datasets[0].hidden = true;
+            trendChart.data.datasets[1].hidden = false;
+            trendChart.update();
+            document.querySelectorAll('#trendToggle button')[0].className = 'btn btn-outline-secondary btn-sm';
+            document.querySelectorAll('#trendToggle button')[1].className = 'btn btn-secondary btn-sm';
+            document.querySelectorAll('#trendToggle button')[2].className = 'btn btn-outline-secondary btn-sm';
+        }
+        function showBoth() {
+            trendChart.data.datasets[0].hidden = false;
+            trendChart.data.datasets[1].hidden = false;
+            trendChart.update();
+            document.querySelectorAll('#trendToggle button')[0].className = 'btn btn-outline-secondary btn-sm';
+            document.querySelectorAll('#trendToggle button')[1].className = 'btn btn-outline-secondary btn-sm';
+            document.querySelectorAll('#trendToggle button')[2].className = 'btn btn-secondary btn-sm';
+        }
+
+        // ── 圓餅圖共用設定 ───────────────────────────────────────────────────────
+        function pieOptions(extraTooltip) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } },
+                    tooltip: { callbacks: { label: extraTooltip } },
+                    datalabels: {
+                        color: '#fff',
+                        font: { size: 11, weight: '500' },
+                        formatter: (value, ctx) => {
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = total > 0 ? Math.round(value / total * 100) : 0;
+                            return pct >= 5 ? pct + '%' : '';  // 太小的扇形不顯示
+                        }
+                    }
+                }
+            };
+        }
+
+        // 付款方式
+        new Chart(document.getElementById('payPieChart'), {
+            type: 'doughnut',
+            data: { labels: payLabels, datasets: [{ data: payData, backgroundColor: COLORS, borderWidth: 2 }] },
+            options: pieOptions(ctx => {
+                const t = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                const pct = t > 0 ? Math.round(ctx.parsed / t * 100) : 0;
+                return ` ${ctx.label}：${ctx.parsed} 筆（${pct}%）`;
+            })
+        });
+
+        // 內用 vs 外帶
+        new Chart(document.getElementById('dineChart'), {
+            type: 'doughnut',
+            data: { labels: ['內用','外帶'], datasets: [{ data: dineData, backgroundColor: ['#378ADD','#EF9F27'], borderWidth: 2 }] },
+            options: pieOptions(ctx => {
+                const t = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                const pct = t > 0 ? Math.round(ctx.parsed / t * 100) : 0;
+                return ` ${ctx.label}：${ctx.parsed} 筆（${pct}%）`;
+            })
+        });
+
+        // 優惠券使用圓餅
+        new Chart(document.getElementById('couponChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['有使用優惠券', '無折扣'],
+                datasets: [{ data: couponData, backgroundColor: ['#EF9F27','#B4B2A9'], borderWidth: 2 }]
+            },
+            options: pieOptions(ctx => {
+                const t = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                const pct = t > 0 ? Math.round(ctx.parsed / t * 100) : 0;
+                return ` ${ctx.label}：${ctx.parsed} 筆（${pct}%）`;
+            })
+        });
+
+        // 切換圓餅 / 排行
+        function toggleCouponView() {
+            const pie  = document.getElementById('couponPieView');
+            const rank = document.getElementById('couponRankView');
+            const btn  = document.getElementById('couponToggleBtn');
+            const isRank = !rank.classList.contains('d-none');
+            pie.classList.toggle('d-none', !isRank);
+            rank.classList.toggle('d-none', isRank);
+            btn.textContent = isRank ? '查看排行' : '查看圖表';
+            btn.classList.toggle('btn-outline-secondary', isRank);
+            btn.classList.toggle('btn-secondary', !isRank);
+        }
+    </script>
+}

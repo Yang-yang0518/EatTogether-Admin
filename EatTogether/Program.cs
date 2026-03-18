@@ -94,16 +94,19 @@ namespace EatTogether
 			builder.Services.AddScoped<IMemberService, MemberService>();
 			builder.Services.AddScoped<IPasswordResetEmailService, PasswordResetEmailService>();
 
-			// ªY¬Xµù¥U
-			builder.Services.AddScoped<IOrderService, OrderService>();
+            // ªY¬Xµù¥U
+            builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddScoped<IPreOrderRepository, PreOrderRepository>();
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
-            builder.Services.AddScoped<IOrderRepository, OrderRepository>();           
+            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            builder.Services.AddScoped<IReportRepository, ReportRepository>();
+            builder.Services.AddScoped<IReportService, ReportService>();
 
-			builder.Services.AddScoped<IEventRepository, EventRepository>();
+            builder.Services.AddScoped<IEventRepository, EventRepository>();
 			builder.Services.AddScoped<EventService>();
 
 			// µù¥U Infra¡]»Ý­n DI ªº¤~µù¥U¡^
+			builder.Services.AddHttpContextAccessor();
 			builder.Services.AddScoped<JwtHelper>();
 			builder.Services.AddScoped<UserNumberGenerator>();
 
