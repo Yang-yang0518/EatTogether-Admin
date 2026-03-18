@@ -412,6 +412,7 @@ CREATE TABLE [dbo].[PreOrderDetails](
 	[Qty] [int] NOT NULL,
 	[SubTotal] [int] NOT NULL,
 	[DoneOrCancel] [int] NOT NULL,
+	[IsBilled] [bit] NOT NULL DEFAULT 0,
  CONSTRAINT [PK_PreOrderDetails] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
