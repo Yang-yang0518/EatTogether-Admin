@@ -93,6 +93,7 @@ namespace EatTogether.Controllers
                 InOrOut = vm.InOrOut,
                 PayMethod = vm.PayMethod,
                 Note = vm.Note,
+                CouponId = vm.CouponId,
                 DiscountAmount = vm.DiscountAmount,
                 Items = vm.Items
                     .Where(i => i.Qty > 0)
@@ -167,6 +168,13 @@ namespace EatTogether.Controllers
             var vm = await _service.GetPreOrderDetailAsync(id);
             if (vm == null) return NotFound();
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ValidateCoupon(string code, int originalAmount)
+        {
+            var result = await _service.ValidateCouponAsync(code, originalAmount);
+            return Json(result);
         }
     }
 }

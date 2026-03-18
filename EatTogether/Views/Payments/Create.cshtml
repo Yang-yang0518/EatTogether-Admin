@@ -508,6 +508,7 @@
                 {
                     <button class="table-btn has-order @(table.HasUnserved ? "unserved" : "")"
                             id="tbtn-@table.PreOrderId"
+                            data-table-id="@table.TableId"
                             onclick="loadDetail(@table.PreOrderId, this)">
                         <span class="table-icon">🪑</span>
                         <span class="table-name">@table.TableName</span>
@@ -553,8 +554,8 @@
     <div class="right-panel">
 
         <div class="empty-right" id="emptyRight">
-            <div class="icon">👈</div>
-            <p>請選擇訂單</p>
+            <div class="icon" id="emptyRightIcon">👈</div>
+            <p id="emptyRightText">請選擇訂單</p>
         </div>
 
         <div id="checkoutContent" style="display:none;flex-direction:column;height:100%;">
@@ -564,6 +565,13 @@
                     <div class="right-title" id="rightTitle">-</div>
                     <div class="right-subtitle" id="rightSubtitle">-</div>
                 </div>
+                <button type="button" id="splitModeBtn"
+                        style="padding:7px 16px;border:2px solid #1a77c9;border-radius:8px;
+                   background:#fff;color:#1a77c9;font-family:inherit;
+                   font-weight:700;font-size:0.85rem;cursor:pointer;"
+                        onclick="toggleSplitMode()">
+                    拆單結帳
+                </button>
             </div>
 
             <div class="unserved-warning" id="unservedWarning">
@@ -578,6 +586,9 @@
                 <table class="detail-table">
                     <thead>
                         <tr>
+                            <th id="splitCheckCol" style="display:none;width:36px;">
+                                <input type="checkbox" id="checkAll" onchange="toggleAll(this)">
+                            </th>
                             <th>餐點名稱</th>
                             <th>結帳份數</th>
                             <th>單價</th>
@@ -589,12 +600,28 @@
             </div>
 
             <div class="amount-section">
-                <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;">
-                    <div style="font-size:0.82rem;color:#888;margin-bottom:8px;">付款方式</div>
-                    <div style="display:flex;gap:8px;">
-                        <button type="button" class="pay-method-btn" id="pmBtn-Cash" onclick="selectPayMethod('Cash')">💵 現金</button>
-                        <button type="button" class="pay-method-btn" id="pmBtn-Card" onclick="selectPayMethod('Card')">💳 刷卡</button>
-                        <button type="button" class="pay-method-btn" id="pmBtn-Other" onclick="selectPayMethod('Other')">📱 行動支付</button>
+                <div id="splitBillSection" style="display:none; margin-bottom:12px;
+                        padding:12px 14px; background:#f0f7ff; border:1px solid #b3d4f5;
+                        border-radius:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-size:0.85rem;color:#1a5c99;font-weight:700;">
+                            已選小計：NT$ <span id="splitSubtotal">0</span>
+                        </span>
+                        <button type="button"
+                                style="padding:6px 16px;background:#1a77c9;color:#fff;border:none;
+                       border-radius:8px;font-family:inherit;font-weight:700;
+                       font-size:0.85rem;cursor:pointer;"
+                                onclick="doSplitCheckout()">
+                            結這張 ✓
+                        </button>
+                    </div>
+                </div>
+                <div id="couponTag" style="display:none; margin-bottom:14px; padding:10px 14px;
+                                background:#fff8e1; border:1px solid #f0c040;
+                                border-radius:10px;">
+                    <div style="font-size:0.75rem;color:#b7770d;font-weight:700;margin-bottom:4px;">優惠券</div>
+                    <div style="display:flex;align-items:center;gap:6px;font-size:0.9rem;font-weight:600;color:#b7770d;">
+                        🎫 <span id="couponTagName"></span>
                     </div>
                 </div>
                 <div class="amount-row">
@@ -609,6 +636,14 @@
                     <span>應付</span>
                     <span>NT$ <span id="amtTotal">-</span></span>
                 </div>
+                <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;">
+                    <div style="font-size:0.82rem;color:#888;margin-bottom:8px;">付款方式</div>
+                    <div style="display:flex;gap:8px;">
+                        <button type="button" class="pay-method-btn" id="pmBtn-Cash" onclick="selectPayMethod('Cash')">💵 現金</button>
+                        <button type="button" class="pay-method-btn" id="pmBtn-Card" onclick="selectPayMethod('Card')">💳 刷卡</button>
+                        <button type="button" class="pay-method-btn" id="pmBtn-Other" onclick="selectPayMethod('Other')">📱 行動支付</button>
+                    </div>
+                </div>
 
                 <div class="cash-section" id="cashSection">
                     <div class="cash-label">實收金額</div>
@@ -621,9 +656,9 @@
                 </div>
 
                 <div class="checkout-btn-wrap">
-                    <form id="checkoutForm" method="post" action="/Payments/Checkout">
+                    <form id="checkoutForm" method="post" action="/Payments/CheckoutByTable">
                         @Html.AntiForgeryToken()
-                        <input type="hidden" name="preOrderId" id="checkoutPreOrderId" value="" />
+                        <input type="hidden" name="tableId" id="checkoutTableId" value="" />
                         <button type="submit" class="btn-checkout" id="checkoutBtn">
                             結帳 ✓
                         </button>
@@ -637,14 +672,14 @@
 @if (ViewBag.ShowSuccess == true) @* TempData["Success"] != null *@
 {
     <div id="toast" style="
-            position:fixed; inset:0;
-            background:rgba(0,0,0,0.35);
-            display:flex; align-items:center; justify-content:center;
-            z-index:9999;">
+                position:fixed; inset:0;
+                background:rgba(0,0,0,0.35);
+                display:flex; align-items:center; justify-content:center;
+                z-index:9999;">
         <div style="
-                background:#fff; border-radius:20px;
-                padding:40px 60px; text-align:center;
-                box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+                    background:#fff; border-radius:20px;
+                    padding:40px 60px; text-align:center;
+                    box-shadow:0 8px 32px rgba(0,0,0,0.2);">
             <div style="font-size:3rem; margin-bottom:12px;">✅</div>
             <div style="font-size:1.4rem; font-weight:700; color:#1a1a1a;">結帳成功！</div>
         </div>
@@ -661,9 +696,10 @@
 }
 
 <script>
-    let currentPreOrderId = null;
+        let currentPreOrderId = null;
     let currentPayMethod  = null;
     let currentTotal      = 0;
+    let currentTableId    = null;
 
     function switchTab(tab) {
         const isDine = tab === 'dine';
@@ -674,13 +710,23 @@
     }
 
     async function loadDetail(preOrderId, el) {
-        document.querySelectorAll('.table-btn, .takeout-item').forEach(b =>
-            b.classList.remove('active-selected'));
-        el.classList.add('active-selected');
-        currentPreOrderId = preOrderId;
+        const tableId = el?.dataset?.tableId;
+        const url = tableId
+            ? `/Payments/GetDetailByTable?tableId=${tableId}`
+            : `/Payments/GetDetail?preOrderId=${preOrderId}`;
 
-        const res  = await fetch(`/Payments/GetDetail?preOrderId=${preOrderId}`);
+        const res  = await fetch(url);
         const data = await res.json();
+
+        // 記錄當前 tableId 或 preOrderId
+        currentPreOrderId = preOrderId;
+        currentTableId    = tableId ? parseInt(tableId) : null;
+
+        // 高亮選中
+        document.querySelectorAll('.table-btn, .takeout-item')
+                .forEach(b => b.classList.remove('active-selected'));
+        el?.classList.add('active-selected');
+
         renderDetail(data);
     }
 
@@ -705,10 +751,18 @@
             if (isCancelled) badge = `<span class="status-badge badge-cancel">已取消</span>`;
 
             tr.innerHTML = `
-                <td>${item.productName}${badge}</td>
-                <td>${isCancelled ? '-' : item.qty}</td>
-                <td>NT$ ${item.unitPrice}</td>
-                <td>${isCancelled ? '-' : 'NT$ ' + item.subTotal}</td>
+                      <td class="split-check-col" style="display:none;">
+                      ${(!isCancelled && !isUnserved)
+                      ? `<input type="checkbox" class="detail-check"
+                      data-detail-id="${item.detailId}"
+                      data-subtotal="${item.subTotal}"
+                      onchange="updateSplitTotal()">`
+                      : ''}
+                      </td>
+                      <td>${item.productName}${badge}</td>
+                      <td>${isCancelled ? '-' : item.qty}</td>
+                      <td>NT$ ${item.unitPrice}</td>
+                      <td>${isCancelled ? '-' : 'NT$ ' + item.subTotal}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -716,6 +770,16 @@
         document.getElementById('amtOriginal').textContent = data.originalAmount;
         document.getElementById('amtDiscount').textContent = data.discountAmount;
         document.getElementById('amtTotal').textContent    = data.totalAmount;
+
+        const couponTag  = document.getElementById('couponTag');
+        const couponName = document.getElementById('couponTagName');
+        if (data.couponName) {
+            couponName.textContent  = data.couponName;
+            couponTag.style.display = 'block';
+        } else {
+            couponTag.style.display = 'none';
+        }
+
         currentTotal     = data.totalAmount;
         currentPayMethod = data.payMethod;
 
@@ -733,17 +797,28 @@
             btn.classList.add('show');
         }
 
-        document.getElementById('checkoutPreOrderId').value = data.preOrderId;
+        if (currentTableId) {
+            document.getElementById('checkoutTableId').value = currentTableId;
+        } else {
+            document.getElementById('checkoutTableId').value = data.preOrderId;
+        }
     }
 
     async function confirmCancelUnserved() {
-        const res = await fetch('/Payments/CancelUnserved', {
+        const url    = currentTableId
+            ? '/Payments/CancelUnservedByTable'
+            : '/Payments/CancelUnserved';
+        const body   = currentTableId
+            ? `tableId=${currentTableId}`
+            : `preOrderId=${currentPreOrderId}`;
+
+        const res  = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
             },
-            body: `preOrderId=${currentPreOrderId}`
+            body
         });
         const data = await res.json();
         renderDetail(data);
@@ -752,6 +827,8 @@
     function closeDetail() {
         document.getElementById('checkoutContent').style.display = 'none';
         document.getElementById('emptyRight').style.display      = 'flex';
+        document.getElementById('emptyRightIcon').textContent    = '👈';
+        document.getElementById('emptyRightText').textContent    = '請選擇訂單';
         document.querySelectorAll('.table-btn, .takeout-item').forEach(b =>
             b.classList.remove('active-selected'));
         currentPreOrderId = null;
@@ -788,8 +865,8 @@
 
             if (defaultTableId > 0) {
         const tables = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                        Model.Tables.Select(t => new { t.TableId, t.TableName, t.PreOrderId, t.HasOrder })
-                ));
+                                                Model.Tables.Select(t => new { t.TableId, t.TableName, t.PreOrderId, t.HasOrder })
+                                ));
             const target = tables.find(t => t.TableId === defaultTableId);
     if (target) {
         const anyEl = document.getElementById('tbtn-' + target.PreOrderId)
@@ -802,16 +879,123 @@
             const el = document.getElementById('tbtn-' + target.PreOrderId);
             if (el) loadDetail(target.PreOrderId, el);
         } else {
-            document.getElementById('emptyRight').style.display = 'none';
-            document.getElementById('checkoutContent').style.display = 'flex';
-            document.getElementById('rightTitle').textContent = `🪑 ${target.TableName}`;
-            document.getElementById('rightSubtitle').textContent = '點餐中...';
-            document.querySelector('.detail-scroll').style.display = 'none';
-            document.querySelector('.amount-section').style.display = 'none';
+            document.getElementById('emptyRight').style.display = 'flex';
+            document.getElementById('checkoutContent').style.display = 'none';
+            document.getElementById('emptyRightIcon').textContent = '🛎️';
+            document.getElementById('emptyRightText').textContent = '點餐中...';
         }
     }
     } else {
         switchTab('take');
     }
     });
+        let splitMode = false;
+
+    function toggleSplitMode() {
+        splitMode = !splitMode;
+        const btn       = document.getElementById('splitModeBtn');
+        const checkCol  = document.querySelectorAll('#splitCheckCol, .split-check-col');
+        const splitSec  = document.getElementById('splitBillSection');
+        const normalSec = document.getElementById('checkoutBtn').parentElement.parentElement;
+
+        btn.textContent = splitMode ? '取消拆單' : '拆單結帳';
+        btn.style.background = splitMode ? '#fff5f5' : '#fff';
+        btn.style.color      = splitMode ? '#c0392b' : '#1a77c9';
+        btn.style.borderColor= splitMode ? '#c0392b' : '#1a77c9';
+
+        checkCol.forEach(el => el.style.display = splitMode ? '' : 'none');
+        splitSec.style.display  = splitMode ? 'block' : 'none';
+
+        // 取消拆單時清除所有勾選
+        if (!splitMode) {
+            document.querySelectorAll('.detail-check').forEach(c => c.checked = false);
+            document.getElementById('splitSubtotal').textContent = '0';
+        }
+    }
+
+    function toggleAll(master) {
+        document.querySelectorAll('.detail-check')
+                .forEach(c => c.checked = master.checked);
+        updateSplitTotal();
+    }
+
+    function updateSplitTotal() {
+        let total = 0;
+        document.querySelectorAll('.detail-check:checked').forEach(c => {
+            total += parseInt(c.dataset.subtotal || 0);
+        });
+        document.getElementById('splitSubtotal').textContent = total;
+
+        // 全選時同步 master checkbox
+        const all     = document.querySelectorAll('.detail-check');
+        const checked = document.querySelectorAll('.detail-check:checked');
+        const master  = document.getElementById('checkAll');
+        if (master) master.indeterminate = checked.length > 0 && checked.length < all.length;
+        if (master) master.checked = checked.length === all.length;
+    }
+
+        async function doSplitCheckout() {
+        const detailIds = [...document.querySelectorAll('.detail-check:checked')]
+            .map(c => parseInt(c.dataset.detailId));
+
+        if (!detailIds.length) {
+            alert('請先勾選要結帳的餐點');
+            return;
+        }
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const res = await fetch('/Payments/SplitCheckout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token
+            },
+            body: JSON.stringify({
+                tableId: currentTableId,
+                detailIds: detailIds,
+                payMethod: currentPayMethod || 'Cash'
+            })
+        });
+
+        const result = await res.json();
+        if (result.success) {
+            // 1. 關閉拆單模式 UI
+            splitMode = true;
+            toggleSplitMode();
+
+            if (result.remaining) {
+                // 2. 獲取新的 PreOrderId (這是重點！)
+                const oldId = currentPreOrderId;
+                const newId = result.remaining.preOrderId;
+
+                // 3. 更新左側按鈕的 ID 與 onclick 事件，防止「點不進去」
+                const targetBtn = document.getElementById('tbtn-' + oldId);
+                if (targetBtn) {
+                    targetBtn.id = 'tbtn-' + newId; // 更新 DOM ID
+                    targetBtn.setAttribute('onclick', `loadDetail(${newId}, this)`); // 更新點擊事件
+
+                    // 更新顯示金額
+                    const amtSpan = targetBtn.querySelector('.table-amount, .takeout-amount');
+                    if (amtSpan) {
+                        amtSpan.textContent = `$${result.remaining.totalAmount}`;
+                    }
+                }
+
+                // 4. 更新全域變數，確保下一次操作指向正確的 PreOrder
+                currentPreOrderId = newId;
+
+                // 5. 重新渲染右側明細
+                renderDetail(result.remaining);
+
+                alert('部分結帳成功，剩餘餐點已更新。');
+            } else {
+                // 全部結完才關閉並重整
+                closeDetail();
+                location.reload();
+            }
+        } else {
+            alert('拆單失敗：' + (result.message || '未知錯誤'));
+        }
+    
+    }
 </script>

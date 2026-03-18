@@ -29,14 +29,19 @@ namespace EatTogether.Models.Infra
 			var issuer = jwtSettings["Issuer"]!;
 			var audience = jwtSettings["Audience"]!;
 
-			// 隨機產生頭像底色，從預設色盤挑一個
+			// 員工頭像隨機背景色
 			var colors = new[]
 			{
-				"#E57373", "#F06292", "#BA68C8", "#7986CB",
-				"#4FC3F7", "#4DB6AC", "#81C784", "#FFB74D"
+				"#C9A96E", "#8B5E3C", "#A0522D", "#6B4226",
+				"#B07D4E", "#7A4F2D", "#9C6B3C", "#5C3317"
 			};
 
-			var avatarColor = colors[new Random().Next(colors.Length)];
+			// 依名字雜湊決定顏色，確保同一使用者每次顏色相同
+			int hash = 0;
+			foreach (var c in payloadDto.Name)
+				hash = (hash * 31 + c) & 0x7fffffff;
+
+			var avatarColor = colors[hash % colors.Length];
 
 			// 建立 Claims (Payload 鍵值對)
 			var claims = new List<Claim>
