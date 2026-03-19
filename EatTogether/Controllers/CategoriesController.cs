@@ -17,10 +17,12 @@ namespace EatTogether.Controllers
 	public class CategoriesController : Controller
 	{
 		private readonly CategoryService _categoryService;
+		private readonly DishService _dishService;
 
-		public CategoriesController(CategoryService categoryService)
+		public CategoriesController(CategoryService categoryService, DishService dishService)
 		{
 			_categoryService = categoryService;
+			_dishService = dishService;
 		}
 
 		// GET: Categories
@@ -58,6 +60,24 @@ namespace EatTogether.Controllers
 				}
 				return vm;
 			}).ToList();
+
+			// 取得所有餐點以供詳情顯示
+			var allDishes = await _dishService.GetAllAsync();
+
+			ViewBag.CategoriesJson = System.Text.Json.JsonSerializer.Serialize(
+				vms.Select(vm => new {
+					id = vm.Id,
+					categoryName = vm.CategoryName,
+					imageUrl = vm.ImageUrl,
+					parentCategoryName = vm.ParentCategoryName,
+					dishCount = vm.DishCount,
+					dishes = allDishes.Where(d => d.CategoryId == vm.Id).Select(d => new {
+						dishName = d.DishName,
+						price = d.Price,
+						isActive = d.IsActive
+					})
+				})
+			);
 
 			// 準備下拉選單給 Modal 使用
 			ViewBag.ParentCategoryOptions = await GetParentCategoryOptionsAsync();
@@ -150,6 +170,14 @@ namespace EatTogether.Controllers
 		{
 			if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
 			await _categoryService.BatchDeleteAsync(request.Ids);
+			return Ok();
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> UpdateOrder([FromBody] OrderedIdsDto request)
+		{
+			if (request?.OrderedIds == null || !request.OrderedIds.Any()) return BadRequest("無順序資料。");
+			await _categoryService.UpdateOrderAsync(request.OrderedIds);
 			return Ok();
 		}
 
