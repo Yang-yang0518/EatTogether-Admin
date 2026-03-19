@@ -205,7 +205,7 @@
                                             {
                                                 <button class="btn btn-light text-danger w-100 rounded-pill btn-sm py-2 border mt-1"
                                                         onclick="disableCategory(@item.Id)">
-                                                    <i class="fas fa-trash-alt me-1"></i>下架
+                                                    <i class="fas fa-power-off me-1"></i>停用
                                                 </button>
                                             }
                                             else
@@ -617,12 +617,9 @@
             
             // 隱藏所有卡片
             allCards.forEach(c => c.style.display = "none");
-            
-            // 依照目前 filteredCards 的順序重新排列 DOM 元素
-            filteredCards.forEach(c => {
-                c.style.display = "";
-                container.appendChild(c); 
-            });
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end   = start + PAGE_SIZE;
+            filteredCards.slice(start, end).forEach(c => c.style.display = "");
 
             const total = filteredCards.length;
             document.getElementById("emptyState").classList.toggle("d-none", total > 0);
@@ -903,12 +900,8 @@
                     ImageUrl:         imageUrl
                 })
             });
-            if (res.ok) { 
-                location.reload(); 
-            } else {
-                const errData = await res.json();
-                showAlert("danger", "新增失敗: " + (errData.message || "請檢查欄位資料"));
-            }
+            if (res.ok) { location.reload(); }
+            else showAlert("danger", "新增失敗，請稍後再試");
         }
 
         /* ════════════════════════════════════════
