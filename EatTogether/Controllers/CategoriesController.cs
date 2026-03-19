@@ -1,6 +1,8 @@
+using EatTogether.Models.DTOs;
+using EatTogether.Models.DTOs;
+using EatTogether.Models.Infra;
 using EatTogether.Models.Services;
 using EatTogether.Models.ViewModels;
-using EatTogether.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Collections.Generic;
@@ -11,6 +13,7 @@ using System;
 
 namespace EatTogether.Controllers
 {
+	[RequirePermission("Menu_Manage")]
 	public class CategoriesController : Controller
 	{
 		private readonly CategoryService _categoryService;

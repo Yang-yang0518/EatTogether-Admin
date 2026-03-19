@@ -1,4 +1,4 @@
-using EatTogether.Models.DTOs;
+ï»¿using EatTogether.Models.DTOs;
 using EatTogether.Models.Extensions;
 using EatTogether.Models.Infra;
 using EatTogether.Models.Services;
@@ -18,17 +18,17 @@ namespace EatTogether.Controllers
 		}
 
 		// GET /Users/Index
-		//[RequirePermission("Staff_View")]
+		[RequirePermission("Staff_View")]   // Staff_Manage çš„äººé€é canManage claim å–å¾—é¡å¤–åŠŸèƒ½
 		[HttpGet]
 		public async Task<IActionResult> Index(UserIndexViewModel vm)
 		{
-			// // ±q JWT ¨ú±o¥Ø«eµn¤JªÌ¸ê°T
+			// å¾ JWT å–å¾—ç›®å‰ç™»å…¥è€…è³‡è¨Š
 			var currentUserId = int.Parse(User.FindFirstValue("UserId") ?? "0");
 
-			// ÀË¬d¥Ø«eµn¤JªÌ¬O§_¾Ö¦³¡uºŞ²z­û¤u¡vªºÅv­­¼Ğ°O (Claim)
+			// æª¢æŸ¥ç›®å‰ç™»å…¥è€…æ˜¯å¦æ“æœ‰ã€Œç®¡ç†å“¡å·¥ã€çš„æ¬Šé™æ¨™è¨˜ (Claim)
 			var canManage = User.HasClaim("Permission", "Staff_Manage");
 
-			// ¬d¸ß±ø¥ó
+			// æŸ¥è©¢æ¢ä»¶
 			var searchDto = new UserSearchDto
 			{
 				EmployeeNumber = vm.EmployeeNumber,
@@ -56,8 +56,8 @@ namespace EatTogether.Controllers
 		}
 
 		// GET /Users/NextEmployeeNumber
-		// ¹w²£­û¤u½s¸¹¡]«eºİ¶} Modal ®É©I¥s¡^
-		//[RequirePermission("Staff_Manage")]
+		// é ç”¢å“¡å·¥ç·¨è™Ÿï¼ˆå‰ç«¯é–‹ Modal æ™‚å‘¼å«ï¼‰
+		[RequirePermission("Staff_Manage")]
 		[HttpGet]
 		public async Task<IActionResult> NextEmployeeNumber()
 		{
@@ -67,8 +67,8 @@ namespace EatTogether.Controllers
 
 
 		// POST /Users/Create
-		// ·s¼W­û¤u
-		//[RequirePermission("Staff_Manage")]
+		// æ–°å¢å“¡å·¥
+		[RequirePermission("Staff_Manage")]
 		[HttpPost]
 		public async Task<IActionResult> Create([FromBody] UserCreateDto dto)
 		{
@@ -77,7 +77,7 @@ namespace EatTogether.Controllers
 				var errors = ModelState.Values
 					.SelectMany(v => v.Errors)
 					.Select(e => e.ErrorMessage);
-				return BadRequest(new { message = string.Join("¡B", errors) });
+				return BadRequest(new { message = string.Join("ï¿½B", errors) });
 			}
 
 			var result = await _userService.CreateAsync(dto);
@@ -88,23 +88,23 @@ namespace EatTogether.Controllers
 		}
 
 		// GET /Users/Edit/{id}
-		// «eºİ¶}½s¿è Modal ®É©I¥s¡A¨ú±o¹w¶ñ¸ê®Æ
-		//[RequirePermission("Staff_Manage")]
+		// å‰ç«¯é–‹ç·¨è¼¯ Modal æ™‚å‘¼å«ï¼Œå–å¾—é å¡«è³‡æ–™
+		[RequirePermission("Staff_Manage")]
 		[HttpGet]
 		public async Task<IActionResult> Edit(int id)
 		{
 			var dto = await _userService.GetForEditAsync(id);
 			if(dto == null)
 			{
-				return NotFound(new { message = "§ä¤£¨ì¦¹­û¤u" });
+				return NotFound(new { message = "ï¿½ä¤£ï¿½ì¦¹ï¿½ï¿½ï¿½u" });
 			}
 
 			return Ok(dto.ToEditVm());
 		}
 
 		// PUT /Users/Edit/{id}
-		// Àx¦s½s¿è
-		//[RequirePermission("Staff_Manage")]
+		// å„²å­˜ç·¨è¼¯
+		[RequirePermission("Staff_Manage")]
 		[HttpPut]
 		public async Task<IActionResult> Edit(int id, [FromBody] UserEditViewModel vm)
 		{
@@ -113,7 +113,7 @@ namespace EatTogether.Controllers
 				var errors = ModelState.Values
 					.SelectMany(v => v.Errors)
 					.Select(e => e.ErrorMessage);
-				return BadRequest(new { message = string.Join("¡B", errors) });
+				return BadRequest(new { message = string.Join("ï¿½B", errors) });
 			}
 
 			var result = await _userService.UpdateAsync(id, vm);
@@ -122,7 +122,7 @@ namespace EatTogether.Controllers
 		}
 
 		// PATCH /Users/Resign/{id}
-		//[RequirePermission("Staff_Manage")]
+		[RequirePermission("Staff_Manage")]
 		[HttpPatch]
 		public async Task<IActionResult> Resign(int id)
 		{
@@ -134,7 +134,7 @@ namespace EatTogether.Controllers
 		}
 
 		// PATCH /Users/Reinstate/{id}
-		//[RequirePermission("Staff_Manage")]
+		[RequirePermission("Staff_Manage")]
 		[HttpPatch]
 		public async Task<IActionResult> Reinstate(int id)
 		{
