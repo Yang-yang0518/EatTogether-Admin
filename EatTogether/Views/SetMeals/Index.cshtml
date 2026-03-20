@@ -173,7 +173,7 @@
                     }
                     else
                     {
-                        statusText = "上架中";
+                        statusText = "供應中";
                         statusClass = "bg-success-subtle text-success border-success";
                     }
 
@@ -274,13 +274,19 @@
 
                                 <div class="mt-auto">
                                     <div class="row g-2">
-                                        <div class="col-6">
+                                        <div class="col-4">
+                                            <button class="btn btn-outline-secondary w-100 rounded-pill btn-sm py-2"
+                                                    onclick="cloneSetMeal(@item.Id)" title="複製套餐">
+                                                <i class="fas fa-copy me-1"></i>複製
+                                            </button>
+                                        </div>
+                                        <div class="col-4">
                                             <button class="btn btn-outline-info w-100 rounded-pill btn-sm py-2 view-setmeal-items"
                                                     data-setmeal-id="@item.Id">
                                                 <i class="fas fa-search me-1"></i>詳情
                                             </button>
                                         </div>
-                                        <div class="col-6">
+                                        <div class="col-4">
                                             <a asp-action="Edit" asp-route-id="@item.Id"
                                                class="btn btn-outline-warning w-100 rounded-pill btn-sm py-2">
                                                 <i class="fas fa-edit me-1"></i>編輯
@@ -463,8 +469,12 @@
                 const matchSearch = !search || card.dataset.name.includes(search);
                 let matchStatus = true;
                 if (status) {
-                    const badge = card.querySelector(".badge.rounded-pill");
-                    matchStatus = badge && badge.textContent.trim() === status;
+                    if (status === "上架中") {
+                        matchStatus = card.dataset.active === "true";
+                    } else {
+                        const badge = card.querySelector(".badge.rounded-pill");
+                        matchStatus = badge && badge.textContent.trim() === status;
+                    }
                 }
                 return matchSearch && matchStatus;
             });
@@ -727,6 +737,21 @@
                 if (res.ok) { showAlert("success", "已重新上架"); setTimeout(() => location.reload(), 1000); }
                 else showAlert("danger", "上架失敗，請稍後再試");
             } catch { showAlert("danger", "發生錯誤，請稍後再試"); }
+        }
+
+        async function cloneSetMeal(id) {
+            if (!confirm("確定要複製此套餐嗎？")) return;
+            try {
+                const res = await fetch(`/SetMeals/Clone/${id}`, { method: "POST" });
+                if (res.ok) {
+                    showAlert("success", "套餐複製成功");
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert("danger", "複製失敗，請稍後再試");
+                }
+            } catch {
+                showAlert("danger", "發生錯誤，請稍後再試");
+            }
         }
 
         /* ════════════════════════════════════════

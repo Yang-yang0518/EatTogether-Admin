@@ -29,37 +29,7 @@ namespace EatTogether.Controllers
 		public async Task<IActionResult> Index()
 		{
 			var dtos = await _categoryService.GetAllAsync();
-			var vms = dtos.Select(d =>
-			{
-				var vm = d.ToViewModel();
-				if (string.IsNullOrEmpty(vm.ImageUrl))
-				{
-					string safeName = vm.CategoryName;
-					foreach (char c in System.IO.Path.GetInvalidFileNameChars())
-					{
-						safeName = safeName.Replace(c, '_');
-					}
-
-					var baseImagesFolderPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "categories");
-
-					string jpgFileName = $"{safeName}.jpg";
-					string jpgPath = System.IO.Path.Combine(baseImagesFolderPath, jpgFileName);
-					if (System.IO.File.Exists(jpgPath))
-					{
-						vm.ImageUrl = "/images/categories/" + jpgFileName;
-					}
-					else
-					{
-						string pngFileName = $"{safeName}.png";
-						string pngPath = System.IO.Path.Combine(baseImagesFolderPath, pngFileName);
-						if (System.IO.File.Exists(pngPath))
-						{
-							vm.ImageUrl = "/images/categories/" + pngFileName;
-						}
-					}
-				}
-				return vm;
-			}).ToList();
+			var vms = dtos.Select(d => d.ToViewModel()).ToList();
 
 			// 取得所有餐點以供詳情顯示
 			var allDishes = await _dishService.GetAllAsync();
