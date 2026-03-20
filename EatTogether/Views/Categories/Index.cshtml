@@ -182,21 +182,19 @@
 
                             <!-- 卡片內容 -->
                             <div class="card-body d-flex flex-column p-4">
-                                <div class="mb-2">
+                                <div class="mb-3">
                                     <h5 class="fw-bold mb-1 text-dark">@item.CategoryName</h5>
-                                    <span class="badge bg-info-subtle text-info border border-info-subtle">
-                                        <i class="fas fa-utensils me-1"></i>@item.DishCount 道餐點
-                                    </span>
-                                </div>
-
-                                <div class="bg-light rounded-3 p-2 mb-3 small text-muted d-flex align-items-center gap-2">
-                                    <i class="fas fa-sort-numeric-up text-primary"></i>
-                                    <span>顯示順序：<strong class="text-dark">@item.DisplayOrder</strong></span>
                                 </div>
 
                                 <div class="mt-auto">
                                     <div class="row g-2">
-                                        <div class="col-12">
+                                        <div class="col-6">
+                                            <button class="btn btn-outline-info w-100 rounded-pill btn-sm py-2 view-category-dishes"
+                                                    data-category-id="@item.Id">
+                                                <i class="fas fa-search me-1"></i>詳情
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
                                             <button class="btn btn-outline-warning w-100 rounded-pill btn-sm py-2"
                                                     onclick="openEditModal(@item.Id, '@item.CategoryName', '@item.ParentCategoryId', @item.DisplayOrder, @(item.IsActive.ToString().ToLower()), '@item.ImageUrl')">
                                                 <i class="fas fa-edit me-1"></i>編輯
@@ -205,14 +203,14 @@
                                         <div class="col-12">
                                             @if (item.IsActive)
                                             {
-                                                <button class="btn btn-light text-danger w-100 rounded-pill btn-sm py-2 border"
+                                                <button class="btn btn-light text-danger w-100 rounded-pill btn-sm py-2 border mt-1"
                                                         onclick="disableCategory(@item.Id)">
-                                                    <i class="fas fa-power-off me-1"></i>下架
+                                                    <i class="fas fa-power-off me-1"></i>停用
                                                 </button>
                                             }
                                             else
                                             {
-                                                <button class="btn btn-light text-success w-100 rounded-pill btn-sm py-2 border"
+                                                <button class="btn btn-light text-success w-100 rounded-pill btn-sm py-2 border mt-1"
                                                         onclick="enableCategory(@item.Id)">
                                                     <i class="fas fa-check-circle me-1"></i>啟用
                                                 </button>
@@ -232,11 +230,37 @@
                 <p class="text-muted">沒有符合條件的分類</p>
                 <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="clearFilter()">清除篩選</button>
             </div>
+        </div>
+    </div>
+</div>
 
-            <!-- 分頁 -->
-            <div class="d-flex justify-content-between align-items-center mt-4">
-                <small class="text-muted" id="pageInfo"></small>
-                <ul class="pagination mb-0" id="pagination"></ul>
+<!-- ===== 查看分類餐點 Modal ===== -->
+<div class="modal fade" id="viewCategoryDishesModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-utensils me-2 text-primary"></i>
+                    <span id="viewCategoryName"></span> 的餐點內容
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 圖片預覽區 -->
+                <div id="catDetailImageWrap" class="mb-4 d-none">
+                    <img id="catDetailImage" src="" alt="分類圖片"
+                         class="w-100 rounded-3 shadow-sm"
+                         style="max-height:200px; object-fit:cover;"
+                         onerror="this.closest('#catDetailImageWrap').classList.add('d-none')" />
+                </div>
+
+                <!-- 分類基本資訊 -->
+                <div id="catDetailMeta" class="mb-3 p-3 bg-light rounded-3 small text-center"></div>
+
+                <div id="viewCategoryDishesList"></div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
             </div>
         </div>
     </div>
@@ -426,6 +450,12 @@
             transition: all .3s ease;
         }
 
+            .transition-hover:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 1rem 2rem rgba(0,0,0,0.12) !important;
+                border-color: #0d6efd !important;
+            }
+
         /* 排序模式 */
         #category-card-container.sort-mode .category-card .card {
             border: 2px dashed #ffc107 !important;
@@ -485,11 +515,72 @@
         let isSortMode  = false;
         let isBatchMode = false;
 
+        const allCategories = @Html.Raw(ViewBag.CategoriesJson);
+
         document.addEventListener("DOMContentLoaded", () => {
             filteredCards = Array.from(document.querySelectorAll(".category-card"));
             // 預設按 ID 倒序，讓最新新增的在最前面
             filteredCards.sort((a, b) => parseInt(b.dataset.id) - parseInt(a.dataset.id));
             renderPage();
+
+            /* ── 詳情按鈕事件 ── */
+            document.querySelectorAll(".view-category-dishes").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    const catId = parseInt(this.dataset.categoryId);
+                    const cat = allCategories.find(c => c.id === catId);
+                    if (!cat) return;
+
+                    document.getElementById("viewCategoryName").textContent = cat.categoryName;
+
+                    // 圖片預覽
+                    const imgWrap = document.getElementById("catDetailImageWrap");
+                    const imgEl = document.getElementById("catDetailImage");
+                    if (cat.imageUrl) {
+                        imgEl.src = cat.imageUrl;
+                        imgWrap.classList.remove("d-none");
+                    } else {
+                        imgWrap.classList.add("d-none");
+                    }
+
+                    // 基本資訊
+                    const metaEl = document.getElementById("catDetailMeta");
+                    metaEl.innerHTML = `
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="text-muted mb-1">上層分類</div>
+                                <div class="fw-bold">${cat.parentCategoryName || "無"}</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted mb-1">餐點數量</div>
+                                <div class="fw-bold text-primary">${cat.dishCount} 道</div>
+                            </div>
+                        </div>`;
+
+                    // 餐點列表
+                    const listContainer = document.getElementById("viewCategoryDishesList");
+                    let listHtml = "";
+                    if (cat.dishes && cat.dishes.length > 0) {
+                        listHtml = `<ul class="list-group list-group-flush border rounded-3 overflow-hidden">`;
+                        cat.dishes.forEach(d => {
+                            const statusBadge = d.isActive ? "" : '<span class="badge bg-secondary-subtle text-secondary border border-secondary ms-2 small">已下架</span>';
+                            listHtml += `
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div>
+                                        <span class="fw-bold text-dark">${d.dishName}</span>
+                                        ${statusBadge}
+                                    </div>
+                                    <span class="text-danger fw-bold">$${d.price.toLocaleString()}</span>
+                                </li>`;
+                        });
+                        listHtml += `</ul>`;
+                    } else {
+                        listHtml = `<div class="text-center py-4 text-muted border rounded-3"><i class="fas fa-info-circle me-2"></i>此分類目前沒有餐點</div>`;
+                    }
+                    listContainer.innerHTML = listHtml;
+
+                    new bootstrap.Modal(document.getElementById("viewCategoryDishesModal")).show();
+                });
+            });
         });
 
         function filterCards() {
@@ -526,37 +617,15 @@
             
             // 隱藏所有卡片
             allCards.forEach(c => c.style.display = "none");
-            
-            // 依照目前 filteredCards 的順序重新排列 DOM 元素
             const start = (currentPage - 1) * PAGE_SIZE;
             const end   = start + PAGE_SIZE;
-            const pagedCards = filteredCards.slice(start, end);
-            
-            pagedCards.forEach(c => {
-                c.style.display = "";
-                container.appendChild(c); // 重新附加會改變其在容器中的實體順序
-            });
+            filteredCards.slice(start, end).forEach(c => c.style.display = "");
 
-            const total      = filteredCards.length;
-            const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+            const total = filteredCards.length;
             document.getElementById("emptyState").classList.toggle("d-none", total > 0);
-
-            const pageInfo = document.getElementById("pageInfo");
-            if (pageInfo) pageInfo.textContent = total === 0
-                ? "沒有符合條件的記錄"
-                : `顯示第 ${start + 1} 至 ${Math.min(end, total)} 筆，共 ${total} 筆記錄`;
-
-            const paginationEl = document.getElementById("pagination");
-            if (paginationEl) {
-                paginationEl.innerHTML = "";
-                for (let i = 1; i <= totalPages; i++) {
-                    const li = document.createElement("li");
-                    li.className = `page-item ${i === currentPage ? "active" : ""}`;
-                    li.innerHTML = `<button type="button" class="page-link" onclick="goToPage(${i})">${i}</button>`;
-                    paginationEl.appendChild(li);
-                }
-            }
         }
+
+        /* 移除 pagination 相關函式 */
 
         function goToPage(page) { currentPage = page; renderPage(); }
 
@@ -831,12 +900,8 @@
                     ImageUrl:         imageUrl
                 })
             });
-            if (res.ok) { 
-                location.reload(); 
-            } else {
-                const errData = await res.json();
-                showAlert("danger", "新增失敗: " + (errData.message || "請檢查欄位資料"));
-            }
+            if (res.ok) { location.reload(); }
+            else showAlert("danger", "新增失敗，請稍後再試");
         }
 
         /* ════════════════════════════════════════
