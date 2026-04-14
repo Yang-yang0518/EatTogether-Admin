@@ -119,6 +119,19 @@ namespace EatTogether
 			builder.Services.AddScoped<JwtHelper>();
 			builder.Services.AddSingleton<UserNumberGenerator>();
 
+			// ▼ 1. 加入 CORS 服務設定 ▼
+			builder.Services.AddCors(options =>
+			{
+				options.AddPolicy("FrontendPolicy", policy =>
+				{
+					policy.WithOrigins("http://localhost:5173") // 允許 Vue 前台
+						  .AllowAnyMethod()
+						  .AllowAnyHeader()
+						  .AllowCredentials();
+				});
+			});
+
+
 			var app = builder.Build();
 
             //每次執行，讓系統自動跑活動的狀態
@@ -144,6 +157,9 @@ namespace EatTogether
             app.UseStaticFiles();
 
             app.UseRouting();
+
+			// ▼ 2. 啟用 CORS 通行證 ▼
+			app.UseCors("FrontendPolicy");
 
 			// 新增 Authentication 在 Authorization 之前
 			app.UseAuthentication();
