@@ -119,6 +119,7 @@ CREATE TABLE [dbo].[Articles](
 	[ExpiryDate] [datetime2](0) NULL,
 	[IsPinned] [bit] NOT NULL,
 	[Status] [int] NOT NULL,
+	[ViewCount] [int] NOT NULL,
  CONSTRAINT [PK_Articles] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
@@ -996,6 +997,8 @@ GO
 ALTER TABLE [dbo].[Articles] ADD  DEFAULT ((0)) FOR [IsPinned]
 GO
 ALTER TABLE [dbo].[Articles] ADD  DEFAULT ((0)) FOR [Status]
+GO
+ALTER TABLE [dbo].[Articles] ADD  DEFAULT ((0)) FOR [ViewCount]
 GO
 ALTER TABLE [dbo].[Categories] ADD  DEFAULT ((1)) FOR [IsActive]
 GO
