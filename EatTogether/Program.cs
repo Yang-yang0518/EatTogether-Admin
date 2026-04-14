@@ -19,11 +19,11 @@ namespace EatTogether
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
-			// ���U��DBContext
+			// 註冊到DBContext
 			builder.Services.AddDbContext<EatTogetherDBContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-			// �s�W JWT Authentication
+			// 新增 JWT Authentication
 			var jwtSettings = builder.Configuration.GetSection("Jwt");
 			var secretKey = jwtSettings["SecretKey"]!;
 
@@ -34,7 +34,7 @@ namespace EatTogether
 			})
 			.AddJwtBearer(options =>
 			{
-				// �q httpOnly Cookie Ū�� Token
+				// 從 httpOnly Cookie 讀取 Token
 				options.Events = new JwtBearerEvents
 				{
 					OnMessageReceived = ctx =>
@@ -58,13 +58,13 @@ namespace EatTogether
 				};
 			});
 
-			// ���URepository
+			// 註冊Repository
 			builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 			builder.Services.AddScoped<IDishRepository, DishRepository>();
 			builder.Services.AddScoped<ISetMealRepository, SetMealRepository>();
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
-            // ���UService
+            // 註冊Service
             builder.Services.AddScoped<CategoryService>();
 			builder.Services.AddScoped<DishService>();
 			builder.Services.AddScoped<SetMealService>();
@@ -117,14 +117,27 @@ namespace EatTogether
 
 
 
-			// ���U Infra�]�ݭn DI ���~���U�^
+			// 註冊 Infra（需要 DI 的才註冊）
 			builder.Services.AddHttpContextAccessor();
 			builder.Services.AddScoped<JwtHelper>();
 			builder.Services.AddSingleton<UserNumberGenerator>();
 
+			// ▼ 1. 加入 CORS 服務設定 ▼
+			builder.Services.AddCors(options =>
+			{
+				options.AddPolicy("FrontendPolicy", policy =>
+				{
+					policy.WithOrigins("http://localhost:5173") // 允許 Vue 前台
+						  .AllowAnyMethod()
+						  .AllowAnyHeader()
+						  .AllowCredentials();
+				});
+			});
+
+
 			var app = builder.Build();
 
-            //�C������A���t�Φ۰ʶ]���ʪ����A
+            //每次執行，讓系統自動跑活動的狀態
 			using (var scope = app.Services.CreateScope())
 			{
 				EventInitializerExtensions.UpdateEventStatuses(app.Services);
@@ -140,7 +153,7 @@ namespace EatTogether
 				app.UseHsts();
             }
 
-			// ������~������
+			// 全域錯誤頁路由
 			app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
 			app.UseHttpsRedirection();
@@ -148,7 +161,10 @@ namespace EatTogether
 
             app.UseRouting();
 
-			// �s�W Authentication �b Authorization ���e
+			// ▼ 2. 啟用 CORS 通行證 ▼
+			app.UseCors("FrontendPolicy");
+
+			// 新增 Authentication 在 Authorization 之前
 			app.UseAuthentication();
 
 			app.UseAuthorization();
