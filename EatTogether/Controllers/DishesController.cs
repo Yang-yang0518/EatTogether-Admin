@@ -2,6 +2,7 @@
 using EatTogether.Models.Infra;
 using EatTogether.Models.Services;
 using EatTogether.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
@@ -193,13 +194,65 @@ namespace EatTogether.Controllers
             return Ok(new { isActive = dish.IsActive });
         }
 
-        public async Task<IActionResult> GetAllJson()
+		[HttpGet]
+		[AllowAnonymous]
+		public async Task<IActionResult> GetAllJson()
         {
             var dtos = await _dishService.GetAllAsync();
-            return Json(dtos.Select(d => new { id = d.Id, dishName = d.DishName, price = d.Price }));     
+            return Json(dtos.Select(d => new
+            {
+                id = d.Id,
+                dishName = d.DishName,
+                price = d.Price,
+                categoryId = d.CategoryId, 
+                imageUrl = d.ImageUrl       //補上圖片路徑，前台才好顯示}));     
+            }));
         }
+		[HttpGet]
+		[AllowAnonymous]
+		public async Task<IActionResult> GetActiveJson()
+		{
+			var dtos = await _dishService.GetAllActiveAsync();
+			return Json(dtos.Select(d => new
+			{
+				id = d.Id,
+				dishName = d.DishName,
+				description = d.Description,
+				price = d.Price,
+				categoryId = d.CategoryId,
+				categoryName = d.CategoryName,
+				imageUrl = d.ImageUrl,
+				isRecommended = d.IsRecommended,
+				isPopular = d.IsPopular,
+				isVegetarian = d.IsVegetarian,
+				spicyLevel = d.SpicyLevel
+			}));
+		}
 
-        private async Task<List<SelectListItem>> GetCategoryOptionsAsync()
+		[HttpGet]
+		[AllowAnonymous]
+		public async Task<IActionResult> GetByIdJson(int id)
+		{
+			var dto = await _dishService.GetByIdAsync(id);
+			if (dto == null) return NotFound();
+			return Json(new
+			{
+				id = dto.Id,
+				dishName = dto.DishName,
+				description = dto.Description,
+				price = dto.Price,
+				categoryId = dto.CategoryId,
+				categoryName = dto.CategoryName,
+				imageUrl = dto.ImageUrl,
+				isRecommended = dto.IsRecommended,
+				isPopular = dto.IsPopular,
+				isVegetarian = dto.IsVegetarian,
+				spicyLevel = dto.SpicyLevel
+			});
+		}
+
+
+		private async Task<List<SelectListItem>> GetCategoryOptionsAsync()
         {
             var categories = await _categoryService.GetAllAsync();
             return categories.Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.CategoryName }).ToList();
