@@ -213,19 +213,38 @@ namespace EatTogether.Controllers
 		public async Task<IActionResult> GetActiveJson()
 		{
 			var dtos = await _dishService.GetAllActiveAsync();
-			return Json(dtos.Select(d => new
-			{
-				id = d.Id,
-				dishName = d.DishName,
-				description = d.Description,
-				price = d.Price,
-				categoryId = d.CategoryId,
-				categoryName = d.CategoryName,
-				imageUrl = d.ImageUrl,
-				isRecommended = d.IsRecommended,
-				isPopular = d.IsPopular,
-				isVegetarian = d.IsVegetarian,
-				spicyLevel = d.SpicyLevel
+			var baseFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+
+			return Json(dtos.Select(d => {
+				string imageUrl = d.ImageUrl;
+
+				// 若資料庫沒有圖片，用餐點名稱去找本地檔案
+				if (string.IsNullOrEmpty(imageUrl))
+				{
+					string safeName = d.DishName;
+					foreach (char c in Path.GetInvalidFileNameChars())
+						safeName = safeName.Replace(c, '_');
+
+					if (System.IO.File.Exists(Path.Combine(baseFolder, safeName + ".jpg")))
+						imageUrl = "/images/" + safeName + ".jpg";
+					else if (System.IO.File.Exists(Path.Combine(baseFolder, safeName + ".png")))
+						imageUrl = "/images/" + safeName + ".png";
+				}
+
+				return new
+				{
+					id = d.Id,
+					dishName = d.DishName,
+					description = d.Description,
+					price = d.Price,
+					categoryId = d.CategoryId,
+					categoryName = d.CategoryName,
+					imageUrl = imageUrl,  // ← 用補過的
+					isRecommended = d.IsRecommended,
+					isPopular = d.IsPopular,
+					isVegetarian = d.IsVegetarian,
+					spicyLevel = d.SpicyLevel
+				};
 			}));
 		}
 
