@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EatTogether.Controllers
 {
-	//[Authorize]
+	[Authorize]
 	[RequirePermission("Event_Manage")]
 	public class EventsController : Controller
 	{
@@ -26,6 +26,7 @@ namespace EatTogether.Controllers
 		{
 			var vm = new EventCreateViewModel();
 			vm.DishOptions = await _service.GetDishOptionsAsync();
+			ViewBag.DishPrices = await _service.GetDishPricesAsync();
 			return View(vm);
 		}
 
@@ -37,15 +38,16 @@ namespace EatTogether.Controllers
 			if (!ModelState.IsValid)
 			{
 				vm.DishOptions = await _service.GetDishOptionsAsync();
+				ViewBag.DishPrices = await _service.GetDishPricesAsync();
 				return View(vm);
 			}
 
 			var dto = vm.ToCreateDto();
-			await _service.CreateAsync(dto);			
+			var result = await _service.CreateAsync(dto);  
 			TempData["SuccessMessage"] = "活動新增完成！";
 			return RedirectToAction("Index");
-
 		}
+
 
 		[HttpGet]
 		// GET: Event/Index
@@ -69,7 +71,8 @@ namespace EatTogether.Controllers
 			}
 
 			var vm = dto.ToEditVm();
-			vm.DishOptions = await _service.GetDishOptionsAsync();  // 補這行
+			vm.DishOptions = await _service.GetDishOptionsAsync();
+			ViewBag.DishPrices = await _service.GetDishPricesAsync();
 			return View(vm);
 
 		}
@@ -82,6 +85,7 @@ namespace EatTogether.Controllers
 			if (!ModelState.IsValid)
 			{
 				vm.DishOptions = await _service.GetDishOptionsAsync();
+				ViewBag.DishPrices = await _service.GetDishPricesAsync();
 				return View(vm);
 			}
 			var dto = vm.ToEditDto();
@@ -89,13 +93,16 @@ namespace EatTogether.Controllers
 
 			if (result.Success)
 			{
-				ViewData["SuccessMessage"] = "活動編輯完成！";
+				TempData["SuccessMessage"] = "活動編輯完成！";
+				return RedirectToAction("Edit", new { id = vm.Id });				
 			}
 
+			vm.DishOptions = await _service.GetDishOptionsAsync();
+			ViewBag.DishPrices = await _service.GetDishPricesAsync();
 			return View(vm);
 		}
 
-
+		/// <summary>停用進行中活動</summary>
 		// POST: Event/Deactivate/5
 		[HttpPost]
 		[ValidateAntiForgeryToken]
@@ -106,12 +113,14 @@ namespace EatTogether.Controllers
 			return RedirectToAction("Index");
 		}
 
+		/// <summary>複製已結束活動做為新活動, 以減少重複輸入相似活動 </summary>
 		[HttpGet]
 		public async Task<IActionResult> CopyCreate(int id)
 		{
 			var vm = await _service.GetCopyCreateVm(id);
 			if (vm == null) return NotFound();
 			vm.DishOptions = await _service.GetDishOptionsAsync();
+			ViewBag.DishPrices = await _service.GetDishPricesAsync();
 			return View("Create", vm);
 		}
 

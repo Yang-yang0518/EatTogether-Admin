@@ -21,7 +21,7 @@ namespace EatTogether.Models.Repositories
         Task UpdateStatusAsync(int id, int doneOrCancel);
 
         // Payment
-        Task CancelUnservedDetailsAsync(int preOrderId);
+        Task CancelUnservedDetailsAsync(int preOrderId, ISet<int>? excludeDetailIds = null);
         Task<PreOrder?> GetByIdAsync(int id);
         Task CancelEntireOrderAsync(int preOrderId);
         Task UpdateDetailBilledAsync(int detailId);
@@ -40,6 +40,8 @@ namespace EatTogether.Models.Repositories
             await _context.PreOrders
                      .Include(p => p.PreOrderDetails)
                      .Include(p => p.Table)
+                     .Include(p => p.Event)
+                     .Include(p => p.Coupon)
                      .Where(p => p.DoneOrCancel == doneOrCancel)
                      .ToListAsync();
         public async Task AddAsync(PreOrder preOrder)
@@ -54,11 +56,16 @@ namespace EatTogether.Models.Repositories
                 .CountAsync();
         }
 
-        public async Task<List<PreOrder>> GetActiveByTableIdAsync(int tableId) =>
-            await _context.PreOrders
+        public async Task<List<PreOrder>> GetActiveByTableIdAsync(int tableId)
+        {
+            var today = DateTime.Today;
+            return await _context.PreOrders
                 .Include(p => p.PreOrderDetails)
-                .Where(p => p.TableId == tableId && p.DoneOrCancel == 0)
+                .Where(p => p.TableId == tableId
+                         && p.DoneOrCancel == 0
+                         && p.OrderAt.Date == today)
                 .ToListAsync();
+        }
 
         public async Task CancelAllByTableIdAsync(int tableId)
         {
@@ -108,14 +115,18 @@ namespace EatTogether.Models.Repositories
         }
 
         // Payment -----------------------------------------------------------------------------------------
-        public async Task CancelUnservedDetailsAsync(int preOrderId)
+        public async Task CancelUnservedDetailsAsync(int preOrderId, ISet<int>? excludeDetailIds = null)
         {
-            var details = await _context.PreOrderDetails
-                .Where(d => d.PreOrderId == preOrderId && d.DoneOrCancel == 0)
-                .ToListAsync();
+            var query = _context.PreOrderDetails
+                .Where(d => d.PreOrderId == preOrderId && d.DoneOrCancel == 0);
+
+            if (excludeDetailIds?.Count > 0)
+                query = query.Where(d => !excludeDetailIds.Contains(d.Id));
+
+            var details = await query.ToListAsync();
 
             foreach (var d in details)
-                d.DoneOrCancel = 2;  // 改成已取消
+                d.DoneOrCancel = 2;
 
             await _context.SaveChangesAsync();
         }

@@ -1,12 +1,13 @@
 ﻿using EatTogether.Models.Extensions;
 using EatTogether.Models.Services;
 using EatTogether.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EatTogether.Controllers
 {
-	//[Authorize]
+	[Authorize]
 	public class ArticlesController : Controller
 	{
 		private readonly ArticleService _service;
@@ -71,7 +72,7 @@ namespace EatTogether.Controllers
 					}
 
 					// 執行存檔 (建立唯一檔名防止覆蓋)
-					string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "articles");
+					string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "articles");
 					if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
 					string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(vm.CoverImageFile.FileName);
@@ -83,11 +84,11 @@ namespace EatTogether.Controllers
 					}
 
 					// 將檔案路徑存入 VM (稍後轉給 DTO 存入資料庫)
-					vm.CoverImageUrl = "/uploads/articles/" + uniqueFileName;
+					vm.CoverImageUrl = "/images/articles/" + uniqueFileName;
 
 				}
 
-				// 3. 呼叫 Service 存檔 (將 VM 轉為 DTO)
+				// 呼叫 Service 存檔 (將 VM 轉為 DTO)
 				try
 				{
 					var dto = vm.ToCreateDto(); 
@@ -151,7 +152,7 @@ namespace EatTogether.Controllers
 						return View(vm);
 					}
 
-					string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "articles");
+					string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "articles");
 					if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 					string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(vm.CoverImageFile.FileName);
 					string filePath = Path.Combine(uploadsFolder, uniqueFileName);
@@ -159,7 +160,7 @@ namespace EatTogether.Controllers
 					{
 						await vm.CoverImageFile.CopyToAsync(fileStream);
 					}
-					vm.CoverImageUrl = "/uploads/articles/" + uniqueFileName;
+					vm.CoverImageUrl = "/images/articles/" + uniqueFileName;
 				}
 				else
 				{
@@ -188,6 +189,7 @@ namespace EatTogether.Controllers
 		}
 
 		// Unpublish action
+		/// <summary>下架文章(軟刪除)</summary>
 		[HttpGet]
 		public async Task<IActionResult> Unpublish(int id)
 		{
@@ -197,6 +199,7 @@ namespace EatTogether.Controllers
 		}
 
 		// DeleteDraft action
+		/// <summary>刪除草稿(硬刪除)</summary>
 		[HttpGet]
 		public async Task<IActionResult> DeleteDraft(int id)
 		{
