@@ -191,6 +191,10 @@ CREATE TABLE [dbo].[Dishes](
 	[StartDate] [date] NULL,
 	[EndDate] [date] NULL,
 	[UpdatedAt] [datetime2](0) NULL,
+	[IngredientsJson] [nvarchar](MAX) NULL,
+	[AverageScore] [float] NOT NULL DEFAULT 0,
+	[RatingCount] [int] NOT NULL DEFAULT 0,
+	[StockStatus] [int] NOT NULL DEFAULT 0,
  CONSTRAINT [PK_Dishes] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC

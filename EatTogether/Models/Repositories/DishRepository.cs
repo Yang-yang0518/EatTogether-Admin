@@ -60,7 +60,11 @@ namespace EatTogether.Models.Repositories
 				   EndDate = d.EndDate,
 				   CreatedAt = d.CreatedAt,
 				   UpdatedAt = d.UpdatedAt,
-				   DisplayOrder = 0 // 資料庫無此欄位
+				   DisplayOrder = 0, // 資料庫無此欄位
+				   IngredientsJson = d.IngredientsJson,
+				   AverageScore = d.AverageScore,
+				   RatingCount = d.RatingCount,
+				   StockStatus = d.StockStatus
 			   })
                .OrderByDescending(d => d.CreatedAt)
 			   .ToListAsync();
@@ -90,7 +94,11 @@ namespace EatTogether.Models.Repositories
 				   EndDate = d.EndDate,
 				   CreatedAt = d.CreatedAt,
 				   UpdatedAt = d.UpdatedAt,
-				   DisplayOrder = 0 // 資料庫無此欄位
+				   DisplayOrder = 0, // 資料庫無此欄位
+				   IngredientsJson = d.IngredientsJson,
+				   AverageScore = d.AverageScore,
+				   RatingCount = d.RatingCount,
+				   StockStatus = d.StockStatus
 			   })
                .OrderByDescending(d => d.CreatedAt)
 			   .ToListAsync();
@@ -116,7 +124,11 @@ namespace EatTogether.Models.Repositories
                     EndDate = d.EndDate,
                     CreatedAt = d.CreatedAt,
                     UpdatedAt = d.UpdatedAt,
-                    DisplayOrder = 0 // 資料庫無此欄位
+                    DisplayOrder = 0, // 資料庫無此欄位
+				   IngredientsJson = d.IngredientsJson,
+                   AverageScore = d.AverageScore,
+                   RatingCount = d.RatingCount,
+                   StockStatus = d.StockStatus
                 })
                 .FirstOrDefaultAsync();
         }
@@ -210,6 +222,28 @@ namespace EatTogether.Models.Repositories
 		{
 			// 此功能暫不執行，因為資料庫 Dishes 表目前沒有 DisplayOrder 欄位
 			await Task.CompletedTask;
+		}
+
+		public async Task<bool> UpdateStockAsync(int id, int stockStatus)
+		{
+			var dish = await _context.Dishes.FindAsync(id);
+			if (dish == null) return false;
+
+			dish.StockStatus = stockStatus;
+			await _context.SaveChangesAsync();
+			return true;
+		}
+
+		public async Task<(double averageScore, int ratingCount)?> RateAsync(int id, int score)
+		{
+			var dish = await _context.Dishes.FindAsync(id);
+			if (dish == null) return null;
+
+			dish.AverageScore = (dish.AverageScore * dish.RatingCount + score) / (dish.RatingCount + 1);
+			dish.RatingCount  = dish.RatingCount + 1;
+
+			await _context.SaveChangesAsync();
+			return (dish.AverageScore, dish.RatingCount);
 		}
 	}
 }

@@ -23,7 +23,11 @@ namespace EatTogether.Models.Extensions
                 StartDate = dish.StartDate,
                 EndDate = dish.EndDate,
                 CreatedAt = dish.CreatedAt,
-                UpdatedAt = dish.UpdatedAt
+                UpdatedAt = dish.UpdatedAt,
+                IngredientsJson = dish.IngredientsJson,
+                AverageScore = dish.AverageScore,
+                RatingCount = dish.RatingCount,
+                StockStatus = dish.StockStatus
             };
         }
     }
