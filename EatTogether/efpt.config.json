@@ -51,11 +51,23 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[MemberConfirmTokens]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[MemberCoupons]",
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[MemberExternalLogins]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[MemberFavorites]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[MemberPasswordResetTokens]",
          "ObjectType": 0
       },
       {
