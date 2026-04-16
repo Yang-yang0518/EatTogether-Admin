@@ -16,5 +16,7 @@ namespace EatTogether.Models.Repositories
         Task DeleteAsync(int id);
         Task BatchDeleteAsync(IEnumerable<int> ids);
         Task UpdateOrderAsync(IEnumerable<int> orderedIds);
+        Task<bool> UpdateStockAsync(int id, int stockStatus);
+        Task<(double averageScore, int ratingCount)?> RateAsync(int id, int score);
     }
 }

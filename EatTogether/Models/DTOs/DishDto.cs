@@ -22,5 +22,9 @@
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public int DisplayOrder { get; set; }
+        public string? IngredientsJson { get; set; }
+        public double AverageScore { get; set; }
+        public int RatingCount { get; set; }
+        public int StockStatus { get; set; }
     }
 }

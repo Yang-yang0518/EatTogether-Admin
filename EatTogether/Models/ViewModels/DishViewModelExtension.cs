@@ -26,7 +26,8 @@ namespace EatTogether.Models.ViewModels
 				EndDate = dto.EndDate,
 				CreatedAt = dto.CreatedAt,
 				UpdatedAt = dto.UpdatedAt,
-				DisplayOrder = dto.DisplayOrder
+				DisplayOrder = dto.DisplayOrder,
+				StockStatus = dto.StockStatus
 			};
 		}
 		public static DishDto ToDto(this DishViewModel vm) // ViewModel => Dto

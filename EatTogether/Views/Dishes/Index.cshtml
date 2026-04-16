@@ -260,6 +260,11 @@
                                           style="cursor:pointer; height:fit-content;" onclick="toggleFeature(@item.Id, 'Active')" id="active-badge-@item.Id">
                                         @(item.IsActive ? "上架中" : "已下架")
                                     </span>
+                                    <select onchange="updateStock(@item.Id, this.value)" class="form-select form-select-sm w-auto" style="height:fit-content; font-size:0.7rem;">
+                                        <option value="0" selected="@(item.StockStatus == 0)">供應中</option>
+                                        <option value="1" selected="@(item.StockStatus == 1)">剩餘不多</option>
+                                        <option value="2" selected="@(item.StockStatus == 2)">售完</option>
+                                    </select>
                                     @if (item.IsTakeOut)
                                     {
                                         <span class="badge rounded-pill bg-info-subtle text-info px-2 border border-info" style="height:fit-content;">外帶</span>
@@ -726,6 +731,19 @@ if (paginationContainer) {
                 body: JSON.stringify({ ids })
             });
             if (res.ok) { showAlert("success", "操作成功"); setTimeout(() => location.reload(), 1000); }
+        }
+
+        async function updateStock(id, stockStatus) {
+            const res = await fetch(`/api/Dishes/${id}/Stock`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ stockStatus: parseInt(stockStatus) })
+            });
+            if (res.ok) {
+                showAlert("success", "庫存狀態已更新");
+            } else {
+                showAlert("danger", "更新失敗，請稍後再試");
+            }
         }
 
         async function disableDish(id) {

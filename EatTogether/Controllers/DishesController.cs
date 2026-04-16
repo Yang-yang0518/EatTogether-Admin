@@ -243,7 +243,14 @@ namespace EatTogether.Controllers
 					isRecommended = d.IsRecommended,
 					isPopular = d.IsPopular,
 					isVegetarian = d.IsVegetarian,
-					spicyLevel = d.SpicyLevel
+					spicyLevel = d.SpicyLevel,
+					ingredientsJson = d.IngredientsJson,
+					isLimited = d.IsLimited,
+					startDate = d.StartDate,
+					endDate = d.EndDate,
+					averageScore = d.AverageScore,
+					ratingCount = d.RatingCount,
+					stockStatus = d.StockStatus
 				};
 			}));
 		}

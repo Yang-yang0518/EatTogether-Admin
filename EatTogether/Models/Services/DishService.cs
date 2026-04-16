@@ -76,5 +76,15 @@ namespace EatTogether.Models.Services
 		{
 			await _repo.UpdateOrderAsync(orderedIds);
 		}
+
+		public async Task<bool> UpdateStockAsync(int id, int stockStatus)
+		{
+			return await _repo.UpdateStockAsync(id, stockStatus);
+		}
+
+		public async Task<(double averageScore, int ratingCount)?> RateAsync(int id, int score)
+		{
+			return await _repo.RateAsync(id, score);
+		}
 	}
 }

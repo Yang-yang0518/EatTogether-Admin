@@ -71,6 +71,9 @@ namespace EatTogether.Models.ViewModels
         [Display(Name = "顯示順序")]
         public int DisplayOrder { get; set; }
 
+        [Display(Name = "庫存狀態")]
+        public int StockStatus { get; set; }
+
         // 給下拉選單用
         public List<SelectListItem> CategoryOptions { get; set; } = new();
     }

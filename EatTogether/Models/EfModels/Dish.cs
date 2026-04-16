@@ -41,6 +41,14 @@ public partial class Dish
 
     public DateTime? UpdatedAt { get; set; }
 
+    public string IngredientsJson { get; set; }
+
+    public double AverageScore { get; set; }
+
+    public int RatingCount { get; set; }
+
+    public int StockStatus { get; set; }
+
     public virtual Category Category { get; set; }
 
     public virtual ICollection<Event> Events { get; set; } = new List<Event>();
