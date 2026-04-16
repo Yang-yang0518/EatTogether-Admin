@@ -5,38 +5,58 @@
 }
 
 <style>
-    .page-wrap {
-        max-width: 1100px;
-        margin: 36px auto;
-        padding: 0 16px 60px;
-    }
-
-    .page-title {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: #1a1a1a;
-        margin-bottom: 24px;
-    }
-
-    /* ── 篩選區 ── */
-    .sticky-filter {
-        position: sticky;
-        top: 56px;
-        z-index: 100;
-        background: #f5f6fa;
-        padding-bottom: 4px;
-    }
-
-    .filter-card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 20px 24px;
-        margin-bottom: 20px;
-        border: 1px solid #eee;
+    /* ── 整體佔滿視窗 ── */
+    .ao-page {
         display: flex;
-        flex-wrap: wrap;
-        gap: 14px;
-        align-items: flex-end;
+        flex-direction: column;
+        height: 88.2vh;
+        overflow: hidden;
+        background: #f4f6f9;
+    }
+
+    /* ── 頂部標頭 ── */
+    .ao-topbar {
+        display: flex;
+        align-items: center;
+        padding: 12px 24px;
+        background: #fff;
+        border-bottom: 1px solid #e8e8e8;
+        flex-shrink: 0;
+    }
+
+    .ao-topbar-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #1a1a1a;
+    }
+
+    /* ── 主體：左欄 + 右欄 ── */
+    .ao-body {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    /* ════ 左欄：搜尋篩選 ════ */
+    .ao-filter-col {
+        background: #fff;
+        border-right: 1.5px solid #e8e8e8;
+        overflow-y: auto;
+        padding: 20px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .filter-section-title {
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: #c0c0c0;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 2px;
     }
 
     .filter-group {
@@ -46,273 +66,269 @@
     }
 
     .filter-label {
-        font-size: 0.78rem;
+        font-size: 0.72rem;
         font-weight: 700;
-        color: #999;
+        color: #bbb;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.07em;
     }
 
-    .filter-select, .filter-input {
-        padding: 9px 12px;
-        border: 2px solid #ddd;
-        border-radius: 10px;
-        font-size: 0.92rem;
+    .filter-input,
+    .filter-select {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1.5px solid #ddd;
+        border-radius: 9px;
+        font-size: 0.88rem;
         font-family: inherit;
         color: #333;
         outline: none;
-        transition: border-color 0.2s;
+        transition: border-color 0.15s;
         background: #fff;
+        box-sizing: border-box;
     }
 
-        .filter-select:focus, .filter-input:focus {
+        .filter-input:focus,
+        .filter-select:focus {
             border-color: #c0392b;
         }
 
-    .filter-input {
-        width: 400px;
-    }
-
-        .filter-input.date {
-            width: 150px;
-        }
-
-    .btn-search {
-        padding: 9px 24px;
-        background: #c0392b;
-        color: #fff;
+    .filter-sep {
         border: none;
-        border-radius: 10px;
-        font-family: inherit;
-        font-size: 0.92rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: background 0.2s;
-        align-self: flex-end;
+        border-top: 1px solid #f0f0f0;
+        margin: 0;
     }
 
-        .btn-search:hover {
-            background: #a93226;
-        }
-
-    .btn-reset {
-        padding: 9px 16px;
-        background: #fff;
-        color: #888;
-        border: 2px solid #ddd;
-        border-radius: 10px;
-        font-family: inherit;
-        font-size: 0.92rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        align-self: flex-end;
-        text-decoration: none;
-        display: inline-block;
-    }
-
-        .btn-reset:hover {
-            border-color: #aaa;
-            color: #555;
-        }
-
-    /* ── 狀態 Tab ── */
-    .status-tabs {
+    /* 狀態選項 */
+    .status-option-list {
         display: flex;
-        gap: 8px;
-        margin-bottom: 16px;
+        flex-direction: column;
+        gap: 6px;
     }
 
-    .status-tab {
-        padding: 8px 20px;
-        border-radius: 20px;
-        border: 2px solid #ddd;
+    .status-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 9px;
+        border: 1.5px solid #e8e8e8;
         background: #fff;
-        font-family: inherit;
         font-size: 0.88rem;
         font-weight: 500;
-        color: #888;
+        color: #666;
         cursor: pointer;
         text-decoration: none;
         transition: all 0.15s;
     }
 
-        .status-tab:hover {
-            border-color: #c0392b;
-            color: #c0392b;
+        .status-option:hover {
+            border-color: #ccc;
+            background: #f8f8f8;
         }
 
-        .status-tab.active-all {
-            border-color: #1a1a1a;
-            background: #1a1a1a;
-            color: #fff;
-        }
+        .status-option.s-all    { border-color: #1a1a1a; background: #1a1a1a; color: #fff; font-weight: 700; }
+        .status-option.s-0      { border-color: #e67e22; background: #fef9f0; color: #e67e22; font-weight: 700; }
+        .status-option.s-1      { border-color: #27ae60; background: #f0fff4; color: #27ae60; font-weight: 700; }
+        .status-option.s-2      { border-color: #e74c3c; background: #fff5f5; color: #e74c3c; font-weight: 700; }
 
-        .status-tab.active-0 {
-            border-color: #e67e22;
-            background: #fef9f0;
-            color: #e67e22;
-            font-weight: 700;
-        }
-
-        .status-tab.active-1 {
-            border-color: #27ae60;
-            background: #f0fff4;
-            color: #27ae60;
-            font-weight: 700;
-        }
-
-        .status-tab.active-2 {
-            border-color: #e74c3c;
-            background: #fff5f5;
-            color: #e74c3c;
-            font-weight: 700;
-        }
-
-    /* ── 訂單表格 ── */
-    .order-table-wrap {
-        background: #fff;
-        border-radius: 16px;
-        overflow: hidden;
-        border: 1px solid #eee;
-        margin-bottom: 20px;
+    .btn-search {
+        width: 100%;
+        padding: 9px;
+        background: #c0392b;
+        color: #fff;
+        border: none;
+        border-radius: 9px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.15s;
     }
 
-    .order-table {
+        .btn-search:hover { background: #a93226; }
+
+    .btn-reset {
+        width: 100%;
+        padding: 9px;
+        background: #fff;
+        color: #888;
+        border: 1.5px solid #ddd;
+        border-radius: 9px;
+        font-family: inherit;
+        font-size: 0.88rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+        text-align: center;
+        display: block;
+        box-sizing: border-box;
+    }
+
+        .btn-reset:hover { border-color: #aaa; color: #444; }
+
+    /* ════ 右欄 ════ */
+    .ao-right-col {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+        padding: 16px 20px;
+        gap: 10px;
+    }
+
+    /* 右欄標頭列 */
+    .ao-right-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .ao-right-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1a1a1a;
+    }
+
+    .ao-result-count {
+        font-size: 0.82rem;
+        color: #aaa;
+    }
+
+    /* 表格卡片 */
+    .ao-table-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #ebebeb;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .ao-table-scroll {
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .ao-table {
         width: 100%;
         border-collapse: collapse;
     }
 
-        .order-table th {
-            padding: 13px 8px;
+        .ao-table thead th {
+            padding: 8px 8px;
             background: #f8f9fa;
-            font-size: 0.8rem;
-            color: #999;
-            text-align: left;
+            font-size: 0.7rem;
             font-weight: 700;
-            letter-spacing: 0.05em;
-            border-bottom: 1px solid #f0f0f0;
+            color: #bbb;
+            text-align: left;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid #efefef;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+            .ao-table thead th:last-child { text-align: center; }
+
+        .ao-table tbody td {
+            padding: 8px 8px;
+            font-size: 0.8rem;
+            color: #333;
+            border-bottom: 1px solid #f6f6f6;
+            vertical-align: middle;
             white-space: nowrap;
         }
 
-            .order-table th:last-child {
-                text-align: center;
-            }
+        .ao-table tbody tr:last-child td { border-bottom: none; }
 
-        .order-table td {
-            padding: 13px 8px;
-            font-size: 0.92rem;
-            color: #333;
-            border-bottom: 1px solid #f8f8f8;
-            vertical-align: middle;
-        }
+        .ao-table tbody tr:hover td { background: #fafafa; }
 
-        .order-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .order-table tr:hover td {
-            background: #fafafa;
-        }
-
-    .order-number {
+    .order-num-cell {
         font-weight: 700;
         color: #1a1a1a;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
     }
 
-    .table-tag {
-        font-size: 0.78rem;
-        padding: 2px 8px;
-        border-radius: 10px;
+    .tag {
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 8px;
+        font-size: 0.74rem;
         font-weight: 600;
-        display: inline-block;
     }
 
-    .tag-dine {
-        background: #eaf0fb;
-        color: #2c3e50;
-    }
+    .tag-dine    { background: #eaf0fb; color: #2561a8; }
+    .tag-takeout { background: #f0f0f0; color: #666; }
 
-    .tag-takeout {
-        background: #f0f0f0;
-        color: #666;
-    }
+    .pay-text { font-size: 0.75rem; color: #888; }
 
-    .pay-method {
-        font-size: 0.82rem;
-        color: #888;
-    }
-
-    /* 狀態徽章 */
     .badge {
-        font-size: 0.78rem;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-weight: 700;
         display: inline-block;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 700;
         white-space: nowrap;
     }
 
-    .badge-pending {
-        background: #fff3cd;
-        color: #856404;
-    }
+    .badge-pending { background: #fff3cd; color: #856404; }
+    .badge-done    { background: #d1f5e0; color: #1a6b3a; }
+    .badge-cancel  { background: #f8d7da; color: #842029; }
 
-    .badge-done {
-        background: #d1f5e0;
-        color: #1a6b3a;
-    }
-
-    .badge-cancel {
-        background: #f8d7da;
-        color: #842029;
-    }
-
-    .amount-cell {
-        font-weight: 700;
-        color: #1a1a1a;
-    }
-
-    .discount-cell {
-        font-size: 0.82rem;
-        color: #27ae60;
-    }
+    .amount-main   { font-weight: 700; color: #1a1a1a; }
+    .amount-disc   { font-size: 0.78rem; color: #27ae60; }
 
     .btn-detail {
-        padding: 6px 16px;
+        padding: 4px 10px;
         background: #fff;
         color: #c0392b;
-        border: 2px solid #c0392b;
-        border-radius: 8px;
+        border: 1.5px solid #c0392b;
+        border-radius: 7px;
         font-family: inherit;
-        font-size: 0.82rem;
+        font-size: 0.74rem;
         font-weight: 700;
         cursor: pointer;
-        transition: all 0.15s;
+        transition: background 0.15s;
         text-decoration: none;
         display: inline-block;
     }
 
-        .btn-detail:hover {
-            background: #fff5f5;
-        }
+        .btn-detail:hover { background: #fff5f5; }
 
-    /* ── 分頁 ── */
-    .pagination {
+    /* 空白狀態 */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #ccc;
+    }
+
+        .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .empty-state p     { font-size: 0.9rem; }
+
+    /* 分頁 */
+    .ao-pagination {
         display: flex;
         justify-content: center;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
+        padding: 10px 0 0;
+        flex-shrink: 0;
     }
 
     .page-btn {
-        padding: 7px 13px;
+        padding: 6px 12px;
         border-radius: 8px;
-        border: 2px solid #ddd;
+        border: 1.5px solid #ddd;
         background: #fff;
         font-family: inherit;
-        font-size: 0.88rem;
+        font-size: 0.85rem;
         font-weight: 500;
         color: #555;
         cursor: pointer;
@@ -321,230 +337,211 @@
         display: inline-block;
     }
 
-        .page-btn:hover {
-            border-color: #c0392b;
-            color: #c0392b;
-        }
-
-        .page-btn.active {
-            background: #c0392b;
-            border-color: #c0392b;
-            color: #fff;
-            font-weight: 700;
-        }
-
-        .page-btn.disabled {
-            opacity: 0.4;
-            pointer-events: none;
-        }
-
-    /* 空白狀態 */
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: #bbb;
-    }
-
-        .empty-state .icon {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-
-        .empty-state p {
-            font-size: 0.95rem;
-        }
-
-    .result-count {
-        font-size: 0.85rem;
-        color: #aaa;
-        margin-bottom: 10px;
-    }
+        .page-btn:hover   { border-color: #c0392b; color: #c0392b; }
+        .page-btn.active  { background: #c0392b; border-color: #c0392b; color: #fff; font-weight: 700; }
+        .page-btn.disabled { opacity: 0.4; pointer-events: none; }
 </style>
 
-<div class="page-wrap">
-    <div class="page-title">📋 所有訂單</div>
+<div class="ao-page">
 
-    <!-- ── 篩選區 + 狀態 Tab（固定在頂部）── -->
-    <div class="sticky-filter">
-    <form method="get" asp-action="AllOrders">
-        <div class="filter-card">
-            <div class="filter-group">
-                <div class="filter-label">日期起</div>
-                <input type="date" class="filter-input date" name="DateFrom"
-                       value="@Model.DateFrom?.ToString("yyyy-MM-dd")"
-                       max="@DateTime.Today.ToString("yyyy-MM-dd")" />
-            </div>
-            <div class="filter-group">
-                <div class="filter-label">日期迄</div>
-                <input type="date" class="filter-input date" name="DateTo"
-                       value="@Model.DateTo?.ToString("yyyy-MM-dd")"
-                       max="@DateTime.Today.ToString("yyyy-MM-dd")" />
-            </div>
-            <div class="filter-group" style="margin-left: auto">
-                <div class="filter-label">搜尋</div>
-                <input type="text" class="filter-input" name="Keyword"
-                       placeholder="訂單編號、會員姓名、桌號、優惠券、活動、支付方式..."
-                       value="@Model.Keyword" />
-            </div>
-            <input type="hidden" name="Status" value="@Model.Status" />
-            <input type="hidden" name="Page" value="1" />
-            <button type="submit" class="btn-search">🔍 搜尋</button>
-            <a href="@Url.Action("AllOrders")" class="btn-reset">✕ 重置</a>
-        </div>
-    </form>
-
-    <!-- ── 狀態 Tab ── -->
-    <div class="status-tabs">
-        <a href="@Url.Action("AllOrders", new { DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword, Page = 1 })"
-           class="status-tab @(Model.Status == null ? "active-all" : "")">全部</a>
-
-        <a href="@Url.Action("AllOrders", new { Status = 0, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword, Page = 1 })"
-           class="status-tab @(Model.Status == 0 ? "active-0" : "")">⏳ 未完成</a>
-
-        <a href="@Url.Action("AllOrders", new { Status = 1, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword, Page = 1 })"
-           class="status-tab @(Model.Status == 1 ? "active-1" : "")">✅ 已完成</a>
-
-        <a href="@Url.Action("AllOrders", new { Status = 2, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword, Page = 1 })"
-           class="status-tab @(Model.Status == 2 ? "active-2" : "")">❌ 已取消</a>
+    @* ── 頂部標頭 *@
+    <div class="ao-topbar">
+        <div class="ao-topbar-title">📋 所有訂單</div>
     </div>
-    </div><!-- end sticky-filter -->
 
-    <div class="result-count">共 @Model.TotalCount 筆</div>
+    @* ── 主體 *@
+    <div class="ao-body">
 
-    <!-- ── 訂單表格 ── -->
-    <div class="order-table-wrap">
-        @if (!Model.Orders.Any())
-        {
-            <div class="empty-state">
-                <div class="icon">📭</div>
-                <p>沒有符合條件的訂單</p>
+        @* ════ 左欄：搜尋篩選 ════ *@
+        <form method="get" asp-action="AllOrders" style="display:contents;">
+            <div class="ao-filter-col">
+
+                <div class="filter-section-title">搜尋</div>
+
+                <div class="filter-group">
+                    <div class="filter-label">關鍵字</div>
+                    <input type="text" class="filter-input" name="Keyword"
+                           placeholder="訂單編號、會員、桌號..."
+                           value="@Model.Keyword" />
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-label">日期起</div>
+                    <input type="date" class="filter-input" name="DateFrom"
+                           value="@Model.DateFrom?.ToString("yyyy-MM-dd")"
+                           max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-label">日期迄</div>
+                    <input type="date" class="filter-input" name="DateTo"
+                           value="@Model.DateTo?.ToString("yyyy-MM-dd")"
+                           max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+
+                <hr class="filter-sep" />
+
+                <div class="filter-section-title">狀態</div>
+
+                <div class="status-option-list">
+                    <a href="@Url.Action("AllOrders", new { DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword, Page = 1 })"
+                       class="status-option @(Model.Status == null ? "s-all" : "")">全部</a>
+                    <a href="@Url.Action("AllOrders", new { Status = 0, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword, Page = 1 })"
+                       class="status-option @(Model.Status == 0 ? "s-0" : "")">⏳ 未完成</a>
+                    <a href="@Url.Action("AllOrders", new { Status = 1, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword, Page = 1 })"
+                       class="status-option @(Model.Status == 1 ? "s-1" : "")">✅ 已完成</a>
+                    <a href="@Url.Action("AllOrders", new { Status = 2, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword, Page = 1 })"
+                       class="status-option @(Model.Status == 2 ? "s-2" : "")">❌ 已取消</a>
+                </div>
+
+                <input type="hidden" name="Status" value="@Model.Status" />
+                <input type="hidden" name="Page" value="1" />
+
+                <hr class="filter-sep" />
+
+                <button type="submit" class="btn-search">🔍 搜尋</button>
+                <a href="@Url.Action("AllOrders")" class="btn-reset">✕ 重置</a>
+
             </div>
-        }
-        else
-        {
-            <table class="order-table">
-                <thead>
-                    <tr>
-                        <th>訂單編號</th>
-                        <th>下單時間</th>
-                        <th>會員</th>
-                        <th>用餐方式</th>
-                        <th>付款方式</th>
-                        <th>優惠券</th>
-                        <th>活動</th>
-                        <th>金額</th>
-                        <th>狀態</th>
-                        <th>明細</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var order in Model.Orders)
+        </form>
+
+        @* ════ 右欄 ════ *@
+        <div class="ao-right-col">
+
+            <div class="ao-right-head">
+                <div class="ao-right-title">所有訂單</div>
+                <div class="ao-result-count">共 @Model.TotalCount 筆</div>
+            </div>
+
+            <div class="ao-table-card">
+                <div class="ao-table-scroll">
+                    @if (!Model.Orders.Any())
                     {
-                        <tr>
-                            <td><span class="order-number">@order.OrderNumber</span></td>
-                            <td>@order.OrderAt.ToString("yyyy/MM/dd HH:mm")</td>
-                            <td style="font-size:0.85rem;color:#666">
-                                @(order.MemberName ?? "訪客")
-                            </td>
-                            <td>
-                                @if (order.InOrOut)
-                                {
-                                    <span class="table-tag tag-dine">🪑 @order.TableName</span>
-                                }
-                                else
-                                {
-                                    <span class="table-tag tag-takeout">🥡 外帶</span>
-                                }
-                        </td>
-                        <td>
-                            <span class="pay-method">
-                                @(order.PayMethod == "Cash" ? "💵 現金"
-                                                            : order.PayMethod == "Card" ? "💳 刷卡"
-                                                            : "📱 行動支付")
-                        </span>
-                    </td>
-                    <td style="font-size:0.82rem;">
-                        @if (!string.IsNullOrEmpty(order.CouponName))
-                        {
-                            <span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#fff8e1;color:#b7770d;font-weight:600;white-space:nowrap;">
-                                🎫 @order.CouponName
-                            </span>
-                            if (!string.IsNullOrEmpty(order.CouponDesc))
-                            {
-                                <div style="color:#aaa;font-size:0.78rem;margin-top:2px;">@order.CouponDesc</div>
-                            }
-                        }
-                        else
-                        {
-                            <span style="color:#ccc;">-</span>
-                        }
-                    </td>
-                    <td style="font-size:0.82rem;">
-                        @if (!string.IsNullOrEmpty(order.EventTitle))
-                        {
-                            <span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#eafaf1;color:#1e8449;font-weight:600;white-space:nowrap;">
-                                🎉 @order.EventTitle
-                            </span>
-                        }
-                        else
-                        {
-                            <span style="color:#ccc;">-</span>
-                        }
-                    </td>
-                            <td>
-                                <div class="amount-cell">NT$ @order.TotalAmount</div>
-                                @if (order.DiscountAmount > 0)
-                                {
-                                    <div class="discount-cell">折扣 -@order.DiscountAmount</div>
-                                }
-                            </td>
-                            <td>
-                                @if (order.DoneOrCancel == 0)
-                                {
-                                    <span class="badge badge-pending">⏳ 未完成</span>
-                                }
-                                else if (order.DoneOrCancel == 1)
-                                {
-                                    <span class="badge badge-done">✅ 已完成</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-cancel">❌ 已取消</span>
-                                }
-                            </td>
-                            <td style="text-align:center">
-                                <a href="@Url.Action("Detail", new { id = order.PreOrderId })"
-                                   class="btn-detail">明細</a>
-                            </td>
-                        </tr>
+                        <div class="empty-state">
+                            <div class="icon">📭</div>
+                            <p>沒有符合條件的訂單</p>
+                        </div>
                     }
-                </tbody>
-            </table>
-        }
-    </div>
+                    else
+                    {
+                        <table class="ao-table">
+                            <thead>
+                                <tr>
+                                    <th>訂單編號</th>
+                                    <th>下單時間</th>
+                                    <th>會員</th>
+                                    <th>用餐方式</th>
+                                    <th>付款方式</th>
+                                    <th>優惠券</th>
+                                    <th>活動</th>
+                                    <th>金額</th>
+                                    <th>狀態</th>
+                                    <th>明細</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var order in Model.Orders)
+                                {
+                                    <tr>
+                                        <td><span class="order-num-cell">@order.OrderNumber</span></td>
+                                        <td style="white-space:nowrap;">@order.OrderAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                        <td style="color:#666;">@(order.MemberName ?? "訪客")</td>
+                                        <td>
+                                            @if (order.InOrOut)
+                                            {
+                                                <span class="tag tag-dine">🪑 @order.TableName</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="tag tag-takeout">🥡 外帶</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="pay-text">
+                                                @(order.PayMethod == "Cash" ? "💵 現金"
+                                                  : order.PayMethod == "Card" ? "💳 刷卡"
+                                                  : "📱 行動支付")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(order.CouponName))
+                                            {
+                                                <span style="display:inline-block;padding:2px 7px;border-radius:9px;background:#fff8e1;color:#b7770d;font-size:0.78rem;font-weight:600;white-space:nowrap;">🎫 @order.CouponName</span>
+                                            }
+                                            else
+                                            {
+                                                <span style="color:#ddd;">—</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(order.EventTitle))
+                                            {
+                                                <span style="display:inline-block;padding:2px 7px;border-radius:9px;background:#eafaf1;color:#1e8449;font-size:0.78rem;font-weight:600;white-space:nowrap;">🎉 @order.EventTitle</span>
+                                            }
+                                            else
+                                            {
+                                                <span style="color:#ddd;">—</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="amount-main">NT$ @order.TotalAmount</div>
+                                            @if (order.DiscountAmount > 0)
+                                            {
+                                                <div class="amount-disc">折扣 −@order.DiscountAmount</div>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (order.DoneOrCancel == 0)
+                                            {
+                                                <span class="badge badge-pending">⏳ 未完成</span>
+                                            }
+                                            else if (order.DoneOrCancel == 1)
+                                            {
+                                                <span class="badge badge-done">✅ 已完成</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-cancel">❌ 已取消</span>
+                                            }
+                                        </td>
+                                        <td style="text-align:center;">
+                                            <a href="@Url.Action("Detail", new { id = order.PreOrderId })" class="btn-detail">明細</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
 
-    <!-- ── 分頁 ── -->
-    @if (Model.TotalPages > 1)
-    {
-        <div class="pagination">
-            <a href="@Url.Action("AllOrders", new { Page = Model.Page - 1, Status = Model.Status, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword })"
-               class="page-btn @(Model.Page <= 1 ? "disabled" : "")">← 上一頁</a>
-
-            @for (int i = 1; i <= Model.TotalPages; i++)
+            @* 分頁 *@
+            @if (Model.TotalPages > 1)
             {
-                if (i == 1 || i == Model.TotalPages || (i >= Model.Page - 2 && i <= Model.Page + 2))
-                {
-                    <a href="@Url.Action("AllOrders", new { Page = i, Status = Model.Status, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword })"
-                       class="page-btn @(i == Model.Page ? "active" : "")">@i</a>
-                }
-                else if (i == Model.Page - 3 || i == Model.Page + 3)
-                {
-                    <span style="color:#ccc;padding:0 4px">…</span>
-                }
+                <div class="ao-pagination">
+                    <a href="@Url.Action("AllOrders", new { Page = Model.Page - 1, Status = Model.Status, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword })"
+                       class="page-btn @(Model.Page <= 1 ? "disabled" : "")">← 上一頁</a>
+
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        if (i == 1 || i == Model.TotalPages || (i >= Model.Page - 2 && i <= Model.Page + 2))
+                        {
+                            <a href="@Url.Action("AllOrders", new { Page = i, Status = Model.Status, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword })"
+                               class="page-btn @(i == Model.Page ? "active" : "")">@i</a>
+                        }
+                        else if (i == Model.Page - 3 || i == Model.Page + 3)
+                        {
+                            <span style="color:#ccc;padding:0 4px;">…</span>
+                        }
+                    }
+
+                    <a href="@Url.Action("AllOrders", new { Page = Model.Page + 1, Status = Model.Status, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword })"
+                       class="page-btn @(Model.Page >= Model.TotalPages ? "disabled" : "")">下一頁 →</a>
+                </div>
             }
 
-            <a href="@Url.Action("AllOrders", new { Page = Model.Page + 1, Status = Model.Status, DateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.DateTo?.ToString("yyyy-MM-dd"), Keyword = Model.Keyword })"
-               class="page-btn @(Model.Page >= Model.TotalPages ? "disabled" : "")">下一頁 →</a>
         </div>
-    }
+
+    </div>
+
 </div>

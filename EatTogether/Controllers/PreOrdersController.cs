@@ -244,5 +244,49 @@ namespace EatTogether.Controllers
             var groups = await _service.GetSetMealItemsAsync(setMealId);
             return Json(groups);
         }
+
+        // ── 點餐頁購物車：會員搜尋 ────────────────────────────
+        [RequirePermission("Order_StatusUpdate")]
+        [HttpGet]
+        public async Task<IActionResult> SearchMember(string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone))
+                return Json(new { success = false, error = "請輸入電話號碼" });
+
+            var member = await _service.SearchMemberByPhoneAsync(phone.Trim());
+            if (member == null)
+                return Json(new { success = false, error = "查無此電話的會員" });
+
+            return Json(new
+            {
+                success = true,
+                member  = new
+                {
+                    id            = member.Id,
+                    name          = member.Name,
+                    phone         = member.Phone,
+                    isBlacklisted = member.IsBlacklisted,
+                    isConfirmed   = member.IsConfirmed
+                }
+            });
+        }
+
+        // ── 點餐頁購物車：活動清單（含未達門檻） ─────────────────
+        [RequirePermission("Order_StatusUpdate")]
+        [HttpGet]
+        public async Task<IActionResult> GetCartEvents(int amount)
+        {
+            var events = await _service.GetEventsForSplitAsync(amount);
+            return Json(events);
+        }
+
+        // ── 點餐頁購物車：優惠券清單（含未達門檻） ───────────────
+        [RequirePermission("Order_StatusUpdate")]
+        [HttpGet]
+        public async Task<IActionResult> GetCartCoupons(int amount, int? memberId = null)
+        {
+            var coupons = await _service.GetCouponsForSplitAsync(amount, memberId);
+            return Json(coupons);
+        }
     }
 }
