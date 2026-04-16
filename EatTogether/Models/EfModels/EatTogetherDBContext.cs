@@ -31,9 +31,15 @@ public partial class EatTogetherDBContext : DbContext
 
     public virtual DbSet<Member> Members { get; set; }
 
+    public virtual DbSet<MemberConfirmToken> MemberConfirmTokens { get; set; }
+
     public virtual DbSet<MemberCoupon> MemberCoupons { get; set; }
 
+    public virtual DbSet<MemberExternalLogin> MemberExternalLogins { get; set; }
+
     public virtual DbSet<MemberFavorite> MemberFavorites { get; set; }
+
+    public virtual DbSet<MemberPasswordResetToken> MemberPasswordResetTokens { get; set; }
 
     public virtual DbSet<Order> Orders { get; set; }
 
@@ -265,6 +271,30 @@ public partial class EatTogetherDBContext : DbContext
                 .IsUnicode(false);
         });
 
+        modelBuilder.Entity<MemberConfirmToken>(entity =>
+        {
+            entity.HasIndex(e => e.MemberId, "IX_MemberConfirmTokens_MemberId");
+
+            entity.HasIndex(e => e.Token, "IX_MemberConfirmTokens_Token").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.ExpiresAt).HasPrecision(0);
+            entity.Property(e => e.NewEmail)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.Token)
+                .IsRequired()
+                .HasMaxLength(32)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.Member).WithMany(p => p.MemberConfirmTokens)
+                .HasForeignKey(d => d.MemberId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MemberConfirmTokens_Members");
+        });
+
         modelBuilder.Entity<MemberCoupon>(entity =>
         {
             entity.Property(e => e.ClaimedAt).HasPrecision(0);
@@ -279,6 +309,31 @@ public partial class EatTogetherDBContext : DbContext
                 .HasForeignKey(d => d.MemberId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_MemberCoupons_Members");
+        });
+
+        modelBuilder.Entity<MemberExternalLogin>(entity =>
+        {
+            entity.HasIndex(e => new { e.MemberId, e.Provider }, "IX_MemberExternalLogins_MemberId_Provider").IsUnique();
+
+            entity.HasIndex(e => new { e.Provider, e.ProviderUserId }, "IX_MemberExternalLogins_Provider_ProviderUserId").IsUnique();
+
+            entity.Property(e => e.AvatarUrl).HasMaxLength(500);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Provider)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false);
+            entity.Property(e => e.ProviderUserId)
+                .IsRequired()
+                .HasMaxLength(100)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.Member).WithMany(p => p.MemberExternalLogins)
+                .HasForeignKey(d => d.MemberId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MemberExternalLogins_Members");
         });
 
         modelBuilder.Entity<MemberFavorite>(entity =>
@@ -298,6 +353,27 @@ public partial class EatTogetherDBContext : DbContext
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_MemberFavorites_Products");
+        });
+
+        modelBuilder.Entity<MemberPasswordResetToken>(entity =>
+        {
+            entity.HasIndex(e => e.MemberId, "IX_MemberPasswordResetTokens_MemberId");
+
+            entity.HasIndex(e => e.Token, "IX_MemberPasswordResetTokens_Token").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.ExpiresAt).HasPrecision(0);
+            entity.Property(e => e.Token)
+                .IsRequired()
+                .HasMaxLength(32)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.Member).WithMany(p => p.MemberPasswordResetTokens)
+                .HasForeignKey(d => d.MemberId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MemberPasswordResetTokens_Members");
         });
 
         modelBuilder.Entity<Order>(entity =>
