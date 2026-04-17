@@ -22,18 +22,42 @@ namespace EatTogether.Models.Repositories
                 .ToListAsync();
         }
 
-        public async Task<List<CouponDto>> GetApplicableCouponsAsync(int amount)
+        public async Task<List<CouponDto>> GetApplicableCouponsAsync(int amount, int? memberId = null)
         {
             var today = DateTime.Today;
-            return await _context.Coupons
+            var coupons = await _context.Coupons
                 .AsNoTracking()
                 .Where(c => !c.IsDisabled
                          && c.StartDate <= today
-                         && (c.EndDate == null || c.EndDate >= today)
-                         && c.MinSpend <= amount)
+                         && (c.EndDate == null || c.EndDate >= today))
                 .OrderByDescending(c => c.MinSpend)
                 .Select(c => c.ToDto())
                 .ToListAsync();
+
+            // 若有指定會員，分別查「已領取」和「已使用」的優惠券 ID 集合
+            HashSet<int>? claimedIds = null;
+            HashSet<int>? usedIds    = null;
+            if (memberId.HasValue)
+            {
+                var memberCoupons = await _context.MemberCoupons
+                    .AsNoTracking()
+                    .Where(mc => mc.MemberId == memberId.Value)
+                    .Select(mc => new { mc.CouponId, mc.IsUsed })
+                    .ToListAsync();
+
+                claimedIds = memberCoupons.Select(mc => mc.CouponId).ToHashSet();
+                usedIds    = memberCoupons.Where(mc => mc.IsUsed).Select(mc => mc.CouponId).ToHashSet();
+            }
+
+            foreach (var c in coupons)
+            {
+                c.IsClaimed       = claimedIds == null || claimedIds.Contains(c.Id);
+                c.IsUsedByMember  = usedIds != null && usedIds.Contains(c.Id);
+                // 已領取、未使用、且達到門檻才算 Eligible
+                c.IsEligible = c.IsClaimed && !c.IsUsedByMember && c.MinSpend <= amount;
+            }
+
+            return coupons;
         }
 
         public async Task<List<CouponDto>> GetCouponsByIdsAsync(IEnumerable<int> ids)

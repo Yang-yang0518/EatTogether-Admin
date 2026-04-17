@@ -9,6 +9,7 @@ namespace EatTogether.Models.Repositories
 		Task<IEnumerable<MemberListDto>> GetAllAsync(MemberSearchDto search);
 		Task<MemberDetailDto?> GetByIdAsync(int id);
 		Task UpdateBlacklistAsync(int id, bool isBlacklisted, string? reason);
+		Task<MemberListDto?> GetByPhoneAsync(string phone);
 	}
 
 	public class MemberRepository : IMemberRepository
@@ -93,6 +94,31 @@ namespace EatTogether.Models.Repositories
 					DeletedAt = m.DeletedAt,
 					BlacklistReason = m.BlacklistReason,
 					AvatarFileName = m.AvatarFileName,
+				})
+				.FirstOrDefaultAsync();
+		}
+
+		// 以電話號碼查單筆會員
+		public async Task<MemberListDto?> GetByPhoneAsync(string phone)
+		{
+			var trimmed = phone.Trim();
+			return await _context.Members
+				.AsNoTracking()
+				.Where(m => m.Phone == trimmed && !m.IsDeleted)
+				.Select(m => new MemberListDto
+				{
+					Id           = m.Id,
+					Name         = m.Name,
+					Account      = m.Account,
+					Email        = m.Email,
+					Phone        = m.Phone,
+					BirthDate    = m.BirthDate,
+					CreatedAt    = m.CreatedAt,
+					IsConfirmed  = m.IsConfirmed,
+					IsBlacklisted= m.IsBlacklisted,
+					IsDeleted    = m.IsDeleted,
+					DeletedAt    = m.DeletedAt,
+					BlacklistReason = m.BlacklistReason,
 				})
 				.FirstOrDefaultAsync();
 		}

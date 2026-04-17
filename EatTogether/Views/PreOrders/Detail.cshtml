@@ -1,38 +1,54 @@
-﻿@model EatTogether.Models.ViewModels.PreOrderListItemViewModel
+@model EatTogether.Models.ViewModels.PreOrderListItemViewModel
 
 @{
     ViewData["Title"] = "訂單明細";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <style>
-    .page-wrap {
-        max-width: 780px;
-        margin: 36px auto;
-        padding: 0 16px 60px;
+    /* ── 佔滿內容區高度 ── */
+    .detail-page {
+        display: flex;
+        flex-direction: column;
+        height: 88.2vh;
+        overflow: hidden;
+        background: #f4f6f9;
     }
 
-    /* ── 標頭 ── */
-    .page-header {
+    /* ── 頂部標頭列 ── */
+    .d-topbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 24px;
+        padding: 12px 24px;
+        background: #fff;
+        border-bottom: 1px solid #e8e8e8;
+        flex-shrink: 0;
     }
 
-    .page-title {
-        font-size: 1.8rem;
-        font-weight: 700;
+    .d-topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .d-title {
+        font-size: 1.2rem;
+        font-weight: 800;
         color: #1a1a1a;
     }
 
     .btn-back {
-        padding: 8px 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 7px 16px;
         background: #fff;
         color: #555;
-        border: 2px solid #ddd;
-        border-radius: 10px;
+        border: 1.5px solid #ddd;
+        border-radius: 9px;
         font-family: inherit;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
         text-decoration: none;
@@ -40,436 +56,511 @@
     }
 
         .btn-back:hover {
-            border-color: #aaa;
-            color: #333;
+            border-color: #999;
+            color: #222;
+            background: #f5f5f5;
         }
 
-    /* ── 卡片 ── */
-    .card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 16px;
-        border: 1px solid #eee;
-    }
-
-    .card-title {
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: #bbb;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 16px;
-    }
-
-    /* ── 訂單號碼 + 狀態 ── */
-    .order-hero {
-        display: flex;
-        justify-content: space-between;
+    /* ── 狀態徽章 ── */
+    .status-badge {
+        display: inline-flex;
         align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .order-number {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #1a1a1a;
-        letter-spacing: 0.04em;
-    }
-
-    .badge {
-        font-size: 0.88rem;
         padding: 5px 14px;
         border-radius: 20px;
+        font-size: 0.85rem;
         font-weight: 700;
     }
 
-    .badge-pending {
-        background: #fff3cd;
-        color: #856404;
-    }
+    .sb-pending { background: #fff3cd; color: #856404; }
+    .sb-done    { background: #d1f5e0; color: #1a6b3a; }
+    .sb-cancel  { background: #f8d7da; color: #842029; }
 
-    .badge-done {
-        background: #d1f5e0;
-        color: #1a6b3a;
-    }
-
-    .badge-cancel {
-        background: #f8d7da;
-        color: #842029;
-    }
-
-    /* ── Info 列 ── */
-    .info-grid {
+    /* ══════════════════════════════════════
+       主體：左欄 260px + 右欄 1fr
+    ══════════════════════════════════════ */
+    .d-body {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
+        grid-template-columns: 320px 1fr;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
     }
 
-    .info-item {
+    /* ── 左欄：訂單資訊（直向捲動） ── */
+    .info-col {
+        background: #fff;
+        border-right: 1.5px solid #e8e8e8;
+        overflow-y: auto;
+        padding: 25px 20px;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 16px;
     }
 
-    .info-label {
+    .info-order-num {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #1a1a1a;
+        letter-spacing: 0.03em;
+        word-break: break-all;
+    }
+
+    .info-sep {
+        border: none;
+        border-top: 1px solid #f0f0f0;
+        margin: 0;
+    }
+
+    .info-item {}
+
+    .info-lbl {
         font-size: 0.75rem;
         font-weight: 700;
-        color: #bbb;
+        color: #c0c0c0;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
     }
 
-    .info-value {
-        font-size: 0.95rem;
+    .info-val {
+        font-size: 1rem;
         color: #1a1a1a;
         font-weight: 500;
+        word-break: break-word;
     }
 
-        .info-value.muted {
-            color: #888;
-            font-weight: 400;
-        }
+        .info-val.muted { color: #aaa; font-weight: 400; }
 
-    .tag-dine {
-        background: #eaf0fb;
-        color: #2c3e50;
-        padding: 2px 10px;
-        border-radius: 10px;
-        font-size: 0.85rem;
-        font-weight: 600;
+    .tag {
         display: inline-block;
-    }
-
-    .tag-takeout {
-        background: #f0f0f0;
-        color: #666;
-        padding: 2px 10px;
-        border-radius: 10px;
-        font-size: 0.85rem;
+        padding: 2px 9px;
+        border-radius: 9px;
+        font-size: 0.8rem;
         font-weight: 600;
-        display: inline-block;
     }
 
-    /* ── 優惠券 ── */
-    .coupon-box {
-        display: flex;
+    .tag-dine    { background: #eaf0fb; color: #2561a8; }
+    .tag-takeout { background: #f0f0f0; color: #666; }
+
+    .pay-tag {
+        display: inline-flex;
         align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
-        background: #fffbf0;
-        border: 1px dashed #f5cba7;
+        padding: 2px 9px;
+        border-radius: 9px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background: #f0f4ff;
+        color: #2561a8;
+    }
+
+    /* 活動 / 優惠券 */
+    .bonus-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 9px 12px;
         border-radius: 10px;
-        margin-top: 4px;
     }
 
-    .coupon-icon {
-        font-size: 1.2rem;
-    }
+    .bonus-event  { background: #eafaf1; border: 1px dashed #a9dfbf; }
+    .bonus-coupon { background: #fffbf0; border: 1px dashed #f5cba7; }
 
-    .coupon-name {
-        font-weight: 700;
-        color: #1a1a1a;
-        font-size: 0.92rem;
-    }
+    .bonus-icon { font-size: 1.05rem; flex-shrink: 0; margin-top: 1px; }
+    .bonus-name { font-size: 0.84rem; font-weight: 700; color: #1a1a1a; }
+    .bonus-sub  { font-size: 0.76rem; color: #e67e22; margin-top: 2px; }
 
-    .coupon-desc {
-        font-size: 0.82rem;
-        color: #e67e22;
-        margin-top: 2px;
-    }
-
-    /* ── 備註 ── */
+    /* 備註 */
     .note-box {
-        padding: 10px 14px;
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+        padding: 9px 12px;
         background: #fff8e1;
-        border-left: 4px solid #f39c12;
-        border-radius: 0 10px 10px 0;
-        font-size: 0.92rem;
+        border-left: 3px solid #f39c12;
+        border-radius: 0 8px 8px 0;
+        font-size: 0.84rem;
         color: #7d6608;
         font-weight: 500;
     }
 
-    /* ── 餐點明細表格 ── */
-    .detail-table {
+    /* ── 右欄：上下分割 ── */
+    .right-col {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+        padding: 14px 18px;
+        gap: 12px;
+    }
+
+    /* 共用卡片樣式 */
+    .r-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #ebebeb;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .r-card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 11px 16px;
+        background: #fafafa;
+        border-bottom: 1px solid #f0f0f0;
+        flex-shrink: 0;
+    }
+
+    .r-card-title {
+        font-size: 0.73rem;
+        font-weight: 800;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    /* 右上：餐點明細（flex:1，可捲動） */
+    .items-card {
+        flex: 1;
+    }
+
+    .items-card-body {
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .items-table {
         width: 100%;
         border-collapse: collapse;
     }
 
-        .detail-table th {
-            padding: 10px 12px;
+        .items-table thead th {
+            padding: 9px 14px;
             background: #f8f9fa;
-            font-size: 0.78rem;
-            color: #aaa;
-            text-align: left;
+            font-size: 0.72rem;
             font-weight: 700;
-            letter-spacing: 0.06em;
-            border-bottom: 1px solid #f0f0f0;
+            color: #bbb;
+            text-align: left;
+            letter-spacing: 0.07em;
+            border-bottom: 1px solid #efefef;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
 
-            .detail-table th:last-child {
-                text-align: right;
-            }
+            .items-table thead th:last-child { text-align: right; }
 
-        .detail-table td {
-            padding: 11px 12px;
-            font-size: 0.92rem;
+        .items-table tbody td {
+            padding: 10px 14px;
+            font-size: 0.88rem;
             color: #333;
-            border-bottom: 1px solid #f8f8f8;
+            border-bottom: 1px solid #f6f6f6;
             vertical-align: middle;
         }
 
-            .detail-table td:last-child {
+            .items-table tbody td:last-child {
                 text-align: right;
                 font-weight: 700;
             }
 
-        .detail-table tr:last-child td {
-            border-bottom: none;
-        }
+        .items-table tbody tr:last-child td { border-bottom: none; }
 
-        .detail-table tr.status-cancel td {
-            opacity: 0.4;
+        .items-table tbody tr.row-cancel td {
+            opacity: 0.45;
             text-decoration: line-through;
+            background: #fdf5f5;
         }
 
-    .status-badge {
-        font-size: 0.72rem;
-        padding: 2px 7px;
-        border-radius: 8px;
-        font-weight: 700;
+        .items-table tbody tr.row-setmeal td {
+            background: #fff4e6;
+            font-weight: 700;
+        }
+
+            .items-table tbody tr.row-setmeal td:first-child {
+                border-left: 4px solid #e67e22;
+            }
+
+        .items-table tbody tr.row-child td {
+            background: #fffbf5;
+            color: #999;
+            font-size: 0.84rem;
+            border-bottom: 1px solid #fdebd0;
+        }
+
+            .items-table tbody tr.row-child td:first-child {
+                padding-left: 28px;
+                border-left: 4px solid #f0c080;
+            }
+
+        .items-table tbody tr.row-child.row-cancel td {
+            background: #fdf5f5;
+            border-left-color: #f5c6cb;
+        }
+
+    .item-badge {
         display: inline-block;
-        margin-left: 6px;
+        font-size: 0.67rem;
+        padding: 2px 6px;
+        border-radius: 7px;
+        font-weight: 700;
+        margin-left: 5px;
+        vertical-align: middle;
     }
 
-    .badge-item-pending {
-        background: #fff3cd;
-        color: #856404;
+    .ib-pending { background: #fff3cd; color: #856404; }
+    .ib-done    { background: #d1f5e0; color: #1a6b3a; }
+    .ib-cancel  { background: #f8d7da; color: #842029; }
+    .ib-setmeal { background: #e67e22; color: #fff; }
+
+    /* 右下：金額明細（固定高度） */
+    .amount-card { flex-shrink: 0; }
+
+    .amount-card-body {
+        padding: 10px 16px;
+        display: flex;
+        flex-direction: column;
     }
 
-    .badge-item-done {
-        background: #d1f5e0;
-        color: #1a6b3a;
-    }
-
-    .badge-item-cancel {
-        background: #f8d7da;
-        color: #842029;
-    }
-
-    /* ── 金額 ── */
     .amount-row {
         display: flex;
         justify-content: space-between;
-        padding: 7px 0;
-        font-size: 0.95rem;
+        align-items: center;
+        padding: 6px 0;
+        font-size: 0.9rem;
         color: #555;
         border-bottom: 1px solid #f8f8f8;
     }
 
-        .amount-row:last-child {
-            border-bottom: none;
-        }
-
-        .amount-row.discount {
-            color: #27ae60;
-        }
+        .amount-row:last-child { border-bottom: none; }
+        .amount-row.discount   { color: #27ae60; }
 
         .amount-row.total {
-            font-size: 1.2rem;
-            font-weight: 700;
+            font-size: 1.1rem;
+            font-weight: 800;
             color: #1a1a1a;
             border-top: 2px solid #eee;
             border-bottom: none;
-            margin-top: 8px;
-            padding-top: 12px;
+            margin-top: 4px;
+            padding-top: 10px;
         }
 
-            .amount-row.total span:last-child {
-                color: #c0392b;
-            }
+            .amount-row.total span:last-child { color: #c0392b; }
 </style>
 
-<div class="page-wrap">
+<div class="detail-page">
 
-    <!-- 標頭 -->
-    <div class="page-header">
-        <div class="page-title">📋 訂單明細</div>
+    @* ── 頂部標頭 *@
+    <div class="d-topbar">
+        <div class="d-title">📋 訂單明細</div>
         <a href="javascript:history.back()" class="btn-back">← 返回</a>
     </div>
 
-    <!-- ── 訂單基本資訊 ── -->
-    <div class="card">
-        <div class="order-hero">
-            <div class="order-number">@Model.OrderNumber</div>
-            @if (Model.DoneOrCancel == 0)
-            {
-                <span class="badge badge-pending">⏳ 未完成</span>
-            }
-            else if (Model.DoneOrCancel == 1)
-            {
-                <span class="badge badge-done">✅ 已完成</span>
-            }
-            else
-            {
-                <span class="badge badge-cancel">❌ 已取消</span>
-            }
-        </div>
+    @* ── 主體 *@
+    <div class="d-body">
 
-        <div class="info-grid">
+        @* ═══ 左欄：訂單資訊（直向排列） ═══ *@
+        <div class="info-col">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <span class="info-order-num">@Model.OrderNumber</span>
+                @if (Model.DoneOrCancel == 0)
+                {
+                    <span class="status-badge sb-pending">⏳ 未完成</span>
+                }
+                else if (Model.DoneOrCancel == 1)
+                {
+                    <span class="status-badge sb-done">✅ 已完成</span>
+                }
+                else
+                {
+                    <span class="status-badge sb-cancel">❌ 已取消</span>
+                }
+            </div>
+            
+
+            <hr class="info-sep" />
+
             <div class="info-item">
-                <div class="info-label">用餐方式</div>
-                <div class="info-value">
+                <div class="info-lbl">用餐方式</div>
+                <div class="info-val">
                     @if (Model.InOrOut)
                     {
-                        <span class="tag-dine">🪑 內用・@Model.TableName</span>
+                        <span class="tag tag-dine">🪑 內用・@Model.TableName</span>
                     }
                     else
                     {
-                        <span class="tag-takeout">🥡 外帶</span>
+                        <span class="tag tag-takeout">🥡 外帶</span>
                     }
                 </div>
             </div>
 
             <div class="info-item">
-                <div class="info-label">下單時間</div>
-                <div class="info-value">@Model.OrderAt.ToString("yyyy/MM/dd HH:mm")</div>
+                <div class="info-lbl">下單時間</div>
+                <div class="info-val">@Model.OrderAt.ToString("yyyy/MM/dd HH:mm")</div>
             </div>
 
             <div class="info-item">
-                <div class="info-label">會員</div>
-                <div class="info-value">@(Model.MemberName ?? "訪客")</div>
+                <div class="info-lbl">付款方式</div>
+                <div class="info-val">
+                    <span class="pay-tag">
+                        @(Model.PayMethod == "Cash" ? "💵 現金"
+                          : Model.PayMethod == "Card" ? "💳 刷卡"
+                          : "📱 行動支付")
+                    </span>
+                </div>
             </div>
 
             <div class="info-item">
-                <div class="info-label">服務員</div>
-                <div class="info-value @(Model.UserName == null ? "muted" : "")">
+                <div class="info-lbl">會員</div>
+                <div class="info-val @(Model.MemberName == null ? "muted" : "")">
+                    @(Model.MemberName ?? "訪客")
+                </div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-lbl">服務員</div>
+                <div class="info-val @(Model.UserName == null ? "muted" : "")">
                     @(Model.UserName ?? "客人自行點餐")
                 </div>
             </div>
 
-            <div class="info-item">
-                <div class="info-label">支付方式</div>
-                <div class="info-value">
-                    @(Model.PayMethod == "Cash" ? "💵 現金"
-                                        : Model.PayMethod == "Card" ? "💳 刷卡"
-                                        : "📱 行動支付")
-                </div>
-            </div>
-
-            @if (!string.IsNullOrEmpty(Model.CompletedAtLabel))
-            {
-                <div class="info-item">
-                    <div class="info-label">@Model.CompletedAtLabel</div>
-                    <div class="info-value">
-                        @(Model.CompletedAt.HasValue
-                                            ? Model.CompletedAt.Value.ToString("yyyy/MM/dd HH:mm")
-                                            : "-")
-                </div>
-            </div>
-                        }
-
             @if (Model.PeopleNum.HasValue)
             {
                 <div class="info-item">
-                    <div class="info-label">用餐人數</div>
-                    <div class="info-value">@Model.PeopleNum 人</div>
+                    <div class="info-lbl">用餐人數</div>
+                    <div class="info-val">@Model.PeopleNum 人</div>
                 </div>
             }
+
+            @if (!string.IsNullOrEmpty(Model.CompletedAtLabel) && Model.CompletedAt.HasValue)
+            {
+                <div class="info-item">
+                    <div class="info-lbl">@Model.CompletedAtLabel</div>
+                    <div class="info-val">@Model.CompletedAt.Value.ToString("yyyy/MM/dd HH:mm")</div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.EventTitle) || !string.IsNullOrEmpty(Model.CouponName) || !string.IsNullOrEmpty(Model.Note))
+            {
+                <hr class="info-sep" />
+
+                @if (!string.IsNullOrEmpty(Model.EventTitle))
+                {
+                    <div class="bonus-card bonus-event">
+                        <span class="bonus-icon">🎉</span>
+                        <div>
+                            <div class="bonus-name">@Model.EventTitle</div>
+                            <div class="bonus-sub">套用活動</div>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.CouponName))
+                {
+                    <div class="bonus-card bonus-coupon">
+                        <span class="bonus-icon">🎟️</span>
+                        <div>
+                            <div class="bonus-name">@Model.CouponName</div>
+                            <div class="bonus-sub">@Model.CouponDesc</div>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.Note))
+                {
+                    <div class="note-box">
+                        <span>⚠️</span>
+                        <span>@Model.Note</span>
+                    </div>
+                }
+            }
+
         </div>
 
-        <!-- 活動 -->
-        @if (!string.IsNullOrEmpty(Model.EventTitle))
-        {
-            <div style="margin-top:16px">
-                <div class="info-label" style="margin-bottom:6px">套用活動</div>
-                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#eafaf1;border:1px dashed #a9dfbf;border-radius:10px;">
-                    <span style="font-size:1.2rem">🎉</span>
-                    <div style="font-weight:700;color:#1a1a1a;font-size:0.92rem;">@Model.EventTitle</div>
+        @* ═══ 右欄 ═══ *@
+        <div class="right-col">
+
+            @* 右上：餐點明細（可捲動） *@
+            <div class="r-card items-card">
+                <div class="r-card-head">
+                    <span class="r-card-title">餐點明細</span>
+                    <span style="font-size:0.78rem;color:#bbb;">共 @Model.Items.Count(i => i.ParentDetailId == null) 項</span>
+                </div>
+                <div class="items-card-body">
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th style="width:44%">餐點名稱</th>
+                                <th>數量</th>
+                                <th>單價</th>
+                                <th>小計</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                bool isCancel  = item.Status == 2;
+                                bool isChild   = item.ParentDetailId != null;
+                                bool isSetMeal = item.IsSetMeal && item.ParentDetailId == null;
+
+                                string rowCls  = (isCancel  ? "row-cancel "  : "")
+                                               + (isSetMeal ? "row-setmeal"  : isChild ? "row-child" : "");
+
+                                string badgeCls = item.Status == 0 ? "ib-pending"
+                                                : item.Status == 1 ? "ib-done"
+                                                : "ib-cancel";
+                                string badgeTxt = item.Status == 0 ? "待處理"
+                                                : item.Status == 1 ? "完成"
+                                                : "取消";
+
+                                <tr class="@rowCls.Trim()">
+                                    <td>
+                                        @item.ProductName
+                                        @if (isSetMeal)
+                                        {
+                                            <span class="item-badge ib-setmeal">套餐</span>
+                                        }
+                                        <span class="item-badge @badgeCls">@badgeTxt</span>
+                                    </td>
+                                    <td>× @item.Qty</td>
+                                    <td>NT$ @item.UnitPrice</td>
+                                    <td>@(isCancel ? "—" : $"NT$ {item.Subtotal}")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        }
 
-        <!-- 備註 -->
-        @if (!string.IsNullOrEmpty(Model.Note))
-        {
-            <div style="margin-top:16px">
-                <div class="info-label" style="margin-bottom:6px">備註</div>
-                <div class="note-box">⚠️ @Model.Note</div>
-            </div>
-        }
-
-        <!-- 優惠券 -->
-        @if (!string.IsNullOrEmpty(Model.CouponName))
-        {
-            <div style="margin-top:16px">
-                <div class="info-label" style="margin-bottom:6px">優惠券</div>
-                <div class="coupon-box">
-                    <span class="coupon-icon">🎟️</span>
-                    <div>
-                        <div class="coupon-name">@Model.CouponName</div>
-                        <div class="coupon-desc">@Model.CouponDesc</div>
+            @* 右下：金額明細（固定高度） *@
+            @if (Model.DoneOrCancel != 2)
+            {
+                <div class="r-card amount-card">
+                    <div class="r-card-head">
+                        <span class="r-card-title">金額明細</span>
+                    </div>
+                    <div class="amount-card-body">
+                        <div class="amount-row">
+                            <span>小計</span>
+                            <span>NT$ @Model.OriginalAmount</span>
+                        </div>
+                        <div class="amount-row discount">
+                            <span>折扣</span>
+                            <span>− NT$ @Model.DiscountAmount</span>
+                        </div>
+                        <div class="amount-row total">
+                            <span>應付金額</span>
+                            <span>NT$ @Model.TotalAmount</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        }
-    </div>
+            }
 
-    <!-- ── 餐點明細 ── -->
-    <div class="card">
-        <div class="card-title">餐點明細</div>
-        <table class="detail-table">
-            <thead>
-                <tr>
-                    <th>餐點名稱</th>
-                    <th>數量</th>
-                    <th>單價</th>
-                    <th>小計</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model.Items)
-                {
-                    string rowClass = item.Status == 2 ? "status-cancel" : "";
-                    string badgeClass = item.Status == 0 ? "badge-item-pending"
-                    : item.Status == 1 ? "badge-item-done"
-                    : "badge-item-cancel";
-                    string badgeText = item.Status == 0 ? "待處理"
-                    : item.Status == 1 ? "完成"
-                    : "取消";
-
-                    <tr class="@rowClass">
-                        <td>
-                            @item.ProductName
-                            <span class="status-badge @badgeClass">@badgeText</span>
-                        </td>
-                        <td>× @item.Qty</td>
-                        <td>NT$ @item.UnitPrice</td>
-                        <td>@(item.Status == 2 ? "-" : $"NT$ {item.Qty * item.UnitPrice}")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-
-    <!-- ── 金額明細 ── -->
-    @if (Model.DoneOrCancel != 2)
-    {
-        <div class="card">
-            <div class="card-title">金額明細</div>
-            <div class="amount-row">
-                <span>總計</span>
-                <span>NT$ @Model.OriginalAmount</span>
-            </div>
-            <div class="amount-row discount">
-                <span>折扣</span>
-                <span>− NT$ @Model.DiscountAmount</span>
-            </div>
-            <div class="amount-row total">
-                <span>應付</span>
-                <span>NT$ @Model.TotalAmount</span>
-            </div>
         </div>
-    }
+
+    </div>
 
 </div>

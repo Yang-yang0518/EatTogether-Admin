@@ -22,5 +22,8 @@ namespace EatTogether.Models.DTOs
 
         /// <summary>此活動是否已套用在目前訂單中</summary>
         public bool IsInUse { get; set; }
+
+        /// <summary>目前訂單金額是否達到最低消費門檻（可選用）</summary>
+        public bool IsEligible { get; set; }
     }
 }

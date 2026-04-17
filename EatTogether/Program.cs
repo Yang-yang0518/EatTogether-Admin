@@ -19,11 +19,11 @@ namespace EatTogether
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
-			// µù¥U¨ìDBContext
+			// ï¿½ï¿½ï¿½Uï¿½ï¿½DBContext
 			builder.Services.AddDbContext<EatTogetherDBContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-			// ·s¼W JWT Authentication
+			// ï¿½sï¿½W JWT Authentication
 			var jwtSettings = builder.Configuration.GetSection("Jwt");
 			var secretKey = jwtSettings["SecretKey"]!;
 
@@ -34,7 +34,7 @@ namespace EatTogether
 			})
 			.AddJwtBearer(options =>
 			{
-				// ±q httpOnly Cookie Åª¨ú Token
+				// ï¿½q httpOnly Cookie Åªï¿½ï¿½ Token
 				options.Events = new JwtBearerEvents
 				{
 					OnMessageReceived = ctx =>
@@ -58,13 +58,13 @@ namespace EatTogether
 				};
 			});
 
-			// µù¥URepository
+			// ï¿½ï¿½ï¿½URepository
 			builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 			builder.Services.AddScoped<IDishRepository, DishRepository>();
 			builder.Services.AddScoped<ISetMealRepository, SetMealRepository>();
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
-            // µù¥UService
+            // ï¿½ï¿½ï¿½UService
             builder.Services.AddScoped<CategoryService>();
 			builder.Services.AddScoped<DishService>();
 			builder.Services.AddScoped<SetMealService>();
@@ -95,7 +95,9 @@ namespace EatTogether
 			builder.Services.AddScoped<IMemberService, MemberService>();
 			builder.Services.AddScoped<IPasswordResetEmailService, PasswordResetEmailService>();
 
-            // ªY¬Xµù¥U
+            // çµå¸³ç›¸é—œ
+            builder.Services.AddMemoryCache();
+            builder.Services.AddSingleton<EcPayService>();
             builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddScoped<IPreOrderRepository, PreOrderRepository>();
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
@@ -114,27 +116,14 @@ namespace EatTogether
 
 
 
-			// µù¥U Infra¡]»İ­n DI ªº¤~µù¥U¡^
+			// ï¿½ï¿½ï¿½U Infraï¿½]ï¿½İ­n DI ï¿½ï¿½ï¿½~ï¿½ï¿½ï¿½Uï¿½^
 			builder.Services.AddHttpContextAccessor();
 			builder.Services.AddScoped<JwtHelper>();
 			builder.Services.AddSingleton<UserNumberGenerator>();
 
-			// ¡¿ 1. ¥[¤J CORS ªA°È³]©w ¡¿
-			builder.Services.AddCors(options =>
-			{
-				options.AddPolicy("FrontendPolicy", policy =>
-				{
-					policy.WithOrigins("http://localhost:5173") // ¤¹³\ Vue «e¥x
-						  .AllowAnyMethod()
-						  .AllowAnyHeader()
-						  .AllowCredentials();
-				});
-			});
-
-
 			var app = builder.Build();
 
-            //¨C¦¸°õ¦æ¡AÅı¨t²Î¦Û°Ê¶]¬¡°Êªºª¬ºA
+            //ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½tï¿½Î¦Û°Ê¶]ï¿½ï¿½ï¿½Êªï¿½ï¿½ï¿½ï¿½A
 			using (var scope = app.Services.CreateScope())
 			{
 				EventInitializerExtensions.UpdateEventStatuses(app.Services);
@@ -150,7 +139,7 @@ namespace EatTogether
 				app.UseHsts();
             }
 
-			// ¥ş°ì¿ù»~­¶¸ô¥Ñ
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
 			app.UseHttpsRedirection();
@@ -158,10 +147,7 @@ namespace EatTogether
 
             app.UseRouting();
 
-			// ¡¿ 2. ±Ò¥Î CORS ³q¦æÃÒ ¡¿
-			app.UseCors("FrontendPolicy");
-
-			// ·s¼W Authentication ¦b Authorization ¤§«e
+			// ï¿½sï¿½W Authentication ï¿½b Authorization ï¿½ï¿½ï¿½e
 			app.UseAuthentication();
 
 			app.UseAuthorization();

@@ -149,18 +149,14 @@ namespace EatTogether.Models.Repositories
 
         public async Task<List<EventApplicableDto>> GetManualEventsAsync(int amount)
         {
-            var today    = DateTime.Today;
-            var tomorrow = today.AddDays(1);
+            var today = DateTime.Today;
 
             var events = await _context.Events
                 .AsNoTracking()
                 .Include(e => e.RewardDish)
                 .Where(e => e.Status == 1
-                         && e.StartDate < tomorrow
-                         && e.EndDate   >= today
-                         && e.MinSpend  <= amount
-                         // Gift 型活動需廚房出餐，不論 IsAutoDiscount 設定都允許手動選擇
-                         && (e.IsAutoDiscount == 0 || e.DiscountType == "Gift"))
+                         && e.StartDate <= today
+                         && (e.EndDate == null || e.EndDate >= today))
                 .OrderByDescending(e => e.MinSpend)
                 .ToListAsync();
 
@@ -168,6 +164,7 @@ namespace EatTogether.Models.Repositories
 
             foreach (var e in events)
             {
+                bool eligible  = e.MinSpend <= amount;
                 int calculated = 0;
                 string desc    = string.Empty;
                 var dishName   = e.RewardDish?.DishName ?? "";
@@ -179,8 +176,15 @@ namespace EatTogether.Models.Repositories
                 }
                 else if (e.DiscountType == "Percent")
                 {
-                    calculated = (int)(amount * e.DiscountValue / 100m);
-                    desc = $"折扣 {e.DiscountValue}%，省 NT${calculated}";
+                    if (eligible)
+                    {
+                        calculated = (int)(amount * e.DiscountValue / 100m);
+                        desc = $"折扣 {e.DiscountValue}%，省 NT${calculated}";
+                    }
+                    else
+                    {
+                        desc = $"折扣 {e.DiscountValue}%";
+                    }
                 }
                 else
                 {
@@ -198,7 +202,8 @@ namespace EatTogether.Models.Repositories
                     RewardDishName      = string.IsNullOrEmpty(dishName) ? null : dishName,
                     MinSpend            = e.MinSpend,
                     CalculatedDiscount  = calculated,
-                    DiscountDescription = desc
+                    DiscountDescription = desc,
+                    IsEligible          = eligible
                 });
             }
 

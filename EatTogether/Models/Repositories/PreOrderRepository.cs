@@ -61,6 +61,7 @@ namespace EatTogether.Models.Repositories
             var today = DateTime.Today;
             return await _context.PreOrders
                 .Include(p => p.PreOrderDetails)
+                .Include(p => p.Member)
                 .Where(p => p.TableId == tableId
                          && p.DoneOrCancel == 0
                          && p.OrderAt.Date == today)
