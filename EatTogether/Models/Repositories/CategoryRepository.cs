@@ -45,7 +45,7 @@ namespace EatTogether.Models.Repositories
 					ImageUrl = c.ImageUrl,
 					CreatedAt = c.CreatedAt,
 					UpdatedAt = c.UpdatedAt,
-					DishCount = c.Dishes.Count()
+					DishCount = c.Dishes.Count(d => d.IsActive)
 				})
 				.ToListAsync();
 		}
@@ -66,7 +66,7 @@ namespace EatTogether.Models.Repositories
 					ImageUrl = c.ImageUrl,
 					CreatedAt = c.CreatedAt,
 					UpdatedAt = c.UpdatedAt,
-					DishCount = c.Dishes.Count()
+					DishCount = c.Dishes.Count(d => d.IsActive)
 				})
 				.ToListAsync();
 		}
@@ -181,6 +181,41 @@ namespace EatTogether.Models.Repositories
 				}
 			}
 			await _context.SaveChangesAsync();
+		}
+
+		public async Task DisableDishesByCategoryAsync(int categoryId)
+		{
+			var dishes = await _context.Dishes
+				.Where(d => d.CategoryId == categoryId && d.IsActive)
+				.ToListAsync();
+			foreach (var dish in dishes)
+				dish.IsActive = false;
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task EnableDishesByCategoryAsync(int categoryId)
+		{
+			var dishes = await _context.Dishes
+				.Where(d => d.CategoryId == categoryId && !d.IsActive)
+				.ToListAsync();
+			foreach (var dish in dishes)
+				dish.IsActive = true;
+			await _context.SaveChangesAsync();
+		}
+
+		public async Task<IEnumerable<DishDto>> GetDishesByCategoryAsync(int categoryId)
+		{
+			return await _context.Dishes
+				.Where(d => d.CategoryId == categoryId)
+				.Select(d => new DishDto
+				{
+					Id = d.Id,
+					DishName = d.DishName,
+					Price = d.Price,
+					IsActive = d.IsActive,
+					CategoryId = d.CategoryId
+				})
+				.ToListAsync();
 		}
 	}
 }

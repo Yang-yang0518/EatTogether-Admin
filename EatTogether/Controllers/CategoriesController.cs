@@ -109,6 +109,7 @@ namespace EatTogether.Controllers
 		public async Task<IActionResult> Disable(int id)
 		{
 			await _categoryService.DisableAsync(id);
+			await _categoryService.DisableDishesByCategoryAsync(id);
 			return Ok(new { message = "已停用" });
 		}
 
@@ -117,6 +118,8 @@ namespace EatTogether.Controllers
 		{
 			if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
 			await _categoryService.BatchDisableAsync(request.Ids);
+			foreach (var id in request.Ids)
+				await _categoryService.DisableDishesByCategoryAsync(id);
 			return Ok();
 		}
 
@@ -124,6 +127,7 @@ namespace EatTogether.Controllers
 		public async Task<IActionResult> Enable(int id)
 		{
 			await _categoryService.EnableAsync(id);
+			await _categoryService.EnableDishesByCategoryAsync(id);
 			return Ok();
 		}
 
@@ -132,6 +136,8 @@ namespace EatTogether.Controllers
 		{
 			if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
 			await _categoryService.BatchEnableAsync(request.Ids);
+			foreach (var id in request.Ids)
+				await _categoryService.EnableDishesByCategoryAsync(id);
 			return Ok();
 		}
 
@@ -141,6 +147,18 @@ namespace EatTogether.Controllers
 			if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
 			await _categoryService.BatchDeleteAsync(request.Ids);
 			return Ok();
+		}
+
+		[HttpGet]
+		public async Task<IActionResult> Details(int id)
+		{
+			var dishes = await _categoryService.GetDishesByCategoryAsync(id);
+			return Json(dishes.Select(d => new {
+				id       = d.Id,
+				dishName = d.DishName,
+				price    = d.Price,
+				isActive = d.IsActive
+			}));
 		}
 
 		[HttpPost]

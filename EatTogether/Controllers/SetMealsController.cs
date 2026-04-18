@@ -1,7 +1,8 @@
 ﻿using EatTogether.Models.DTOs;
 using EatTogether.Models.Infra;
-using EatTogether.Models.Services;       
-using EatTogether.Models.ViewModels;     
+using EatTogether.Models.Repositories;
+using EatTogether.Models.Services;
+using EatTogether.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
@@ -17,12 +18,14 @@ namespace EatTogether.Controllers
         private readonly SetMealService _setMealService;
         private readonly DishService _dishService;
         private readonly CategoryService _categoryService;
+        private readonly ISetMealRepository _setMealRepo;
 
-        public SetMealsController(SetMealService setMealService, DishService dishService, CategoryService categoryService)
+        public SetMealsController(SetMealService setMealService, DishService dishService, CategoryService categoryService, ISetMealRepository setMealRepo)
         {
             _setMealService = setMealService;
             _dishService    = dishService;
             _categoryService = categoryService;
+            _setMealRepo    = setMealRepo;
         }
 
         public async Task<IActionResult> Index()
@@ -300,17 +303,9 @@ namespace EatTogether.Controllers
         [HttpPost]
         public async Task<IActionResult> Clone(int id)
         {
-            var dto = await _setMealService.GetByIdAsync(id);
-            if (dto == null) return NotFound();
-
-            dto.Id = 0;
-            dto.SetMealName = dto.SetMealName + " - 複製";
-            dto.IsActive = false;
-            var allSetMeals = await _setMealService.GetAllAsync();
-            dto.DisplayOrder = allSetMeals.Any() ? allSetMeals.Min(s => s.DisplayOrder) - 1 : 1;
-
-            await _setMealService.CreateAsync(dto);
-            return Ok();
+            var newId = await _setMealRepo.CloneSetMealAsync(id);
+            if (newId == 0) return NotFound();
+            return Ok(new { newId });
         }
 
         private async Task<string> SaveBase64ImageAsync(string base64Data, string fileNamePrefix)
