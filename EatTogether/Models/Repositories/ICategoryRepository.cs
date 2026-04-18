@@ -17,6 +17,9 @@ namespace EatTogether.Models.Repositories
             Task DeleteAsync(int id);
             Task BatchDeleteAsync(IEnumerable<int> ids);
             Task UpdateOrderAsync(IEnumerable<int> orderedIds);
+        Task DisableDishesByCategoryAsync(int categoryId);
+        Task EnableDishesByCategoryAsync(int categoryId);
+        Task<IEnumerable<DishDto>> GetDishesByCategoryAsync(int categoryId);
         }
     
 }
