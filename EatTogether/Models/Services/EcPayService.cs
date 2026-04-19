@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.WebUtilities;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -6,31 +7,34 @@ namespace EatTogether.Models.Services
 {
     public class EcPaySettings
     {
-        public string MerchantId  { get; set; } = "";
-        public string HashKey     { get; set; } = "";
-        public string HashIV      { get; set; } = "";
-        public string PaymentUrl  { get; set; } = "";
-        public string ReturnUrl   { get; set; } = "";
+        public string MerchantId    { get; set; } = "";
+        public string HashKey       { get; set; } = "";
+        public string HashIV        { get; set; } = "";
+        public string PaymentUrl    { get; set; } = "";
+        public string QueryUrl      { get; set; } = "";
+        public string ReturnUrl     { get; set; } = "";
         public string ClientBackUrl { get; set; } = "";
     }
 
     public class EcPayService
     {
-        private readonly EcPaySettings _cfg;
+        private readonly EcPaySettings    _cfg;
+        private readonly IHttpClientFactory _http;
 
-        public EcPayService(IConfiguration config)
+        public EcPayService(IConfiguration config, IHttpClientFactory http)
         {
-            _cfg = config.GetSection("EcPay").Get<EcPaySettings>() ?? new EcPaySettings();
+            _cfg  = config.GetSection("EcPay").Get<EcPaySettings>() ?? new EcPaySettings();
+            _http = http;
         }
 
-        public string PaymentUrl  => _cfg.PaymentUrl;
+        public string PaymentUrl    => _cfg.PaymentUrl;
         public string ClientBackUrl => _cfg.ClientBackUrl;
 
         // ── 產生送到綠界的表單參數 ─────────────────────────────────────────
         // tradeNo：MerchantTradeNo（格式見 controller，≤20 碼英數字）
         public Dictionary<string, string> BuildParams(
             string tradeNo, int amount, string itemName, string tradeDesc,
-            string? clientBackUrl = null)
+            string? clientBackUrl = null, string choosePayment = "Credit")
         {
             var p = new Dictionary<string, string>
             {
@@ -43,7 +47,7 @@ namespace EatTogether.Models.Services
                 ["ItemName"]          = itemName,
                 ["ReturnURL"]         = _cfg.ReturnUrl,
                 ["ClientBackURL"]     = clientBackUrl ?? _cfg.ClientBackUrl,
-                ["ChoosePayment"]     = "Credit",
+                ["ChoosePayment"]     = choosePayment,
                 ["EncryptType"]       = "1",
             };
             p["CheckMacValue"] = ComputeCheckMac(p);
@@ -99,6 +103,48 @@ namespace EatTogether.Models.Services
             var prefix = tradeNo[0];
             var id     = int.Parse(tradeNo.Substring(1, 7));
             return (prefix, id);
+        }
+
+        // ── 主動向綠界查詢單筆訂單交易資訊 ───────────────────────────────────
+        // 回傳 (TradeStatus, PayMethod)
+        //   TradeStatus：1 = 付款成功；0 = 未付款；其他 = 失敗；null = 查詢失敗
+        //   PayMethod：從 PaymentType 欄位對映（"Card" / "LinePay"）；null = 無法判斷
+        public async Task<(int? Status, string? PayMethod)> QueryTradeAsync(string tradeNo)
+        {
+            if (string.IsNullOrWhiteSpace(_cfg.QueryUrl)) return (null, null);
+
+            var ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+            var p = new Dictionary<string, string>
+            {
+                ["MerchantID"]      = _cfg.MerchantId,
+                ["MerchantTradeNo"] = tradeNo,
+                ["TimeStamp"]       = ts,
+            };
+            p["CheckMacValue"] = ComputeCheckMac(p);
+
+            var client = _http.CreateClient();
+            var resp   = await client.PostAsync(_cfg.QueryUrl, new FormUrlEncodedContent(p));
+            if (!resp.IsSuccessStatusCode) return (null, null);
+
+            var body = await resp.Content.ReadAsStringAsync();
+            // 綠界回傳 URL-encoded 字串，例如 "TradeStatus=1&PaymentType=Credit_CreditCard&..."
+            var dict = QueryHelpers.ParseQuery(body);
+
+            int? status = null;
+            if (dict.TryGetValue("TradeStatus", out var sv) && int.TryParse(sv, out var s))
+                status = s;
+
+            // 從 PaymentType 對映付款方式
+            string? payMethod = null;
+            if (dict.TryGetValue("PaymentType", out var ptv))
+            {
+                var pt = ptv.ToString().ToUpperInvariant();
+                payMethod = (pt.Contains("CREDIT") || pt.Contains("CARD"))
+                    ? "Card"
+                    : "LinePay";  // LINE Pay / iPass / AFTEE 等非信用卡一律歸 LinePay
+            }
+
+            return (status, payMethod);
         }
     }
 }

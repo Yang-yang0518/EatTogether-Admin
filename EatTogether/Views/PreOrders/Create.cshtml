@@ -22,7 +22,7 @@
 
     /* ── 左側購物車 ── */
     .cart-panel {
-        width: 300px;
+        width: 450px;
         flex-shrink: 0;
         display: flex;
         flex-direction: column;
@@ -60,7 +60,7 @@
         gap: 6px;
         padding: 7px 4px;
         border-bottom: 1px solid #f0f0f0;
-        font-size: 0.85rem;
+        font-size: 1rem;
     }
 
     .cart-item-name {
@@ -69,16 +69,43 @@
         color: #1a1a1a;
         line-height: 1.3;
         word-break: break-all;
+        font-size: 1rem;
     }
 
     .cart-item-sub {
         font-weight: 700;
         color: #c0392b;
         white-space: nowrap;
-        font-size: 0.82rem;
-        min-width: 52px;
+        font-size: 0.95rem;
+        min-width: 56px;
         text-align: right;
     }
+
+    .cart-item-wrap {
+        border-bottom: 1px solid #f0f0f0;
+        padding: 4px 0;
+    }
+    .cart-item-wrap .cart-item-row {
+        border-bottom: none;
+        padding: 3px 4px 2px;
+    }
+    .cart-item-note-input {
+        width: 100%;
+        padding: 4px 10px;
+        font-size: 0.88rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        color: #555;
+        background: #fafafa;
+        margin: 0 4px 4px;
+        box-sizing: border-box;
+        outline: none;
+    }
+    .cart-item-note-input:focus {
+        border-color: #27ae60;
+        background: #fff;
+    }
+    .cart-item-note-input::placeholder { color: #bbb; }
 
     .cart-item-del {
         background: none;
@@ -115,12 +142,12 @@
     }
 
     .cart-qty-btn {
-        width: 22px;
-        height: 22px;
+        width: 26px;
+        height: 26px;
         border-radius: 50%;
         border: 1.5px solid #ddd;
         background: #fff;
-        font-size: 0.95rem;
+        font-size: 1.05rem;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -138,10 +165,10 @@
         }
 
     .cart-qty-val {
-        min-width: 18px;
+        min-width: 22px;
         text-align: center;
         font-weight: 700;
-        font-size: 0.88rem;
+        font-size: 1rem;
         color: #1a1a1a;
     }
 
@@ -993,15 +1020,34 @@
 </style>
 
 <div class="order-wrap">
-    <form asp-action="Confirm" method="post" id="orderForm">
+    <form asp-action="DirectSubmit" method="post" id="orderForm"
+          onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();}">
         @Html.AntiForgeryToken()
         <input type="hidden" name="IsAddOrder" value="@Model.IsAddOrder.ToString().ToLower()" />
+        <input type="hidden" id="hiddenMemberId"       name="MemberId"       value="" />
+        <input type="hidden" id="hiddenCouponId"       name="CouponId"       value="" />
+        <input type="hidden" id="hiddenEventId"        name="EventId"        value="" />
+        <input type="hidden" id="hiddenDiscountAmount" name="DiscountAmount"  value="0" />
+        <input type="hidden" id="hiddenItemNotesJson"  name="ItemNotesJson"  value="" />
 
         <!-- ── 右側購物車（先放 HTML，CSS order 讓它靠右） ── -->
         <div class="cart-panel" style="order:2;">
-            <div class="cart-header">🛒 已選餐點</div>
+            <div class="cart-header" style="display:flex;align-items:center;justify-content:space-between;">
+                <span>🛒 已選餐點</span>
+                <span id="cartItemCount" style="font-size:0.82rem;color:#888;font-weight:400;"></span>
+            </div>
             <div class="cart-items" id="cartItems">
                 <div class="cart-empty" id="cartEmpty">尚未選擇任何餐點</div>
+            </div>
+            <!-- 贈品顯示列（選活動且為贈品型時顯示） -->
+            <div id="cartRewardRow" style="display:none;padding:6px 12px;
+                 border-top:1px dashed #b7ddb7;background:#f6fff6;">
+                <div class="cart-item-row" style="border-bottom:none;padding:4px 0;">
+                    <div class="cart-item-name" style="color:#27ae60;">
+                        🎁 <span id="cartRewardName"></span>
+                    </div>
+                    <span class="cart-item-sub" style="color:#27ae60;">$0</span>
+                </div>
             </div>
             <!-- 會員按鈕 -->
             <div class="cart-member-section">
@@ -1011,21 +1057,9 @@
                 </button>
             </div>
 
-            <!-- 活動 / 優惠券按鈕 -->
+            <!-- 優惠券按鈕（選完會員才顯示） -->
             <div class="cart-discount-section" id="cartDiscountSection">
                 <div class="cart-disc-btn-row">
-                    <div>
-                        <button type="button" id="cartEventBtn" class="cart-disc-btn event-btn"
-                                onclick="openCartEventModal()">
-                            <span class="btn-label" id="cartEventBtnLabel">🎉 選擇活動</span>
-                            <span style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-                                <span class="cart-disc-avail-badge" id="cartEventAvailBadge"></span>
-                                <span class="cart-disc-clear" id="cartEventClearBtn"
-                                      onclick="event.stopPropagation(); clearCartEvent()" title="清除">✕</span>
-                            </span>
-                        </button>
-                        <div class="cart-disc-near-miss" id="cartEventNearMiss"></div>
-                    </div>
                     <div>
                         <button type="button" id="cartCouponBtn" class="cart-disc-btn coupon-btn"
                                 onclick="openCartCouponModal()">
@@ -1041,11 +1075,16 @@
             </div>
 
             <div class="cart-footer">
+                <div id="cartDiscountRow" style="display:none;justify-content:space-between;align-items:center;
+                     padding:6px 0 4px;font-size:0.88rem;color:#c0392b;border-top:1px solid #f0f0f0;">
+                    <span id="cartDiscountLabel">折扣</span>
+                    <span>－NT$ <span id="cartDiscountAmt">0</span></span>
+                </div>
                 <div class="cart-total-row">
                     <span>合計</span>
                     <span class="cart-total-amt">NT$ <span id="cartTotal">0</span></span>
                 </div>
-                <button type="submit" class="btn-next" style="width:100%; padding:11px;">下一步 →</button>
+                <button type="submit" class="btn-next" id="submitOrderBtn" style="width:100%; padding:11px;">送出</button>
             </div>
         </div>
 
@@ -1084,7 +1123,16 @@
                         onclick="setInOrOut(false)">
                     🥡 外帶
                 </button>
+						<!-- 服務人員按鈕 -->
+						<button type="button" id="staffBtn" class="cart-member-btn"
+								onclick="openStaffModal()"
+								style="width:auto;flex-shrink:0;padding:7px 14px;">
+							🧑‍💼 <span id="staffBtnLabel">輸入服務人員</span>
+						</button>
+						<input type="hidden" id="hiddenUserId" name="UserId" value="" />
             </div>
+
+            
 
             <!-- 桌號 + 人數（內用才顯示） -->
             <div id="tableInput" style="display:flex; align-items:center; gap:10px; margin-left:auto;">
@@ -1150,24 +1198,39 @@
             var firstCat = orderedGroups.FirstOrDefault()?.Key ?? "";
         }
 
-        <!-- 分類 Tab 按鈕（在 order-top 內） -->
-        <div class="cat-tabs" id="catTabs">
-            @foreach (var group in orderedGroups)
-            {
-                var catName  = group.Key;
-                var icon     = categoryIcons.ContainsKey(catName) ? categoryIcons[catName] : "🍽️";
-                var color    = categoryColors.ContainsKey(catName) ? categoryColors[catName] : "#555";
-                var count    = group.Count();
-                var isFirst  = catName == firstCat;
-                <button type="button"
-                        class="cat-tab-btn @(isFirst ? "active" : "")"
-                        id="tab-@catName"
-                        style="--tab-color: @color"
-                        onclick="showCategory('@catName')">
-                    @icon @catName
-                    <span class="tab-badge">@count</span>
-                </button>
-            }
+        <!-- 分類 Tab 按鈕 + 活動按鈕（同一行） -->
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:0;">
+            <div class="cat-tabs" id="catTabs" style="margin-bottom:0;flex-wrap:wrap;">
+                @foreach (var group in orderedGroups)
+                {
+                    var catName  = group.Key;
+                    var icon     = categoryIcons.ContainsKey(catName) ? categoryIcons[catName] : "🍽️";
+                    var color    = categoryColors.ContainsKey(catName) ? categoryColors[catName] : "#555";
+                    var count    = group.Count();
+                    var isFirst  = catName == firstCat;
+                    <button type="button"
+                            class="cat-tab-btn @(isFirst ? "active" : "")"
+                            id="tab-@catName"
+                            style="--tab-color: @color"
+                            onclick="showCategory('@catName')">
+                        @icon @catName
+                        <span class="tab-badge">@count</span>
+                    </button>
+                }
+            </div>
+
+            <!-- 活動按鈕（永遠顯示，不限會員） -->
+            <button type="button" id="cartEventBtn" onclick="openCartEventModal()"
+                    style="display:flex;align-items:center;gap:6px;padding:8px 14px;
+                           border:2px solid #27ae60;border-radius:24px;background:#fff;
+                           color:#27ae60;font-family:inherit;font-weight:700;font-size:0.85rem;
+                           cursor:pointer;white-space:nowrap;transition:all 0.18s;flex-shrink:0;">
+                🎉 <span id="cartEventBtnLabel">選擇活動</span>
+                <span id="cartEventAvailBadge"
+                      style="display:none;font-size:0.78rem;font-weight:600;color:inherit;"></span>
+                <span id="cartEventClearBtn" style="display:none;font-size:0.9rem;line-height:1;"
+                      onclick="event.stopPropagation();clearCartEvent()" title="清除">✕</span>
+            </button>
         </div>
 
         </div><!-- /order-top -->
@@ -1212,12 +1275,8 @@
 
         </div><!-- /menu-scroll-area -->
 
-        <!-- ③ 固定底部：備註 -->
-        <div class="order-bottom">
-            <div class="note-wrap">
-                <textarea class="form-control" name="Note" placeholder="備註（可不填）" style="min-height:44px;"></textarea>
-            </div>
-        </div>
+        <!-- 整筆備註改成隱藏，由個別品項備註取代 -->
+        <input type="hidden" name="Note" value="" />
 
         </div><!-- /order-right -->
 
@@ -1225,6 +1284,12 @@
         <div id="extraItemsContainer"></div>
     </form>
 </div>
+
+<!-- 右下角近差額持久通知 -->
+<!-- 多通知容器 -->
+<div id="nearMissContainer" style="position:fixed;bottom:24px;right:24px;z-index:9500;
+     display:flex;flex-direction:column;gap:10px;align-items:flex-end;max-width:300px;
+     font-family:'Noto Sans TC',sans-serif;"></div>
 
 <!-- 活動選擇 Modal -->
 <div class="cm-overlay" id="cartEventModal">
@@ -1304,6 +1369,35 @@
     </div>
 </div>
 
+<!-- 服務人員搜尋 Modal -->
+<div class="cm-overlay" id="staffModal">
+    <div class="cm-box">
+        <div class="cm-title">🧑‍💼 輸入服務人員</div>
+
+        <!-- 目前已綁定的服務人員 -->
+        <div class="cm-current" id="smStaffCurrentInfo">
+            <div class="cm-current-label">目前綁定的服務人員</div>
+            <div class="cm-current-name" id="smStaffCurrentName"></div>
+        </div>
+
+        <!-- 搜尋框 -->
+        <div class="cm-search-row">
+            <input type="text" id="staffEmpNoInput" class="cm-phone-input"
+                   placeholder="輸入員工編號"
+                   onkeydown="if(event.key==='Enter') doSearchStaff()" />
+            <button type="button" class="cm-search-btn" onclick="doSearchStaff()">🔍 查詢</button>
+        </div>
+
+        <!-- 查詢結果 -->
+        <div class="cm-result" id="staffSearchResult"></div>
+
+        <div class="cm-actions">
+            <button type="button" class="cm-btn cm-btn-cancel" onclick="closeStaffModal()">關閉</button>
+            <button type="button" class="cm-btn cm-btn-clear" id="staffClearBtn" onclick="clearStaff()" style="display:none;">清除服務人員</button>
+        </div>
+    </div>
+</div>
+
 <script>
     let smCurrentIdx  = -1;
     let smProductId   = 0;
@@ -1327,7 +1421,6 @@
         document.getElementById('smTitle').textContent = name;
         document.getElementById('smPrice').textContent = `NT$ ${price}`;
         document.getElementById('smError').style.display = 'none';
-        document.body.style.overflow = 'hidden';
 
         const res = await fetch(`/PreOrders/GetSetMealItems?setMealId=${productId}`);
         smGroups  = await res.json();
@@ -1469,7 +1562,6 @@
 
     function closeSetMealModal() {
         document.getElementById('setmealModal').classList.remove('show');
-        document.body.style.overflow = ''; // ← 解除鎖定
         smCurrentIdx = -1;
     }
 
@@ -1678,7 +1770,7 @@
         if (cartMemberId) {
             document.getElementById('cmCurrentName').textContent = `${cartMemberName}　${cartMemberPhone || ''}`;
             curInfo.style.display  = 'block';
-            clearBtn.style.display = '';
+            clearBtn.style.display = 'inline-block';
         } else {
             curInfo.style.display  = 'none';
             clearBtn.style.display = 'none';
@@ -1764,9 +1856,9 @@
         cartMemberName  = name;
         cartMemberPhone = phone;
 
-        // 更新按鈕標籤
         document.getElementById('cartMemberBtnLabel').textContent = `${name}　${phone || ''}`;
         document.getElementById('cartMemberBtn').classList.add('has-member');
+        document.getElementById('hiddenMemberId').value = id;
 
         closeCartMemberModal();
         refreshCartDiscounts();
@@ -1777,17 +1869,25 @@
         cartMemberName = null;
         cartMemberPhone = null;
 
-        // 重置按鈕
         const btn = document.getElementById('cartMemberBtn');
         document.getElementById('cartMemberBtnLabel').textContent = '輸入會員';
         btn.classList.remove('has-member');
+        document.getElementById('hiddenMemberId').value = '';
+
+        // 清除會員時一併清除已選活動
+        if (cartSelectedEvent) {
+            cartSelectedEvent = null;
+            document.getElementById('hiddenEventId').value = '';
+        }
 
         closeCartMemberModal();
+        updateCartTotalDisplay();
         refreshCartDiscounts();
     }
 
-    let rawCartTotal      = 0;    // 原始金額（不含折扣）
+    let rawCartTotal       = 0;
     let cartSelectedEvent  = null; // { id, title, discount }
+    let cartItemNotes      = {};   // { productName: noteText }
     let cartSelectedCoupon = null; // { id, name, disc }
 
     // ── 折扣合計顯示 ──────────────────────────────────────
@@ -1796,78 +1896,194 @@
         const cpDisc  = cartSelectedCoupon ? (cartSelectedCoupon.disc     || 0) : 0;
         const disc    = evDisc + cpDisc;
         const finalAmt = Math.max(0, rawCartTotal - disc);
+
+        // 合計欄
         const totalSpan = document.getElementById('cartTotal');
         if (disc > 0) {
             totalSpan.innerHTML = `<span style="text-decoration:line-through;color:#bbb;font-size:0.85em;">${rawCartTotal.toLocaleString()}</span> ${finalAmt.toLocaleString()}`;
         } else {
             totalSpan.textContent = rawCartTotal.toLocaleString();
         }
+
+        // 折扣列
+        const discRow = document.getElementById('cartDiscountRow');
+        if (disc > 0) {
+            const parts = [];
+            if (evDisc > 0 && cartSelectedEvent)  parts.push(`活動 -${evDisc}`);
+            if (cpDisc > 0 && cartSelectedCoupon) parts.push(`優惠券 -${cpDisc}`);
+            document.getElementById('cartDiscountLabel').textContent = parts.join('　');
+            document.getElementById('cartDiscountAmt').textContent   = disc.toLocaleString();
+            discRow.style.display = 'flex';
+        } else {
+            discRow.style.display = 'none';
+        }
+
+        document.getElementById('hiddenDiscountAmount').value = disc;
     }
 
-    // ── 折扣按鈕列更新 ─────────────────────────────────────
+    // ── 多通知系統 ────────────────────────────────────────
+    const _nearMissDismissed = new Set(); // 已手動關閉的活動 id
+
+    function renderNearMissNotifications(notifyList) {
+        const container = document.getElementById('nearMissContainer');
+        const newIds = new Set(notifyList.map(n => n.ev.id));
+
+        // 移除不再需要的
+        container.querySelectorAll('[data-ev-id]').forEach(el => {
+            if (!newIds.has(parseInt(el.dataset.evId))) el.remove();
+        });
+
+        notifyList.forEach(({ ev, isEligible }) => {
+            const gap = isEligible ? 0 : (ev.minSpend - rawCartTotal);
+            const existing = container.querySelector(`[data-ev-id="${ev.id}"]`);
+
+            if (existing) {
+                if (existing.dataset.eligible === String(isEligible)) {
+                    // 資格沒變：若仍未達門檻，只更新差額文字（不重建卡，不閃爍）
+                    if (!isEligible) {
+                        const gapEl = existing.querySelector('.near-miss-gap');
+                        if (gapEl) gapEl.textContent = `NT$ ${gap.toLocaleString()}`;
+                        existing.dataset.gap = String(gap);
+                    }
+                    return;
+                }
+                existing.remove(); // 資格改變 → 重建
+            }
+
+            const msg = isEligible
+                ? `金額已達門檻，可參加<br>「<strong>${ev.title ?? ''}</strong>」活動！`
+                : `再消費 <strong class="near-miss-gap">NT$ ${gap.toLocaleString()}</strong> 即可參加<br>「${ev.title ?? ''}」活動！`;
+
+            const card = document.createElement('div');
+            card.dataset.evId  = ev.id;
+            card.dataset.eligible = String(isEligible);
+            card.dataset.gap   = String(gap);
+            const borderColor = isEligible ? '#27ae60' : '#e67e22';
+            const textColor   = isEligible ? '#1a5c2e' : '#7d5a00';
+            const icon        = isEligible ? '🎉' : '📌';
+            card.style.cssText = `background:#fff;border:2px solid ${borderColor};border-radius:14px;` +
+                'padding:12px 14px 12px 12px;box-shadow:0 6px 24px rgba(0,0,0,0.15);' +
+                'animation:smIn 0.2s cubic-bezier(0.34,1.56,0.64,1);width:300px;';
+            card.innerHTML =
+                '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+                  `<span style="font-size:1.2rem;flex-shrink:0;">${icon}</span>` +
+                  `<div style="font-size:0.88rem;color:${textColor};font-weight:600;line-height:1.6;flex:1;">` + msg + '</div>' +
+                  '<button onclick="dismissNearMissById(' + ev.id + ')" title="關閉" ' +
+                  'style="flex-shrink:0;border:none;background:none;font-size:1.1rem;color:#bbb;' +
+                  'cursor:pointer;padding:0;line-height:1;margin-top:-2px;">✕</button>' +
+                '</div>';
+            container.appendChild(card);
+        });
+    }
+
+    function dismissNearMissById(evId) {
+        _nearMissDismissed.add(evId);
+        const card = document.querySelector(`#nearMissContainer [data-ev-id="${evId}"]`);
+        if (card) card.remove();
+    }
+
+    function clearNearMissNotifications() {
+        document.getElementById('nearMissContainer').innerHTML = '';
+    }
+
+    // ── 活動按鈕獨立更新（永遠執行） ──────────────────────
+    async function refreshEventBtn() {
+        try {
+            const res    = await fetch(`/PreOrders/GetCartEvents?amount=${rawCartTotal}`);
+            const data   = await res.json();
+            const events = Array.isArray(data) ? data : [];
+            _cartEventsCache = events;
+
+            // 若已選活動不再符合，清除
+            if (cartSelectedEvent && !events.find(e => e.isEligible && e.id === cartSelectedEvent.id)) {
+                cartSelectedEvent = null;
+                document.getElementById('hiddenEventId').value = '';
+                updateCartTotalDisplay();
+            }
+
+            const evBadge = document.getElementById('cartEventAvailBadge');
+            const evClear = document.getElementById('cartEventClearBtn');
+            const evBtn   = document.getElementById('cartEventBtn');
+            const evLabel = document.getElementById('cartEventBtnLabel');
+
+            if (cartSelectedEvent) {
+                evLabel.textContent = cartSelectedEvent.title;
+                evBadge.style.display = 'none';
+                evClear.style.display = '';
+                evBtn.style.borderColor = '#1e8449';
+                evBtn.style.background  = '#f0fdf4';
+                evBtn.style.color       = '#1e8449';
+            } else {
+                evLabel.textContent = '選擇活動';
+                evClear.style.display = 'none';
+                evBtn.style.borderColor = '#27ae60';
+                evBtn.style.background  = '#fff';
+                evBtn.style.color       = '#27ae60';
+                if (events.length > 0) {
+                    evBadge.textContent = `進行中的活動(${events.length}個)`;
+                    evBadge.style.display = '';
+                } else {
+                    evBadge.style.display = 'none';
+                }
+            }
+
+            // ── 多通知：已選活動時不顯示任何通知 ──────────────
+            const notifyList = [];
+
+            if (!cartSelectedEvent) {
+                // 已達門檻但尚未選擇
+                events.filter(e => e.isEligible)
+                    .forEach(e => {
+                        if (!_nearMissDismissed.has(e.id))
+                            notifyList.push({ ev: e, isEligible: true });
+                    });
+
+                // 差距 ≤200 且尚未達門檻
+                events.filter(e => !e.isEligible && (e.minSpend - rawCartTotal) > 0 && (e.minSpend - rawCartTotal) <= 200)
+                    .forEach(e => {
+                        if (!_nearMissDismissed.has(e.id))
+                            notifyList.push({ ev: e, isEligible: false });
+                    });
+            }
+
+            if (notifyList.length > 0) {
+                renderNearMissNotifications(notifyList);
+            } else {
+                clearNearMissNotifications();
+            }
+        } catch(err) {
+            console.error('[refreshEventBtn]', err);
+        }
+    }
+
+    // ── 優惠券按鈕更新（選完會員才顯示） ─────────────────
     async function refreshCartDiscounts() {
         const section = document.getElementById('cartDiscountSection');
 
+        // 活動按鈕永遠更新
+        refreshEventBtn();
+
         if (!cartMemberId) {
             section.style.display = 'none';
-            if (cartSelectedEvent || cartSelectedCoupon) {
-                cartSelectedEvent = cartSelectedCoupon = null;
+            if (cartSelectedCoupon) {
+                cartSelectedCoupon = null;
+                document.getElementById('hiddenCouponId').value = '';
                 updateCartTotalDisplay();
             }
             return;
         }
 
         try {
-            const [evRes, cpRes] = await Promise.all([
-                fetch(`/PreOrders/GetCartEvents?amount=${rawCartTotal}`),
-                fetch(`/PreOrders/GetCartCoupons?amount=${rawCartTotal}&memberId=${cartMemberId}`)
-            ]);
-            const events  = (await evRes.json()) || [];
-            const coupons = (await cpRes.json()) || [];
+            const cpRes   = await fetch(`/PreOrders/GetCartCoupons?amount=${rawCartTotal}&memberId=${cartMemberId}`);
+            const cpData  = await cpRes.json();
+            const coupons = Array.isArray(cpData) ? cpData : [];
 
-            // 驗證已選是否仍有效
-            if (cartSelectedEvent) {
-                if (!events.find(e => e.isEligible && e.id === cartSelectedEvent.id))
-                    { cartSelectedEvent = null; updateCartTotalDisplay(); }
-            }
-            if (cartSelectedCoupon) {
-                if (!coupons.find(c => c.isClaimed && !c.isUsedByMember && c.isEligible && c.id === cartSelectedCoupon.id))
-                    { cartSelectedCoupon = null; updateCartTotalDisplay(); }
+            if (cartSelectedCoupon && !coupons.find(c => c.isClaimed && !c.isUsedByMember && c.isEligible && c.id === cartSelectedCoupon.id)) {
+                cartSelectedCoupon = null;
+                document.getElementById('hiddenCouponId').value = '';
+                updateCartTotalDisplay();
             }
 
-            // 更新活動按鈕
-            const evAvail    = events.filter(e => e.isEligible).length;
-            const evBadge    = document.getElementById('cartEventAvailBadge');
-            const evClear    = document.getElementById('cartEventClearBtn');
-            const evBtn      = document.getElementById('cartEventBtn');
-            const evLabel    = document.getElementById('cartEventBtnLabel');
-            const evNearMiss = document.getElementById('cartEventNearMiss');
-            if (cartSelectedEvent) {
-                evLabel.textContent = `🎉 ${cartSelectedEvent.title}`;
-                evBadge.style.display = 'none';
-                evClear.style.display = '';
-                evBtn.classList.add('selected');
-                evNearMiss.style.display = 'none';
-            } else {
-                evLabel.textContent = '🎉 選擇活動';
-                evClear.style.display = 'none';
-                evBtn.classList.remove('selected');
-                if (evAvail > 0) { evBadge.textContent = `${evAvail} 可用`; evBadge.style.display = ''; }
-                else evBadge.style.display = 'none';
-
-                // 近差額提示：找最近、差額 ≤ 200 的活動
-                const nearEv = events
-                    .filter(e => !e.isEligible && (e.minSpend - rawCartTotal) > 0 && (e.minSpend - rawCartTotal) <= 200)
-                    .sort((a, b) => (a.minSpend - rawCartTotal) - (b.minSpend - rawCartTotal))[0];
-                if (nearEv) {
-                    evNearMiss.textContent = `📌 再消費 NT$ ${(nearEv.minSpend - rawCartTotal).toLocaleString()} 可享活動`;
-                    evNearMiss.style.display = '';
-                } else {
-                    evNearMiss.style.display = 'none';
-                }
-            }
-
-            // 更新優惠券按鈕
             const cpAvail = coupons.filter(c => c.isClaimed && !c.isUsedByMember && c.isEligible).length;
             const cpBadge = document.getElementById('cartCouponAvailBadge');
             const cpClear = document.getElementById('cartCouponClearBtn');
@@ -1887,12 +2103,15 @@
             }
 
             section.style.display = 'block';
-        } catch {
-            section.style.display = 'none';
+        } catch(err) {
+            console.error('[refreshCartDiscounts]', err);
+            section.style.display = 'block';
         }
     }
 
     // ── 活動 Modal ────────────────────────────────────────
+    let _cartEventsCache = [];
+
     async function openCartEventModal() {
         const listArea = document.getElementById('cartEventListArea');
         listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">載入中...</div>';
@@ -1900,10 +2119,56 @@
         document.getElementById('cartEventModal').classList.add('show');
         try {
             const res    = await fetch(`/PreOrders/GetCartEvents?amount=${rawCartTotal}`);
-            const events = (await res.json()) || [];
-            _renderCartEventList(events);
-        } catch {
-            listArea.innerHTML = '<div style="text-align:center;color:#c0392b;padding:24px;">載入失敗</div>';
+            const events = await res.json();
+                if (events?.error) {
+        listArea.innerHTML = `<div style="text-align:center;color:#c0392b;padding:24px;">錯誤：${events.error}</div>`;
+        return;
+    }
+
+    _cartEventsCache = Array.isArray(events) ? events : [];
+
+    if (!_cartEventsCache.length) {
+        listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">目前沒有進行中的活動</div>';
+        return;
+    }
+
+
+            // 無會員時頂部顯示提示
+            const noMemberHint = !cartMemberId
+                ? `<div style="padding:8px 12px;margin-bottom:10px;background:#fff8e1;
+                               border:1.5px solid #f0c040;border-radius:8px;
+                               font-size:0.82rem;color:#7d5a00;font-weight:600;">
+                       ⚠️ 請先選擇會員才能套用活動
+                   </div>` : '';
+
+            listArea.innerHTML = noMemberHint + _cartEventsCache.map(ev => {
+                const eligible    = ev.isEligible;
+                const inUse       = cartSelectedEvent && cartSelectedEvent.id === ev.id;
+                const canClick    = eligible && !!cartMemberId;
+                const borderColor = inUse ? '#1e8449' : '#e8e8e8';
+                const bgColor     = inUse ? '#f0fdf4' : '#fff';
+                const opacity     = eligible ? '1' : '0.55';
+                const cursor      = canClick ? 'pointer' : (eligible ? 'default' : 'not-allowed');
+                const clickAttr   = canClick
+                    ? `onclick="applyCartEvent(${ev.id})"
+                       onmouseover="this.style.borderColor='#27ae60';this.style.background='#f0fdf4'"
+                       onmouseout="this.style.borderColor='${inUse ? '#1e8449' : '#e8e8e8'}';this.style.background='${inUse ? '#f0fdf4' : '#fff'}'"` : '';
+                return `<div ${clickAttr} style="padding:12px 14px;border:2px solid ${borderColor};border-radius:10px;
+                        margin-bottom:8px;cursor:${cursor};transition:all 0.15s;background:${bgColor};opacity:${opacity};user-select:none;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                        <span style="font-weight:700;font-size:0.92rem;color:#1a1a1a;">${ev.title ?? ''}</span>
+                        ${inUse ? '<span style="font-size:0.7rem;background:#27ae60;color:#fff;padding:1px 8px;border-radius:20px;font-weight:700;">使用中</span>' : ''}
+                        ${!eligible ? '<span style="font-size:0.7rem;background:#e0e0e0;color:#999;padding:1px 8px;border-radius:20px;font-weight:600;">未達門檻</span>' : ''}
+                        ${eligible && !cartMemberId ? '<span style="font-size:0.7rem;background:#f0c040;color:#7d5a00;padding:1px 8px;border-radius:20px;font-weight:600;">需選會員</span>' : ''}
+                    </div>
+                    <div style="font-size:0.83rem;color:#27ae60;font-weight:600;">${ev.discountDescription ?? ''}</div>
+                    ${ev.summary ? `<div style="font-size:0.78rem;color:#888;margin-top:3px;">${ev.summary}</div>` : ''}
+                    <div style="font-size:0.74rem;color:#bbb;margin-top:3px;">最低消費 NT$ ${(ev.minSpend ?? 0).toLocaleString()}</div>
+                </div>`;
+            }).join('');
+        } catch(err) {
+            console.error('[openCartEventModal]', err);
+            listArea.innerHTML = '<div style="text-align:center;color:#c0392b;padding:24px;">載入失敗，請重試</div>';
         }
     }
 
@@ -1911,46 +2176,22 @@
         document.getElementById('cartEventModal').classList.remove('show');
     }
 
-    function _renderCartEventList(events) {
-        const rawTotal  = rawCartTotal;
-        const NEAR_MISS = 200;
-        const listArea  = document.getElementById('cartEventListArea');
-        if (!events.length) {
-            listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">暫無可用活動</div>';
-            return;
-        }
-        listArea.innerHTML = events.map(e => {
-            const eligible = e.isEligible;
-            const inUse    = cartSelectedEvent && cartSelectedEvent.id === e.id;
-            const gap      = e.minSpend - rawTotal;
-            const nearMiss = !eligible && gap > 0 && gap <= NEAR_MISS;
-            const border   = inUse ? '#1e8449' : '#e8e8e8';
-            const bg       = inUse ? '#f0fdf4' : '#fff';
-            const opacity  = eligible ? '1' : '0.45';
-            const cursor   = eligible ? 'pointer' : 'default';
-            const safeName = e.title.replace(/'/g, "\\'");
-            const clickA   = eligible
-                ? `onclick="applyCartEvent(${e.id},'${safeName}',${e.calculatedDiscount})"
-                   onmouseover="this.style.background='#f0fdf4'"
-                   onmouseout="this.style.background='${bg}'"` : '';
-            const nearHtml = nearMiss
-                ? `<div style="font-size:0.75rem;color:#e67e22;font-weight:700;margin-top:4px;">📌 再消費 NT$ ${gap.toLocaleString()} 可享此優惠</div>` : '';
-            return `<div ${clickA} style="padding:12px 14px;border:2px solid ${border};border-radius:10px;
-                         margin-bottom:8px;cursor:${cursor};transition:all 0.15s;background:${bg};opacity:${opacity};user-select:none;">
-                <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
-                    <span style="font-weight:700;font-size:0.92rem;color:#1a1a1a;">${e.title}</span>
-                    ${inUse ? '<span style="font-size:0.7rem;background:#27ae60;color:#fff;padding:1px 8px;border-radius:20px;font-weight:700;">使用中</span>' : ''}
-                    ${!eligible && !nearMiss ? '<span style="font-size:0.7rem;background:#e0e0e0;color:#999;padding:1px 8px;border-radius:20px;font-weight:600;">不符合</span>' : ''}
-                </div>
-                <div style="font-size:0.83rem;color:#27ae60;font-weight:600;">${e.discountDescription}</div>
-                <div style="font-size:0.74rem;color:#bbb;margin-top:3px;">最低消費 NT$ ${e.minSpend.toLocaleString()}</div>
-                ${nearHtml}
-            </div>`;
-        }).join('');
-    }
+    function applyCartEvent(id) {
+        const ev = _cartEventsCache.find(e => e.id === id);
+        if (!ev) return;
+        cartSelectedEvent = { id: ev.id, title: ev.title ?? '', discount: ev.calculatedDiscount ?? 0 };
+        document.getElementById('hiddenEventId').value = id;
 
-    function applyCartEvent(id, title, discount) {
-        cartSelectedEvent = { id, title, discount };
+        // 贈品型活動：在購物車顯示贈品列
+        const rewardRow  = document.getElementById('cartRewardRow');
+        const rewardName = document.getElementById('cartRewardName');
+        if (ev.rewardDishName) {
+            rewardName.textContent = ev.rewardDishName;
+            rewardRow.style.display = '';
+        } else {
+            rewardRow.style.display = 'none';
+        }
+
         closeCartEventModal();
         updateCartTotalDisplay();
         refreshCartDiscounts();
@@ -1958,23 +2199,61 @@
 
     function clearCartEvent() {
         cartSelectedEvent = null;
+        document.getElementById('hiddenEventId').value = '';
+        document.getElementById('cartRewardRow').style.display = 'none';
         closeCartEventModal();
         updateCartTotalDisplay();
         refreshCartDiscounts();
     }
 
     // ── 優惠券 Modal ──────────────────────────────────────
+    let _cartCouponsCache = [];  // 快取優惠券清單供 applyCartCoupon 查找
+
     async function openCartCouponModal() {
         const listArea = document.getElementById('cartCouponListArea');
         listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">載入中...</div>';
         document.getElementById('cartCouponClearModalBtn').style.display = cartSelectedCoupon ? '' : 'none';
         document.getElementById('cartCouponModal').classList.add('show');
         try {
-            const res     = await fetch(`/PreOrders/GetCartCoupons?amount=${rawCartTotal}&memberId=${cartMemberId}`);
-            const coupons = (await res.json()) || [];
-            _renderCartCouponList(coupons);
-        } catch {
-            listArea.innerHTML = '<div style="text-align:center;color:#c0392b;padding:24px;">載入失敗</div>';
+            const memberParam = cartMemberId ? `&memberId=${cartMemberId}` : '';
+            const res     = await fetch(`/PreOrders/GetCartCoupons?amount=${rawCartTotal}${memberParam}`);
+            const coupons = await res.json();
+            _cartCouponsCache = coupons || [];
+            if (!coupons || !coupons.length) {
+                listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">目前沒有可用的優惠券</div>';
+                return;
+            }
+            listArea.innerHTML = coupons.map(c => {
+                const claimed      = c.isClaimed !== false;
+                const usedByMember = c.isUsedByMember === true;
+                const eligible     = c.isEligible;
+                const inUse        = cartSelectedCoupon && cartSelectedCoupon.id === c.id;
+                const canClick     = claimed && !usedByMember && eligible;
+                const borderColor  = inUse ? '#92610b' : '#e8e8e8';
+                const bgColor      = inUse ? '#fffbeb' : '#fff';
+                const opacity      = canClick ? '1' : '0.45';
+                const cursor       = canClick ? 'pointer' : 'not-allowed';
+                const clickAttr    = canClick
+                    ? `onclick="applyCartCoupon(${c.id})"
+                       onmouseover="this.style.borderColor='#b7770d';this.style.background='#fffbeb'"
+                       onmouseout="this.style.borderColor='${inUse ? '#92610b' : '#e8e8e8'}';this.style.background='${inUse ? '#fffbeb' : '#fff'}'"` : '';
+                return `<div ${clickAttr} style="padding:12px 14px;border:2px solid ${borderColor};border-radius:10px;
+                        margin-bottom:8px;cursor:${cursor};transition:all 0.15s;background:${bgColor};opacity:${opacity};user-select:none;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                        <span style="font-weight:700;font-size:0.92rem;color:#1a1a1a;">${c.name ?? ''}</span>
+                        <span style="font-size:0.78rem;color:#888;font-weight:500;">${c.code ?? ''}</span>
+                        ${inUse         ? '<span style="font-size:0.7rem;background:#b7770d;color:#fff;padding:1px 8px;border-radius:20px;font-weight:700;">使用中</span>' : ''}
+                        ${!claimed      ? '<span style="font-size:0.7rem;background:#6c757d;color:#fff;padding:1px 8px;border-radius:20px;font-weight:600;">未領取</span>' : ''}
+                        ${claimed && usedByMember ? '<span style="font-size:0.7rem;background:#495057;color:#fff;padding:1px 8px;border-radius:20px;font-weight:600;">已使用</span>' : ''}
+                        ${claimed && !usedByMember && !eligible ? '<span style="font-size:0.7rem;background:#e0e0e0;color:#999;padding:1px 8px;border-radius:20px;font-weight:600;">不符合</span>' : ''}
+                    </div>
+                    <div style="font-size:0.83rem;color:#b7770d;font-weight:600;">${c.discountDescription ?? ''}</div>
+                    ${(c.minSpend ?? 0) > 0 ? `<div style="font-size:0.74rem;color:#bbb;margin-top:3px;">最低消費 NT$ ${c.minSpend.toLocaleString()}</div>` : ''}
+                </div>`;
+            }).join('');
+        } catch(err) {
+            console.error('[openCartCouponModal]', err);
+            listArea.innerHTML = '<div style="text-align:center;color:#c0392b;padding:24px;">載入失敗，請重試</div>';
         }
     }
 
@@ -1982,49 +2261,16 @@
         document.getElementById('cartCouponModal').classList.remove('show');
     }
 
-    function _renderCartCouponList(coupons) {
-        const rawTotal  = rawCartTotal;
-        const NEAR_MISS = 200;
-        const listArea  = document.getElementById('cartCouponListArea');
-        const showable  = coupons.filter(c => c.isClaimed && !c.isUsedByMember);
-        if (!showable.length) {
-            listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">暫無可用優惠券</div>';
-            return;
-        }
-        listArea.innerHTML = showable.map(c => {
-            const eligible = c.isEligible;
-            const inUse    = cartSelectedCoupon && cartSelectedCoupon.id === c.id;
-            const gap      = c.minSpend - rawTotal;
-            const nearMiss = !eligible && gap > 0 && gap <= NEAR_MISS;
-            const disc     = c.discountType === 0 ? c.discountValue : Math.floor(rawTotal * c.discountValue / 100);
-            const border   = inUse ? '#92610b' : '#e8e8e8';
-            const bg       = inUse ? '#fffbeb' : '#fff';
-            const opacity  = eligible ? '1' : '0.45';
-            const cursor   = eligible ? 'pointer' : 'default';
-            const safeName = c.name.replace(/'/g, "\\'");
-            const clickA   = eligible
-                ? `onclick="applyCartCoupon(${c.id},'${safeName}',${disc})"
-                   onmouseover="this.style.background='#fffbeb'"
-                   onmouseout="this.style.background='${bg}'"` : '';
-            const nearHtml = nearMiss
-                ? `<div style="font-size:0.75rem;color:#e67e22;font-weight:700;margin-top:4px;">📌 再消費 NT$ ${gap.toLocaleString()} 可用此優惠券</div>` : '';
-            return `<div ${clickA} style="padding:12px 14px;border:2px solid ${border};border-radius:10px;
-                         margin-bottom:8px;cursor:${cursor};transition:all 0.15s;background:${bg};opacity:${opacity};user-select:none;">
-                <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
-                    <span style="font-weight:700;font-size:0.92rem;color:#1a1a1a;">${c.name}</span>
-                    <span style="font-size:0.78rem;color:#888;font-weight:500;">${c.code}</span>
-                    ${inUse ? '<span style="font-size:0.7rem;background:#b7770d;color:#fff;padding:1px 8px;border-radius:20px;font-weight:700;">使用中</span>' : ''}
-                    ${!eligible && !nearMiss ? '<span style="font-size:0.7rem;background:#e0e0e0;color:#999;padding:1px 8px;border-radius:20px;font-weight:600;">不符合</span>' : ''}
-                </div>
-                <div style="font-size:0.83rem;color:#b7770d;font-weight:600;">${c.discountDescription}</div>
-                <div style="font-size:0.74rem;color:#bbb;margin-top:3px;">最低消費 NT$ ${c.minSpend.toLocaleString()}</div>
-                ${nearHtml}
-            </div>`;
-        }).join('');
-    }
+    function _renderCartCouponList(coupons) { /* unused */ }
 
-    function applyCartCoupon(id, name, disc) {
-        cartSelectedCoupon = { id, name, disc };
+    function applyCartCoupon(id) {
+        const c = _cartCouponsCache.find(x => x.id === id);
+        if (!c) return;
+        const disc = (c.discountType === 0 || c.discountType === 'Fixed')
+            ? (c.discountValue ?? 0)
+            : Math.floor(rawCartTotal * (c.discountValue ?? 0) / 100);
+        cartSelectedCoupon = { id: c.id, name: c.name ?? '', disc };
+        document.getElementById('hiddenCouponId').value = id;
         closeCartCouponModal();
         updateCartTotalDisplay();
         refreshCartDiscounts();
@@ -2032,6 +2278,7 @@
 
     function clearCartCoupon() {
         cartSelectedCoupon = null;
+        document.getElementById('hiddenCouponId').value = '';
         closeCartCouponModal();
         updateCartTotalDisplay();
         refreshCartDiscounts();
@@ -2044,10 +2291,11 @@
         const cartTotal = document.getElementById('cartTotal');
 
         // 清除舊內容（保留 cartEmpty）
-        [...cartItems.querySelectorAll('.cart-item-row, .cart-sub-items')].forEach(el => el.remove());
+        [...cartItems.querySelectorAll('.cart-item-wrap, .cart-item-row, .cart-sub-items')].forEach(el => el.remove());
 
         let total = 0;
         let hasAny = false;
+        let totalQty = 0;
 
         // ① 一般餐點（非套餐）
         @for (int i = 0; i < Model.Items.Count; i++)
@@ -2055,24 +2303,36 @@
             if (!Model.Items[i].IsSetMeal && !Model.Items[i].ParentIndex.HasValue)
             {
                 var escapedName = Model.Items[i].ProductName.Replace("'", "\\'");
+                var jsName = System.Text.Json.JsonSerializer.Serialize(Model.Items[i].ProductName);
                 <text>
                 {
                     const q = parseInt(document.getElementById('qty-@(i)')?.value || 0);
                     if (q > 0) {
                         hasAny = true;
+                        totalQty += q;
                         const s = q * @(Model.Items[i].UnitPrice);
                         total += s;
-                        const el = document.createElement('div');
-                        el.className = 'cart-item-row';
-                        el.innerHTML = '<div class="cart-item-name">@(escapedName)</div>'
+                        const _nk = @Html.Raw(jsName); // 品項名稱，正確 JS 字串
+                        const wrap = document.createElement('div');
+                        wrap.className = 'cart-item-wrap';
+                        const noteVal = cartItemNotes[_nk] || '';
+                        wrap.innerHTML =
+                            '<div class="cart-item-row">'
+                            + '<div class="cart-item-name">@(escapedName)</div>'
                             + '<div class="cart-qty-wrap">'
                             + '<button type="button" class="cart-qty-btn" onclick="changeQty(@(i),-1)">−</button>'
                             + '<span class="cart-qty-val">' + q + '</span>'
                             + '<button type="button" class="cart-qty-btn" onclick="changeQty(@(i),1)">＋</button>'
                             + '</div>'
                             + '<span class="cart-item-sub">$' + s.toLocaleString() + '</span>'
-                            + '<button type="button" class="cart-item-del" onclick="changeQty(@(i),-'+q+')" title="移除">✕</button>';
-                        cartItems.appendChild(el);
+                            + '<button type="button" class="cart-item-del" onclick="changeQty(@(i),-'+q+')" title="移除">✕</button>'
+                            + '</div>'
+                            + '<input type="text" class="cart-item-note-input" placeholder="📝 備註（選填）"'
+                            + ' value="' + noteVal.replace(/"/g,'&quot;') + '" />';
+                        // 用 JS 直接設定 noteKey，避免 innerHTML HTML 編碼問題
+                        const _ni = wrap.querySelector('.cart-item-note-input');
+                        if (_ni) _ni.dataset.noteKey = _nk;
+                        cartItems.appendChild(wrap);
                     }
                 }
                 </text>
@@ -2082,24 +2342,33 @@
         // ② 套餐：每份獨立顯示（含細項）
         setMealServings.forEach((s, si) => {
             hasAny = true;
+            totalQty += 1;
             total += s.price;
 
-            const row = document.createElement('div');
-            row.className = 'cart-item-row';
-            row.innerHTML = `
-                <div class="cart-item-name">${s.name}</div>
-                <div class="cart-qty-wrap">
-                    <button type="button" class="cart-qty-btn"
-                            onclick="changeSetMealQty(${s.parentIdx}, -1)">−</button>
-                    <span class="cart-qty-val">1</span>
-                    <button type="button" class="cart-qty-btn"
-                            onclick="openSetMealModal(${s.parentIdx}, 0, ${JSON.stringify(s.name)}, ${s.price})">＋</button>
+            const smWrap = document.createElement('div');
+            smWrap.className = 'cart-item-wrap';
+            const smNoteVal = (cartItemNotes[s.name] || '').replace(/"/g, '&quot;');
+            smWrap.innerHTML = `
+                <div class="cart-item-row">
+                    <div class="cart-item-name">${s.name}</div>
+                    <div class="cart-qty-wrap">
+                        <button type="button" class="cart-qty-btn"
+                                onclick="changeSetMealQty(${s.parentIdx}, -1)">−</button>
+                        <span class="cart-qty-val">1</span>
+                        <button type="button" class="cart-qty-btn"
+                                onclick="openSetMealModal(${s.parentIdx}, 0, ${JSON.stringify(s.name)}, ${s.price})">＋</button>
+                    </div>
+                    <span class="cart-item-sub">$${s.price.toLocaleString()}</span>
+                    <button type="button" class="cart-item-del"
+                            onclick="changeSetMealQty(${s.parentIdx}, -1)" title="移除">✕</button>
                 </div>
-                <span class="cart-item-sub">$${s.price.toLocaleString()}</span>
-                <button type="button" class="cart-item-del"
-                        onclick="changeSetMealQty(${s.parentIdx}, -1)" title="移除">✕</button>
+                <input type="text" class="cart-item-note-input" placeholder="📝 備註（選填）"
+                       value="${smNoteVal}" />
             `;
-            cartItems.appendChild(row);
+            // 用 JS 直接設定 noteKey
+            const _smNi = smWrap.querySelector('.cart-item-note-input');
+            if (_smNi) _smNi.dataset.noteKey = s.name;
+            cartItems.appendChild(smWrap);
 
             // 細項
             if (s.subItems && s.subItems.length > 0) {
@@ -2111,6 +2380,9 @@
         });
 
         rawCartTotal = total;
+        // 共計項數
+        const countEl = document.getElementById('cartItemCount');
+        if (countEl) countEl.textContent = totalQty > 0 ? `共計 ${totalQty} 項` : '';
         // 若選取的折扣在金額變動後超出範圍，refreshCartDiscounts 內部會重置
         // 先更新顯示（用舊的 selectedDiscount），refreshCartDiscounts 結束後再校正
         updateCartTotalDisplay();
@@ -2126,6 +2398,217 @@
                                 @:document.getElementById('card-@i').classList.add('selected');
                     }
         }
+        refreshEventBtn(); // 頁面載入時立即顯示進行中活動數
+
+        // ── 備註事件委派（比 oninput 屬性更可靠，支援中文 IME） ───
+        document.getElementById('cartItems').addEventListener('input', function(e) {
+            const inp = e.target.closest('.cart-item-note-input');
+            if (!inp) return;
+            const key = inp.dataset.noteKey;
+            if (!key) return;
+            if (inp.value.trim()) {
+                cartItemNotes[key] = inp.value.trim();
+            } else {
+                delete cartItemNotes[key];
+            }
+        });
+
+        // ── AJAX 送出 ─────────────────────────────────────────
+        document.getElementById('orderForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // ── 桌號驗證（內用必填） ─────────────────────────────
+            const isIn = document.getElementById('inOrOutInput').value === 'true';
+            if (isIn) {
+                const tableVal = document.getElementById('tableSelect').value;
+                if (!tableVal) {
+                    document.getElementById('tableRequiredModal').style.display = 'flex';
+                    return;
+                }
+            }
+
+            const btn = document.getElementById('submitOrderBtn');
+            btn.disabled = true;
+            btn.textContent = '處理中…';
+
+            // 直接從 DOM 讀取備註（最可靠，不依賴 cartItemNotes 是否同步）
+            const notesFiltered = {};
+            document.querySelectorAll('#cartItems .cart-item-note-input').forEach(inp => {
+                const key = inp.dataset.noteKey;
+                const val = inp.value.trim();
+                if (key && val) notesFiltered[key] = val;
+            });
+            const itemNotesJson = Object.keys(notesFiltered).length ? JSON.stringify(notesFiltered) : '';
+            document.getElementById('hiddenItemNotesJson').value = itemNotesJson;
+
+            const formData = new FormData(this);
+
+            try {
+                const resp = await fetch('@Url.Action("DirectSubmit", "PreOrders")', {
+                    method: 'POST',
+                    body: formData
+                });
+                const json = await resp.json();
+                if (json.success) {
+                    document.getElementById('successOrderNumber').textContent = json.orderNumber;
+                    document.getElementById('orderSuccessModal').style.display = 'flex';
+                    // 1.5 秒後自動關閉
+                    setTimeout(closeOrderSuccessModal, 1500);
+                } else {
+                    alert(json.error || '送出失敗，請再試一次');
+                    btn.disabled = false;
+                    btn.textContent = '送出';
+                }
+            } catch {
+                alert('網路錯誤，請再試一次');
+                btn.disabled = false;
+                btn.textContent = '送出';
+            }
+        });
     });
+
+    // ── 個別餐點備註 ──────────────────────────────────────────
+    function updateItemNote(name, value) {
+        if (value.trim()) {
+            cartItemNotes[name] = value.trim();
+        } else {
+            delete cartItemNotes[name];
+        }
+    }
+
+    // ── 服務人員 Modal ────────────────────────────────────────
+    let staffUserId   = null;
+    let staffUserName = null;
+
+    function openStaffModal() {
+        const curInfo  = document.getElementById('smStaffCurrentInfo');
+        const clearBtn = document.getElementById('staffClearBtn');
+        if (staffUserId) {
+            document.getElementById('smStaffCurrentName').textContent = staffUserName;
+            curInfo.style.display  = 'block';
+            clearBtn.style.display = 'inline-block';
+        } else {
+            curInfo.style.display  = 'none';
+            clearBtn.style.display = 'none';
+        }
+        document.getElementById('staffSearchResult').innerHTML = '';
+        document.getElementById('staffEmpNoInput').value = '';
+        document.getElementById('staffModal').classList.add('show');
+        setTimeout(() => document.getElementById('staffEmpNoInput').focus(), 80);
+    }
+
+    function closeStaffModal() {
+        document.getElementById('staffModal').classList.remove('show');
+    }
+
+    async function doSearchStaff() {
+        const empNo = document.getElementById('staffEmpNoInput').value.trim();
+        const resultDiv = document.getElementById('staffSearchResult');
+        if (!empNo) { resultDiv.innerHTML = '<div style="color:#c0392b;font-size:0.88rem;">請輸入員工編號</div>'; return; }
+
+        resultDiv.innerHTML = '<div style="color:#888;font-size:0.88rem;">查詢中…</div>';
+        const resp = await fetch(`/PreOrders/SearchStaff?empNo=${encodeURIComponent(empNo)}`);
+        const json = await resp.json();
+
+        if (!json.success) {
+            resultDiv.innerHTML = `<div style="color:#c0392b;font-size:0.88rem;">⚠️ ${json.error}</div>`;
+            return;
+        }
+
+        resultDiv.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;
+                        background:#f0f4ff;border:1.5px solid #5c6bc0;border-radius:10px;
+                        padding:10px 14px;margin-top:6px;">
+                <span style="font-weight:600;color:#333;">🧑‍💼 ${json.name}</span>
+                <button type="button" onclick="applyStaff(${json.id}, '${json.name.replace(/'/g,"\\'")}')"
+                        style="background:#5c6bc0;color:#fff;border:none;border-radius:8px;
+                               padding:5px 14px;font-size:0.88rem;cursor:pointer;">選擇</button>
+            </div>`;
+    }
+
+    function applyStaff(id, name) {
+        staffUserId   = id;
+        staffUserName = name;
+        document.getElementById('hiddenUserId').value = id;
+        document.getElementById('staffBtnLabel').textContent = name;
+        document.getElementById('staffBtn').classList.add('has-member');
+        closeStaffModal();
+    }
+
+    function clearStaff() {
+        staffUserId   = null;
+        staffUserName = null;
+        document.getElementById('hiddenUserId').value = '';
+        document.getElementById('staffBtnLabel').textContent = '輸入服務人員';
+        document.getElementById('staffBtn').classList.remove('has-member');
+        document.getElementById('staffClearBtn').style.display = 'none';
+        document.getElementById('smStaffCurrentInfo').style.display = 'none';
+    }
+
+    function closeOrderSuccessModal() {
+        document.getElementById('orderSuccessModal').style.display = 'none';
+        // 清除購物車數量
+        document.querySelectorAll('.menu-card.selected').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('input[name^="Items["][name$=".Qty"]').forEach(i => i.value = 0);
+        rawCartTotal = 0;
+        cartItemNotes = {};
+        document.getElementById('hiddenItemNotesJson').value = '';
+        // 清除通知
+        _nearMissDismissed.clear();
+        clearNearMissNotifications();
+        // 清除優惠券
+        clearCartCoupon();
+        // 清除活動
+        clearCartEvent();
+        // 清除會員
+        clearCartMember();
+        // 清除服務人員
+        clearStaff();
+        document.getElementById('hiddenDiscountAmount').value = '0';
+        document.getElementById('cartRewardRow').style.display = 'none';
+        refreshCart();
+        refreshEventBtn();
+        // 清除桌號 & 人數
+        const tableSelect = document.getElementById('tableSelect');
+        if (tableSelect) tableSelect.value = '';
+        const peopleNumSelect = document.getElementById('peopleNumSelect');
+        if (peopleNumSelect) peopleNumSelect.value = '1';
+        // 跳回第一個分類（套餐起始畫面）
+        const firstTab = document.querySelector('.cat-tab-btn');
+        if (firstTab) firstTab.click();
+        // 重置送出按鈕
+        const btn = document.getElementById('submitOrderBtn');
+        btn.disabled = false;
+        btn.textContent = '送出';
+    }
 </script>
+
+<!-- ── 點餐成功 Modal ── -->
+<div id="orderSuccessModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+     z-index:10000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:18px;padding:40px 48px;text-align:center;
+                box-shadow:0 8px 40px rgba(0,0,0,.18);min-width:300px;">
+        <div style="font-size:3rem;margin-bottom:12px;">✅</div>
+        <div style="font-size:1.3rem;font-weight:700;color:#1a7a3c;margin-bottom:8px;">點餐成功！</div>
+        <div style="color:#555;margin-bottom:20px;">
+            訂單編號：<strong id="successOrderNumber" style="color:#1a1a1a;"></strong>
+        </div>
+    </div>
+</div>
+
+<!-- ── 請選擇桌號 Modal ── -->
+<div id="tableRequiredModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+     z-index:10000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:18px;padding:36px 44px;text-align:center;
+                box-shadow:0 8px 40px rgba(0,0,0,.18);min-width:280px;">
+        <div style="font-size:2.6rem;margin-bottom:12px;">🪑</div>
+        <div style="font-size:1.2rem;font-weight:700;color:#c0392b;margin-bottom:8px;">請選擇桌號</div>
+        <div style="color:#666;margin-bottom:20px;font-size:0.95rem;">內用訂單需選擇桌號才能送出</div>
+        <button onclick="document.getElementById('tableRequiredModal').style.display='none'"
+                style="background:#c0392b;color:#fff;border:none;border-radius:10px;
+                       padding:10px 36px;font-size:1rem;cursor:pointer;font-weight:600;">
+            確認
+        </button>
+    </div>
+</div>
 

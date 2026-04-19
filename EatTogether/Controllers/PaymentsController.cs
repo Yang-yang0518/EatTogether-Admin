@@ -178,10 +178,10 @@ namespace EatTogether.Controllers
 
         // ── 綠界信用卡結帳 ──────────────────────────────────────────────────
 
-        /// <summary>前端 AJAX 呼叫：取得送往綠界的表單參數（不直接結帳）</summary>
+        /// <summary>前端 AJAX 呼叫：取得送往綠界的表單參數（刷卡／行動支付）</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> InitiateCardPayment(int? tableId, int? preOrderId)
+        public async Task<IActionResult> InitiateCardPayment(int? tableId, int? preOrderId, string payMethod = "Card")
         {
             // 取得金額
             int amount;
@@ -210,12 +210,16 @@ namespace EatTogether.Controllers
             }
 
             if (amount <= 0)
-                return Json(new { success = false, error = "應付金額為 0，無需刷卡" });
+                return Json(new { success = false, error = "應付金額為 0，無需付款" });
 
-            var itemName     = $"EatTogether Order {orderNo}";
-            var tradeDesc    = "EatTogether";
+            // 暫存 payMethod，供 EcPayCallback 結帳時使用（1 小時有效）
+            _cache.Set($"paymethod:{tradeNo}", payMethod, TimeSpan.FromHours(1));
+
+            var choosePayment = payMethod == "LinePay" ? "ALL" : "Credit";
+            var itemName      = $"EatTogether Order {orderNo}";
+            var tradeDesc     = "EatTogether";
             var clientBackUrl = _ecPay.ClientBackUrl + "?tradeNo=" + tradeNo;
-            var formParams   = _ecPay.BuildParams(tradeNo, amount, itemName, tradeDesc, clientBackUrl);
+            var formParams    = _ecPay.BuildParams(tradeNo, amount, itemName, tradeDesc, clientBackUrl, choosePayment);
 
             return Json(new
             {
@@ -266,16 +270,18 @@ namespace EatTogether.Controllers
 
             var tradeNo = EcPayService.MakeSplitTradeNo(dto.TableId);
 
-            // 暫存拆單資料（30 分鐘有效）
-            _cache.Set($"split:{tradeNo}", dto,
-                       TimeSpan.FromMinutes(30));
+            // 暫存拆單資料與 payMethod（30 分鐘有效）
+            _cache.Set($"split:{tradeNo}",    dto,            TimeSpan.FromMinutes(30));
+            _cache.Set($"paymethod:{tradeNo}", dto.PayMethod, TimeSpan.FromMinutes(30));
 
+            var choosePayment = dto.PayMethod == "LinePay" ? "ALL" : "Credit";
             var clientBackUrl = _ecPay.ClientBackUrl + "?tradeNo=" + tradeNo;
             var formParams = _ecPay.BuildParams(
                 tradeNo, amount,
-                itemName:     $"EatTogether Split {vm.TableName}",
-                tradeDesc:    "EatTogether",
-                clientBackUrl: clientBackUrl);
+                itemName:      $"EatTogether Split {vm.TableName}",
+                tradeDesc:     "EatTogether",
+                clientBackUrl: clientBackUrl,
+                choosePayment: choosePayment);
 
             return Json(new { success = true, paymentUrl = _ecPay.PaymentUrl, formParams });
         }
@@ -303,19 +309,31 @@ namespace EatTogether.Controllers
 
             try
             {
+                // 付款方式：優先取 Cache，Cache Miss 時從 callback 的 PaymentType 欄位對映
+                string payMethod;
+                if (_cache.TryGetValue($"paymethod:{tradeNo}", out string? pm) && pm != null)
+                {
+                    payMethod = pm;
+                }
+                else
+                {
+                    var pt = Request.Form["PaymentType"].ToString().ToUpperInvariant();
+                    payMethod = (pt.Contains("CREDIT") || pt.Contains("CARD")) ? "Card" : "LinePay";
+                }
+
                 var (prefix, id) = EcPayService.ParseTradeNo(tradeNo);
                 switch (prefix)
                 {
                     case 'T':
-                        await _service.CheckoutByTableAsync(id, "Card");
+                        await _service.CheckoutByTableAsync(id, payMethod);
                         break;
                     case 'O':
-                        await _service.CheckoutAsync(id, "Card");
+                        await _service.CheckoutAsync(id, payMethod);
                         break;
                     case 'S':
                         if (_cache.TryGetValue($"split:{tradeNo}", out SplitCheckoutRequestDto? splitDto) && splitDto != null)
                         {
-                            await _service.SplitCheckoutAsync(splitDto.DetailIds, "Card",
+                            await _service.SplitCheckoutAsync(splitDto.DetailIds, payMethod,
                                 splitDto.MemberId, splitDto.CouponId, splitDto.EventId);
                             _cache.Remove($"split:{tradeNo}");
                         }
@@ -350,16 +368,69 @@ namespace EatTogether.Controllers
             return View();
         }
 
-        /// <summary>前端 polling：查詢綠界付款結果是否已寫入 Cache</summary>
+        /// <summary>前端 polling：查詢綠界付款結果（Cache → 綠界 QueryAPI → DB 備援）</summary>
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult EcPayStatus(string? tradeNo)
+        public async Task<IActionResult> EcPayStatus(string? tradeNo)
         {
             if (string.IsNullOrWhiteSpace(tradeNo))
                 return Json(new { known = false });
 
-            if (_cache.TryGetValue($"ecpay-result:{tradeNo}", out bool result))
-                return Json(new { known = true, success = result });
+            // 1. Cache（由 EcPayCallback 寫入）
+            if (_cache.TryGetValue($"ecpay-result:{tradeNo}", out bool cached))
+                return Json(new { known = true, success = cached });
+
+            // 2. 主動向綠界查詢（callback 沒打到時的主要備援）
+            try
+            {
+                var (tradeStatus, ecPayMethod) = await _ecPay.QueryTradeAsync(tradeNo);
+                if (tradeStatus.HasValue && tradeStatus.Value != 0) // 0 = 尚未付款，跳過
+                {
+                    var ecSuccess = tradeStatus.Value == 1;
+                    _cache.Set($"ecpay-result:{tradeNo}", ecSuccess, TimeSpan.FromMinutes(10));
+
+                    if (ecSuccess)
+                    {
+                        // callback 未到，由此處補執行結帳
+                        // payMethod 優先用 QueryTradeInfo 回傳的 PaymentType，再取 Cache，最後預設 Card
+                        var payMethod = ecPayMethod
+                            ?? (_cache.TryGetValue($"paymethod:{tradeNo}", out string? pm) && pm != null ? pm : "Card");
+                        try
+                        {
+                            var (pfx, eid) = EcPayService.ParseTradeNo(tradeNo);
+                            switch (pfx)
+                            {
+                                case 'T': await _service.CheckoutByTableAsync(eid, payMethod); break;
+                                case 'O': await _service.CheckoutAsync(eid, payMethod); break;
+                                case 'S':
+                                    if (_cache.TryGetValue($"split:{tradeNo}", out SplitCheckoutRequestDto? sd) && sd != null)
+                                    {
+                                        await _service.SplitCheckoutAsync(sd.DetailIds, payMethod,
+                                            sd.MemberId, sd.CouponId, sd.EventId);
+                                        _cache.Remove($"split:{tradeNo}");
+                                    }
+                                    break;
+                            }
+                        }
+                        catch { /* 重複結帳時靜默忽略 */ }
+                    }
+
+                    return Json(new { known = true, success = ecSuccess });
+                }
+            }
+            catch { /* 查詢失敗，繼續往下 */ }
+
+            // 3. DB 備援：訂單已被 callback 或其他路徑結帳完成
+            try
+            {
+                var (prefix, id) = EcPayService.ParseTradeNo(tradeNo);
+                if (await _service.IsOrderCompletedAsync(prefix, id))
+                {
+                    _cache.Set($"ecpay-result:{tradeNo}", true, TimeSpan.FromMinutes(10));
+                    return Json(new { known = true, success = true });
+                }
+            }
+            catch { /* tradeNo 格式錯誤或其他例外，靜默忽略 */ }
 
             return Json(new { known = false });
         }

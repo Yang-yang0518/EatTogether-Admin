@@ -11,7 +11,13 @@ namespace EatTogether.Models.ViewModels
         public bool IsAddOrder { get; set; }
         public List<SelectListItem> TableOptions { get; set; } = new();
         public string? Note { get; set; }
+        /// <summary>前端把個別餐點備註序列化成 {"炸雞腿":"不要皮"} 存在這裡</summary>
+        public string? ItemNotesJson { get; set; }
         public int DiscountAmount { get; set; }
+        public int? MemberId { get; set; }
+        public int? UserId { get; set; }
+        public int? CouponId { get; set; }
+        public int? EventId { get; set; }
         public List<CreatePreOrderItemViewModel> Items { get; set; } = new();
     }
 }

@@ -11,5 +11,6 @@
         public int Status { get; set; }  // 0=待處理 1=完成 2=取消
         public bool IsSetMeal { get; set; }
         public int? ParentDetailId { get; set; }
+        public string? ItemNote { get; set; }   // 從 Note JSON 解析出的個別備註
     }
 }
