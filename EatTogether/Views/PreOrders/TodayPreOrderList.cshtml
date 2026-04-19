@@ -177,6 +177,17 @@
         font-weight: 500;
     }
 
+    .item-note {
+        font-size: 0.9rem;
+        color: #e67e22;
+        font-weight: 600;
+        flex-shrink: 0;
+        margin-left: 8px;
+        text-align: right;
+        max-width: 80px;
+        word-break: break-all;
+    }
+
     .detail-item {
         display: flex;
         align-items: center;
@@ -656,12 +667,16 @@
                                          data-preorder-id="@order.PreOrderId"
                                          onclick="selectSetMeal(this)">
                                         <span class="detail-icon" id="icon-@item.DetailId">@icon</span>
-                                        <div>
+                                        <div style="flex:1;min-width:0;">
                                             <div class="detail-name">
                                                 @item.ProductName
                                                 <span class="setmeal-badge">套餐</span>
                                             </div>
                                         </div>
+                                        @if (!string.IsNullOrEmpty(item.ItemNote))
+                                        {
+                                            <div class="item-note">📝 @item.ItemNote</div>
+                                        }
                                     </div>
                                     <div class="action-btns" id="actions-@item.DetailId">
                                         <button class="btn-cancel" onclick="cancelSetMeal(event, @item.DetailId, @order.PreOrderId)">✕ 取消套餐</button>
@@ -693,10 +708,14 @@
                                      data-preorder-id="@order.PreOrderId"
                                      onclick="selectItem(this)">
                                     <span class="detail-icon" id="icon-@item.DetailId">@icon</span>
-                                    <div>
+                                    <div style="flex:1;min-width:0;">
                                         <div class="detail-name">@item.ProductName</div>
                                         <div class="detail-qty">× @item.Qty 份</div>
                                     </div>
+                                    @if (!string.IsNullOrEmpty(item.ItemNote))
+                                    {
+                                        <div class="item-note">📝 @item.ItemNote</div>
+                                    }
                                 </div>
                                 <div class="action-btns" id="actions-@item.DetailId">
                                     <button class="btn-cancel" onclick="updateStatus(event, @item.DetailId, 2, @order.PreOrderId)">✕ 取消</button>
@@ -778,12 +797,16 @@
                                              data-preorder-id="@order.PreOrderId"
                                              onclick="selectSetMeal(this)">
                                             <span class="detail-icon" id="icon-@item.DetailId">@icon</span>
-                                            <div>
+                                            <div style="flex:1;min-width:0;">
                                                 <div class="detail-name">
                                                     @item.ProductName
                                                     <span class="setmeal-badge">套餐</span>
                                                 </div>
-                                                </div>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(item.ItemNote))
+                                            {
+                                                <div class="item-note">📝 @item.ItemNote</div>
+                                            }
                                         </div>
                                         <div class="action-btns" id="actions-@item.DetailId">
                                             <button class="btn-cancel" onclick="cancelSetMeal(event, @item.DetailId, @order.PreOrderId)">✕ 取消套餐</button>
@@ -815,9 +838,14 @@
                                          data-preorder-id="@order.PreOrderId"
                                          onclick="selectItem(this)">
                                         <span class="detail-icon" id="icon-@item.DetailId">@icon</span>
-                                        <div>
+                                        <div style="flex:1;min-width:0;">
                                             <div class="detail-name">@item.ProductName</div>
+                                            <div class="detail-qty">× @item.Qty 份</div>
                                         </div>
+                                        @if (!string.IsNullOrEmpty(item.ItemNote))
+                                        {
+                                            <div class="item-note">📝 @item.ItemNote</div>
+                                        }
                                     </div>
                                     <div class="action-btns" id="actions-@item.DetailId">
                                         <button class="btn-cancel" onclick="updateStatus(event, @item.DetailId, 2, @order.PreOrderId)">✕ 取消</button>

@@ -38,7 +38,13 @@
     {
         public int PreOrderId { get; set; }
         public string OrderNumber { get; set; }
-        public int Amount { get; set; }      // 未結帳小計
+        public int Amount { get; set; }          // 未結帳小計
+        public int DiscountAmount { get; set; }  // 該筆訂單的折扣（優惠券/活動綁在哪筆就算哪筆）
+        // 該筆自有的優惠券 / 活動（用於子單篩選時只顯示該筆的折扣按鈕）
+        public int? CouponId { get; set; }
+        public string? CouponName { get; set; }
+        public int? EventId { get; set; }
+        public string? EventTitle { get; set; }
         public bool HasUnserved { get; set; }
     }
 }

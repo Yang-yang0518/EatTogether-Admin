@@ -51,18 +51,21 @@
 
     @if (known && success)
     {
-        <!-- 已知：成功 -->
+        <!-- 已知：成功，3 秒後自動跳轉 -->
         <div class="result-icon">✅</div>
         <div class="result-title" style="color:#27ae60;">付款成功</div>
-        <div class="result-sub">信用卡刷卡完成，感謝您的消費！</div>
-        <a href="/Payments/Create" class="btn-back" style="background:#27ae60;color:#fff;">返回結帳頁</a>
+        <div class="result-sub">付款完成，感謝您的消費！</div>
+        <a href="/Payments/Create" class="btn-back" style="background:#27ae60;color:#fff;">立即返回結帳頁</a>
+        <script>
+            setTimeout(function(){ location.href='/Payments/Create'; }, 1500);
+        </script>
     }
     else if (known && !success)
     {
         <!-- 已知：失敗 -->
         <div class="result-icon">❌</div>
         <div class="result-title" style="color:#c0392b;">付款失敗</div>
-        <div class="result-sub">刷卡未完成或已取消，請重新嘗試。</div>
+        <div class="result-sub">付款未完成或已取消，請重新嘗試。</div>
         <a href="/Payments/Create" class="btn-back" style="background:#c0392b;color:#fff;">返回結帳頁</a>
     }
     else
@@ -79,22 +82,26 @@
 {
     <script>
         const tradeNo  = '@Html.Raw(tradeNo)';
-        const maxTries = 15;   // 最多等 30 秒（每 2 秒一次）
+        const maxTries = 30;   // 最多等 60 秒（每 2 秒一次）
         let   tries    = 0;
+        let   polling  = true;
 
         async function poll() {
+            if (!polling) return;
             tries++;
             try {
                 const res  = await fetch(`/Payments/EcPayStatus?tradeNo=${encodeURIComponent(tradeNo)}`);
                 const data = await res.json();
 
                 if (data.known) {
+                    polling = false;
                     renderResult(data.success);
                     return;
                 }
             } catch { /* 靜默，繼續重試 */ }
 
             if (tries >= maxTries) {
+                polling = false;
                 renderTimeout();
                 return;
             }
@@ -102,23 +109,47 @@
         }
 
         function renderResult(success) {
-            document.getElementById('box').innerHTML = success
-                ? `<div class="result-icon">✅</div>
-                   <div class="result-title" style="color:#27ae60;">付款成功</div>
-                   <div class="result-sub">信用卡刷卡完成，感謝您的消費！</div>
-                   <a href="/Payments/Create" class="btn-back" style="background:#27ae60;color:#fff;">返回結帳頁</a>`
-                : `<div class="result-icon">❌</div>
-                   <div class="result-title" style="color:#c0392b;">付款失敗</div>
-                   <div class="result-sub">刷卡未完成或已取消，請重新嘗試。</div>
-                   <a href="/Payments/Create" class="btn-back" style="background:#c0392b;color:#fff;">返回結帳頁</a>`;
+            if (success) {
+                // 成功：顯示成功畫面並 1.5 秒後自動跳轉
+                document.getElementById('box').innerHTML =
+                    `<div class="result-icon">✅</div>
+                     <div class="result-title" style="color:#27ae60;">付款成功</div>
+                     <div class="result-sub">付款完成，感謝您的消費！</div>
+                     <a href="/Payments/Create" class="btn-back" style="background:#27ae60;color:#fff;">立即返回結帳頁</a>`;
+                setTimeout(function(){ location.href='/Payments/Create'; }, 1500);
+            } else {
+                document.getElementById('box').innerHTML =
+                    `<div class="result-icon">❌</div>
+                     <div class="result-title" style="color:#c0392b;">付款失敗</div>
+                     <div class="result-sub">付款未完成或已取消，請重新嘗試。</div>
+                     <a href="/Payments/Create" class="btn-back" style="background:#c0392b;color:#fff;">返回結帳頁</a>`;
+            }
         }
 
         function renderTimeout() {
             document.getElementById('box').innerHTML =
                 `<div class="result-icon">⚠️</div>
                  <div class="result-title" style="color:#e67e22;">付款狀態未知</div>
-                 <div class="result-sub">無法自動確認，請至後台確認是否有付款記錄，或詢問收銀人員。</div>
-                 <a href="/Payments/Create" class="btn-back" style="background:#e67e22;color:#fff;">返回結帳頁</a>`;
+                 <div class="result-sub">無法自動確認，請點「再次確認」或至後台確認是否有付款記錄。</div>
+                 <button onclick="retryPoll()" class="btn-back"
+                         style="background:#1a77c9;color:#fff;border:none;cursor:pointer;margin-bottom:10px;">
+                     🔄 再次確認
+                 </button>
+                 <br>
+                 <a href="/Payments/Create" class="btn-back"
+                    style="background:#e67e22;color:#fff;">返回結帳頁</a>`;
+        }
+
+        function retryPoll() {
+            tries  = 0;
+            polling = true;
+            document.getElementById('box').innerHTML =
+                `<div class="spinner" style="display:inline-block;width:36px;height:36px;
+                     border:4px solid #ddd;border-top-color:#1a77c9;border-radius:50%;
+                     animation:spin 0.8s linear infinite;margin-bottom:20px;"></div>
+                 <div class="result-title" style="color:#1a77c9;">確認付款中…</div>
+                 <div class="result-sub" style="font-size:0.92rem;color:#888;">正在重新查詢，請稍候。</div>`;
+            setTimeout(poll, 500);
         }
 
         // 頁面載入後立即開始 polling

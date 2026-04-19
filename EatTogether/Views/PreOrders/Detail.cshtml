@@ -524,6 +524,10 @@
                                             <span class="item-badge ib-setmeal">套餐</span>
                                         }
                                         <span class="item-badge @badgeCls">@badgeTxt</span>
+                                        @if (!string.IsNullOrEmpty(item.ItemNote))
+                                        {
+                                            <span style="margin-left:6px;font-size:0.8rem;color:#e67e22;font-weight:600;">📝 @item.ItemNote</span>
+                                        }
                                     </td>
                                     <td>× @item.Qty</td>
                                     <td>NT$ @item.UnitPrice</td>

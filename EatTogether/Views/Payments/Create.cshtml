@@ -821,7 +821,7 @@
                         onchange="onSplitPayChange(this.value)">
                     <option value="Cash">💵 現金</option>
                     <option value="Card">💳 刷卡</option>
-                    <option value="Other">📱 行動支付</option>
+                    <option value="LinePay">📱 行動支付</option>
                 </select>
             </div>
             <div class="pay-field" id="splitCashWrap" style="flex:1; min-width:0;">
@@ -839,7 +839,7 @@
         <!-- 按鈕 -->
         <div class="modal-actions">
             <button class="modal-btn-cancel"
-                    onclick="document.getElementById('splitModal').classList.remove('show'); (function(){ var r=document.getElementById('discountBtnRow'); if(r&&currentData) r.style.display='flex'; })()">取消</button>
+                    onclick="document.getElementById('splitModal').classList.remove('show'); (function(){ var r=document.getElementById('discountBtnRow'); if(r&&currentData&&currentData.memberId) r.style.display='flex'; })()">取消</button>
             <button class="modal-btn-confirm" id="splitConfirmBtn"
                     style="background:#1a77c9;" onclick="doSplitCheckout()" disabled>
                 確認結帳
@@ -1098,7 +1098,7 @@
                                     onchange="onSplitPayMethodChange(this.value)">
                                 <option value="Cash">💵 現金</option>
                                 <option value="Card">💳 刷卡</option>
-                                <option value="Other">📱 行動支付</option>
+                                <option value="LinePay">📱 行動支付</option>
                             </select>
                         </div>
                         <div class="pay-field" id="splitCashWrapInline" style="flex:1;min-width:0;display:none;">
@@ -1175,7 +1175,7 @@
                                 onchange="selectPayMethod(this.value)">
                             <option value="Cash">💵 現金</option>
                             <option value="Card">💳 刷卡</option>
-                            <option value="Other">📱 行動支付</option>
+                            <option value="LinePay">📱 行動支付</option>
                         </select>
                     </div>
                     <!-- 實收（現金時才顯示） -->
@@ -1821,7 +1821,7 @@
 
     // ── 結帳按鈕統一入口 ──────────────────────────────────────────────────
     async function handleCheckout() {
-        if (currentPayMethod === 'Card') {
+        if (currentPayMethod === 'Card' || currentPayMethod === 'LinePay') {
             await initiateEcPayCheckout();
         } else {
             document.getElementById('checkoutForm').submit();
@@ -1830,9 +1830,14 @@
 
     async function initiateEcPayCheckout() {
         const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-        const body  = currentTableId
-            ? `tableId=${currentTableId}`
-            : `preOrderId=${currentPreOrderId}`;
+        // 若下拉有選特定子訂單，用 preOrderId；否則整桌用 tableId
+        const orderSelect = document.getElementById('orderSelect');
+        const selectedVal = orderSelect ? orderSelect.value : '0';
+        const selectedPid = currentTableId && selectedVal && selectedVal !== '0' ? parseInt(selectedVal) : 0;
+        const base = selectedPid
+            ? `preOrderId=${selectedPid}`
+            : (currentTableId ? `tableId=${currentTableId}` : `preOrderId=${currentPreOrderId}`);
+        const body  = `${base}&payMethod=${encodeURIComponent(currentPayMethod)}`;
 
         const btn = document.getElementById('checkoutBtn');
         btn.disabled = true;
@@ -1848,7 +1853,7 @@
             const result = await res.json();
 
             if (!result.success) {
-                showAlert(result.error || '刷卡初始化失敗', '❌ 錯誤');
+                showAlert(result.error || '付款初始化失敗', '❌ 錯誤');
                 return;
             }
 
@@ -1890,7 +1895,7 @@
                 body: JSON.stringify({
                     tableId:  currentTableId,
                     detailIds,
-                    payMethod: 'Card',
+                    payMethod: splitPayMethod,   // Card 或 LinePay
                     memberId:  splitMemberId  ?? null,
                     couponId:  splitCouponId  ?? null,
                     eventId:   splitEventId   ?? null
@@ -1899,7 +1904,7 @@
             const result = await res.json();
 
             if (!result.success) {
-                showAlert(result.error || '刷卡初始化失敗', '❌ 錯誤');
+                showAlert(result.error || '付款初始化失敗', '❌ 錯誤');
                 return;
             }
 
@@ -2402,8 +2407,8 @@
 
         if (!detailIds.length) { showAlert('請先勾選要結帳的餐點'); return; }
 
-        // 拆單刷卡 → 走綠界
-        if (splitPayMethod === 'Card') {
+        // 刷卡 / 行動支付 → 走綠界
+        if (splitPayMethod === 'Card' || splitPayMethod === 'LinePay') {
             await initiateSplitEcPayCheckout(detailIds);
             return;
         }
@@ -2501,12 +2506,85 @@
     function onOrderSelectChange(preOrderIdStr) {
         if (!currentData) return;
         const pid = preOrderIdStr ? parseInt(preOrderIdStr) : null;
+
+        // ── 同步更新 checkoutForm，讓現金／刷卡路徑也依選單正確結帳 ──
+        const checkoutForm     = document.getElementById('checkoutForm');
+        const checkoutIdInput  = document.getElementById('checkoutTableId');
+        if (checkoutForm && checkoutIdInput) {
+            if (pid && currentTableId) {
+                // 選了特定子訂單 → POST /Payments/Checkout?preOrderId=...
+                checkoutForm.action    = '/Payments/Checkout';
+                checkoutIdInput.name   = 'preOrderId';
+                checkoutIdInput.value  = pid;
+            } else if (currentTableId) {
+                // 回到「全部訂單」 → POST /Payments/CheckoutByTable?tableId=...
+                checkoutForm.action    = '/Payments/CheckoutByTable';
+                checkoutIdInput.name   = 'tableId';
+                checkoutIdInput.value  = currentTableId;
+            }
+        }
         const items = pid
             ? currentData.items.filter(i => i.preOrderId === pid)
             : currentData.items;
         renderItemsTable(items);
-        renderAmounts(items, pid ? null : currentData);
+        if (pid) {
+            // 單筆篩選：用該筆的原始金額，折扣只顯示綁在該筆的部分
+            const sub = (currentData.subOrders || []).find(s => s.preOrderId === pid);
+            const orderOriginal = sub
+                ? sub.amount
+                : items.filter(i => !i.parentDetailId && i.status !== 2)
+                       .reduce((s, i) => s + (i.subTotal || 0), 0);
+            const orderDiscount = sub ? (sub.discountAmount || 0) : 0;
+            renderAmounts(items, {
+                originalAmount: orderOriginal,
+                discountAmount: orderDiscount,
+                totalAmount: Math.max(0, orderOriginal - orderDiscount)
+            });
+        } else {
+            renderAmounts(items, currentData);
+        }
         updateMemberBtnDisplay(currentData);
+
+        // ── 結帳按鈕可見度：依所選訂單的出餐狀態決定 ──
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        const warningArea = document.getElementById('unservedWarning');
+        if (pid) {
+            // 單筆：以那筆的頂層餐點是否有未出餐為準
+            const hasUnserved = items.some(i => !i.parentDetailId && i.status === 0 && !i.isBilled);
+            if (hasUnserved) {
+                checkoutBtn.classList.remove('show');
+            } else {
+                checkoutBtn.classList.add('show');
+                warningArea.style.display = 'none';
+            }
+        } else {
+            // 全部訂單：還原整桌原始狀態
+            if (currentData.hasUnserved) {
+                checkoutBtn.classList.remove('show');
+                warningArea.style.display = 'block';
+            } else {
+                checkoutBtn.classList.add('show');
+                warningArea.style.display = 'none';
+            }
+        }
+
+        // ── 優惠按鈕：依子單自己的會員決定顯示與否，內容用子單自己的優惠券/活動 ──
+        // 規則（對應規格表）：
+        //   有會員 → 顯示（未套用時顯示X個可用；已套用時顯示套用內容）
+        //   沒會員 → 不顯示
+        if (pid) {
+            const om  = (currentData.orderMembers || []).find(m => m.preOrderId === pid);
+            const sub = (currentData.subOrders    || []).find(s => s.preOrderId === pid);
+            renderDiscountBtns(Object.assign({}, currentData, {
+                memberId:   om  ? om.memberId         : null,
+                couponId:   sub ? (sub.couponId   ?? null) : null,
+                couponName: sub ? (sub.couponName ?? null) : null,
+                eventId:    sub ? (sub.eventId    ?? null) : null,
+                eventTitle: sub ? (sub.eventTitle ?? null) : null,
+            }));
+        } else {
+            renderDiscountBtns(currentData);
+        }
     }
 
     // ── 會員按鈕顯示邏輯（依目前 orderSelect 決定顯示哪位會員）─────────────
@@ -2931,8 +3009,11 @@
             const res     = await fetch(`/Payments/GetApplicableCoupons?${getDiscountContext()}`);
             const coupons = await res.json();
 
-            if (!coupons || coupons.length === 0) {
-                listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">目前沒有進行中的優惠券</div>';
+            // 只顯示「會員已領取」或「目前使用中」的優惠券；未領取的不列出
+            const visibleCoupons = (coupons || []).filter(c => c.isClaimed !== false || c.isInUse === true);
+
+            if (!visibleCoupons.length) {
+                listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">目前沒有可用的優惠券</div>';
                 return;
             }
 
@@ -2946,7 +3027,7 @@
                             </div>`;
             }
 
-            listArea.innerHTML = hintHtml + coupons.map(c => {
+            listArea.innerHTML = hintHtml + visibleCoupons.map(c => {
                 const claimed       = c.isClaimed !== false;   // 未傳時預設已領取
                 const usedByMember  = c.isUsedByMember === true;
                 const eligible      = c.isEligible;

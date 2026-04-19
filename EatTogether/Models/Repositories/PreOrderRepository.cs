@@ -62,6 +62,8 @@ namespace EatTogether.Models.Repositories
             return await _context.PreOrders
                 .Include(p => p.PreOrderDetails)
                 .Include(p => p.Member)
+                .Include(p => p.Coupon)
+                .Include(p => p.Event)
                 .Where(p => p.TableId == tableId
                          && p.DoneOrCancel == 0
                          && p.OrderAt.Date == today)

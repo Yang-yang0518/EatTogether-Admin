@@ -97,6 +97,7 @@ namespace EatTogether
 
             // 結帳相關
             builder.Services.AddMemoryCache();
+            builder.Services.AddHttpClient();
             builder.Services.AddSingleton<EcPayService>();
             builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddScoped<IPreOrderRepository, PreOrderRepository>();
