@@ -64,7 +64,7 @@
             <option value="即將開始">即將開始</option>
             <option value="活動結束">活動結束</option>
         </select>
-        <button id="toggleSortBtn" class="btn btn-outline-secondary btn-sm" onclick="toggleSortMode()" style="flex-shrink:0; white-space:nowrap;">
+        <button id="toggleSortBtn" class="btn btn-outline-secondary btn-sm" onclick="toggleSortMode()" style="flex-shrink:0; white-space:nowrap; display:none;">
             <i class="fas fa-arrows-alt me-1"></i>調整排序
         </button>
         <a asp-action="Create" class="btn btn-primary btn-sm" style="flex-shrink:0; white-space:nowrap;">
@@ -94,7 +94,7 @@
     </div>
 
     <!-- 排序模式提示列 -->
-    <div id="sortModeBar" class="alert alert-warning border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3" role="alert">
+    <div id="sortModeBar" class="alert alert-warning border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3" role="alert" style="display:none !important;">
         <i class="fas fa-info-circle fa-lg"></i>
         <div><strong>排序模式已開啟</strong>：請拖曳列調整順序，完成後點擊右側儲存按鈕。</div>
         <div class="ms-auto d-flex gap-2">
@@ -332,7 +332,7 @@
                                     <div class="text-xs text-gray-400 mb-1">定價</div>
                                     <div class="font-medium text-red-600" id="detail-price">—</div>
                                 </div>
-                                <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="bg-gray-50 rounded-lg p-3" style="display:none;">
                                     <div class="text-xs text-gray-400 mb-1">排序</div>
                                     <div class="font-medium text-gray-700" id="detail-order">—</div>
                                 </div>
@@ -343,6 +343,14 @@
                                 <div class="bg-gray-50 rounded-lg p-3">
                                     <div class="text-xs text-gray-400 mb-1">狀態</div>
                                     <div class="font-medium text-gray-700" id="detail-status">—</div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="text-xs text-gray-400 mb-1">單點合計</div>
+                                    <div class="font-medium text-gray-700" id="detail-original-price">—</div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="text-xs text-gray-400 mb-1">省下金額</div>
+                                    <div class="font-medium" style="color:#16a34a;" id="detail-save-amount">—</div>
                                 </div>
                             </div>
 
@@ -547,6 +555,17 @@
             const sm = allSetMeals.find(x => x.id === selectedSetMealId);
             document.getElementById('detail-items').textContent =
                 sm && sm.items ? sm.items.length + ' 項' : '—';
+
+            // 單點合計 & 省下金額
+            const originalTotal = sm && sm.items
+                ? sm.items.reduce((sum, i) => sum + ((i.dishPrice || 0) * (i.quantity || 1)), 0)
+                : 0;
+            const setMealPrice = parseFloat(d.price.replace(/,/g, '')) || 0;
+            const saveAmount   = originalTotal - setMealPrice;
+            document.getElementById('detail-original-price').textContent =
+                originalTotal > 0 ? '$' + originalTotal.toLocaleString() : '—';
+            document.getElementById('detail-save-amount').textContent =
+                saveAmount > 0 ? '省 $' + saveAmount.toLocaleString() : '—';
 
             // 上架 Toggle
             const toggle = document.getElementById('detailActiveToggle');
