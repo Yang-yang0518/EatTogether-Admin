@@ -1430,7 +1430,18 @@ ALTER TABLE [dbo].[Tables]  WITH CHECK ADD  CONSTRAINT [CK_Tables_Status] CHECK 
 GO
 ALTER TABLE [dbo].[Tables] CHECK CONSTRAINT [CK_Tables_Status]
 GO
+CREATE TABLE [dbo].[SchedulerLogs] (
+    [Id]             INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [ExecutedAt]     DATETIME NOT NULL DEFAULT GETDATE(),
+    [DishesEnabled]  INT NOT NULL DEFAULT 0,
+    [DishesDisabled] INT NOT NULL DEFAULT 0,
+    [MealsEnabled]   INT NOT NULL DEFAULT 0,
+    [MealsDisabled]  INT NOT NULL DEFAULT 0,
+    [TriggerType]    NVARCHAR(10) NOT NULL DEFAULT N'自動',
+    [DetailJson]     NVARCHAR(MAX) NULL
+);
+GO
 USE [master]
 GO
-ALTER DATABASE [EatTogetherDB] SET  READ_WRITE 
+ALTER DATABASE [EatTogetherDB] SET  READ_WRITE
 GO

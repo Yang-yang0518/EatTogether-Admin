@@ -61,6 +61,8 @@ public partial class EatTogetherDBContext : DbContext
 
     public virtual DbSet<RoleFunction> RoleFunctions { get; set; }
 
+    public virtual DbSet<SchedulerLog> SchedulerLogs { get; set; }
+
     public virtual DbSet<SetMeal> SetMeals { get; set; }
 
     public virtual DbSet<SetMealItem> SetMealItems { get; set; }
@@ -615,6 +617,19 @@ public partial class EatTogetherDBContext : DbContext
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_RoleFunctions_Roles");
+        });
+
+        modelBuilder.Entity<SchedulerLog>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0724E7CC8E");
+
+            entity.Property(e => e.ExecutedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.TriggerType)
+                .IsRequired()
+                .HasMaxLength(10)
+                .HasDefaultValue("自動");
         });
 
         modelBuilder.Entity<SetMeal>(entity =>

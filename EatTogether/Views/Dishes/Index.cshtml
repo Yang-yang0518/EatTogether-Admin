@@ -5,6 +5,7 @@
 
 <div class="container-fluid px-4">
     <h1 class="mt-4">餐點管理</h1>
+    <div id="stockWarningBar"></div>
 
     <!-- 統計卡片 -->
     <div style="display:flex; gap:16px; margin-bottom:1.5rem;">
@@ -18,7 +19,7 @@
                         text-transform:uppercase; letter-spacing:.05em;">
                     總餐點數
                 </div>
-                <div style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count()</div>
+                <div id="stat-total" style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count()</div>
             </div>
             <i class="fas fa-utensils fa-2x" style="opacity:0.4;"></i>
         </div>
@@ -32,7 +33,7 @@
                         text-transform:uppercase; letter-spacing:.05em;">
                     上架中
                 </div>
-                <div style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count(d => d.IsActive)</div>
+                <div id="stat-active" style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count(d => d.IsActive)</div>
             </div>
             <i class="fas fa-check-circle fa-2x" style="opacity:0.4;"></i>
         </div>
@@ -46,7 +47,7 @@
                         text-transform:uppercase; letter-spacing:.05em;">
                     已下架
                 </div>
-                <div style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count(d => !d.IsActive)</div>
+                <div id="stat-inactive" style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count(d => !d.IsActive)</div>
             </div>
             <i class="fas fa-ban fa-2x" style="opacity:0.4;"></i>
         </div>
@@ -65,7 +66,7 @@
             <option value="上架中">上架中</option>
             <option value="已下架">已下架</option>
         </select>
-        <button id="toggleSortBtn" class="btn btn-outline-secondary btn-sm" onclick="toggleSortMode()" style="flex-shrink:0; white-space:nowrap;">
+        <button id="toggleSortBtn" class="btn btn-outline-secondary btn-sm" onclick="toggleSortMode()" style="flex-shrink:0; white-space:nowrap; display:none;">
             <i class="fas fa-arrows-alt me-1"></i>調整排序
         </button>
         <a asp-action="Create" class="btn btn-primary btn-sm" style="flex-shrink:0; white-space:nowrap;">
@@ -97,7 +98,7 @@
     </div>
 
     <!-- 排序模式提示列 -->
-    <div id="sortModeBar" class="alert alert-warning border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3" role="alert">
+    <div id="sortModeBar" class="alert alert-warning border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3" role="alert" style="display:none !important;">
         <i class="fas fa-info-circle fa-lg"></i>
         <div>
             <strong>排序模式已開啟</strong>：請拖曳列調整順序，完成後點擊右側儲存按鈕。
@@ -303,7 +304,7 @@
                                     <div class="text-xs text-gray-400 mb-1">定價</div>
                                     <div class="font-medium text-red-600" id="detail-price">—</div>
                                 </div>
-                                <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="bg-gray-50 rounded-lg p-3" style="display:none;">
                                     <div class="text-xs text-gray-400 mb-1">排序</div>
                                     <div class="font-medium text-gray-700" id="detail-order">—</div>
                                 </div>
@@ -311,9 +312,16 @@
                                     <div class="text-xs text-gray-400 mb-1">分類</div>
                                     <div class="font-medium text-gray-700" id="detail-category">—</div>
                                 </div>
-                                <div class="bg-gray-50 rounded-lg p-3">
-                                    <div class="text-xs text-gray-400 mb-1">庫存狀態</div>
-                                    <select class="font-medium text-gray-700 text-sm border-0 bg-transparent p-0 w-full outline-none" id="detail-stock" onchange="updateStock(selectedDishId, this.value)">
+                                <div id="stock-card" class="rounded-lg p-3">
+                                    <div class="text-xs mb-1" style="color:#9ca3af;">
+                                        庫存狀態
+                                        <i class="fas fa-pen" style="font-size:10px; color:#9ca3af; margin-left:4px;"></i>
+                                    </div>
+                                    <select id="detail-stock"
+                                            onchange="updateStock(selectedDishId, this.value); updateStockCardColor(this.value)"
+                                            style="border:1px solid #d1d5db; border-radius:6px; padding:4px 8px;
+                                                   background:#fff; cursor:pointer; font-size:0.875rem; width:100%;
+                                                   font-weight:500;">
                                         <option value="0">供應中</option>
                                         <option value="1">剩餘不多</option>
                                         <option value="2">售完</option>
@@ -501,6 +509,7 @@
                         }
 
             filterCards(false);
+            checkStockWarning();
 
             if (savedScrollPosition) {
                 window.scrollTo(0, parseInt(savedScrollPosition));
@@ -546,6 +555,7 @@
 
             // 庫存下拉
             document.getElementById('detail-stock').value = d.stock;
+            updateStockCardColor(d.stock);
 
             // 上架 Toggle
             const toggle = document.getElementById('detailActiveToggle');
@@ -863,6 +873,95 @@ if (paginationContainer) {
             if (res.ok) { showAlert("success", "操作成功"); setTimeout(() => location.reload(), 1000); }
         }
 
+        function updateStatCards() {
+            const allCards = document.querySelectorAll('.dish-card');
+            const total    = allCards.length;
+            const active   = document.querySelectorAll(".dish-card[data-is-active='true']").length;
+            const inactive = total - active;
+            const elTotal    = document.getElementById('stat-total');
+            const elActive   = document.getElementById('stat-active');
+            const elInactive = document.getElementById('stat-inactive');
+            if (elTotal)    elTotal.textContent    = total;
+            if (elActive)   elActive.textContent   = active;
+            if (elInactive) elInactive.textContent = inactive;
+        }
+
+        function checkStockWarning() {
+            const bar = document.getElementById('stockWarningBar');
+            if (!bar) return;
+
+            const soldOut  = [];
+            const lowStock = [];
+
+            document.querySelectorAll('.dish-card').forEach(card => {
+                const stock = parseInt(card.dataset.stock);
+                const name  = card.dataset.fullName || card.dataset.name || '';
+                if (stock === 2) soldOut.push(name);
+                else if (stock === 1) lowStock.push(name);
+            });
+
+            let html = '';
+
+            if (soldOut.length > 0) {
+                html += `
+                <div onclick="filterByStockWarning(2)"
+                     style="display:flex; align-items:center; gap:10px; margin-bottom:8px;
+                            padding:10px 16px; border-radius:8px; cursor:pointer;
+                            background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c;
+                            font-size:0.875rem; transition:opacity .15s;"
+                     onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
+                    <i class="fas fa-exclamation-triangle" style="flex-shrink:0;"></i>
+                    <span><strong>售完：</strong>${soldOut.join('、')}</span>
+                    <span style="margin-left:auto; font-size:0.75rem; opacity:.7;">點擊篩選 →</span>
+                </div>`;
+            }
+
+            if (lowStock.length > 0) {
+                html += `
+                <div onclick="filterByStockWarning(1)"
+                     style="display:flex; align-items:center; gap:10px; margin-bottom:8px;
+                            padding:10px 16px; border-radius:8px; cursor:pointer;
+                            background:#fffbeb; border:1px solid #fcd34d; color:#92400e;
+                            font-size:0.875rem; transition:opacity .15s;"
+                     onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
+                    <i class="fas fa-bolt" style="flex-shrink:0;"></i>
+                    <span><strong>剩餘不多：</strong>${lowStock.join('、')}</span>
+                    <span style="margin-left:auto; font-size:0.75rem; opacity:.7;">點擊篩選 →</span>
+                </div>`;
+            }
+
+            bar.innerHTML = html ? `<div style="margin-bottom:1rem;">${html}</div>` : '';
+        }
+
+        function filterByStockWarning(stockVal) {
+            // 先清除其他篩選條件，只以 stock 值過濾
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            selectedCategory = '';
+            document.querySelectorAll('#categoryTabs .nav-link').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.trim() === '全部');
+            });
+
+            // 直接對 filteredCards 做二次過濾顯示
+            const allCards = Array.from(document.querySelectorAll('.dish-card'));
+            filteredCards = allCards.filter(c => parseInt(c.dataset.stock) === stockVal);
+            filteredCards.sort((a, b) => parseInt(b.dataset.id) - parseInt(a.dataset.id));
+            currentPage = 1;
+            renderPage();
+
+            const label = stockVal === 2 ? '售完' : '剩餘不多';
+            showAlert('info', `已篩選庫存狀態：${label}`);
+        }
+
+        function updateStockCardColor(val) {
+            const card = document.getElementById('stock-card');
+            if (!card) return;
+            const v = parseInt(val);
+            if (v === 0)      { card.style.background = '#f0fdf4'; card.style.color = '#16a34a'; }
+            else if (v === 1) { card.style.background = '#fffbeb'; card.style.color = '#d97706'; }
+            else              { card.style.background = '#fef2f2'; card.style.color = '#dc2626'; }
+        }
+
         async function updateStock(id, stockStatus) {
             const res = await fetch(`/api/Dishes/${id}/Stock`, {
                 method: "PATCH",
@@ -870,7 +969,11 @@ if (paginationContainer) {
                 body: JSON.stringify({ stockStatus: parseInt(stockStatus) })
             });
             if (res.ok) {
+                // 同步更新 dish-card 上的 data-stock 屬性
+                const card = document.querySelector(`.dish-card[data-id="${id}"]`);
+                if (card) card.dataset.stock = stockStatus;
                 showAlert("success", "庫存狀態已更新");
+                checkStockWarning();
             } else {
                 showAlert("danger", "更新失敗，請稍後再試");
             }
@@ -883,6 +986,12 @@ if (paginationContainer) {
         }
 
         async function toggleFeature(id, type) {
+            if (type === 'Active') {
+                const card = document.querySelector(`.dish-card[data-id="${id}"]`);
+                const isCurrentlyActive = card?.dataset.isActive === 'true';
+                const action = isCurrentlyActive ? '下架' : '上架';
+                if (!confirm(`確定要${action}嗎？`)) return;
+            }
             const res = await fetch(`/Dishes/Toggle${type}/${id}`, { method: "POST" });
             if (res.ok) {
                 const data = await res.json();
@@ -895,11 +1004,15 @@ if (paginationContainer) {
                         badge.className = "badge rounded-pill bg-secondary-subtle text-secondary border-secondary border px-2";
                         badge.textContent = "下架";
                     }
+                    // 同步更新 dish-card 的 data-is-active 屬性
+                    const dishCard = document.querySelector(`.dish-card[data-id="${id}"]`);
+                    if (dishCard) dishCard.dataset.isActive = data.isActive ? 'true' : 'false';
                     // 同步更新右側詳情面板（如果正在顯示該餐點）
                     if (selectedDishId === id) {
                         document.getElementById('detailActiveToggle').checked = data.isActive;
                         document.getElementById('detailActiveLabel').textContent = data.isActive ? '目前上架中' : '目前已下架';
                     }
+                    updateStatCards();
                 }
                 showAlert("success", "狀態已更新");
             }
