@@ -69,12 +69,23 @@ namespace EatTogether.Models.Repositories
             if (product?.SetMealId == null) return new List<SetMealItemGroupDto>();
 
             var items = await _context.SetMealItems
-                .Include(s => s.Dish)
                 .Where(s => s.SetMealId == product.SetMealId)
                 .OrderBy(s => s.DisplayOrder)
+                .Select(s => new
+                {
+                    s.DishId,
+                    s.IsOptional,
+                    s.OptionGroupNo,
+                    s.PickLimit,
+                    s.Quantity,
+                    DishName = _context.Dishes
+                        .Where(d => d.Id == s.DishId)
+                        .Select(d => d.DishName)
+                        .FirstOrDefault()
+                })
                 .ToListAsync();
 
-            // �T�w���ء]IsOptional=0�^�� GroupNo=0
+            //�T�w���ء]IsOptional=0�^�� GroupNo=0
             var result = items
                 .GroupBy(s => s.IsOptional ? s.OptionGroupNo ?? 0 : -1)
                 .OrderBy(g => g.Key)
@@ -85,9 +96,9 @@ namespace EatTogether.Models.Repositories
                     IsOptional = g.First().IsOptional,
                     Options = g.Select(s => new SetMealItemOptionDto
                     {
-                        DishId = s.DishId,
-                        DishName = s.Dish.DishName,
-                        Qty = s.Quantity
+                        DishId   = s.DishId,
+                        DishName = s.DishName ?? "",
+                        Qty      = s.Quantity
                     }).ToList()
                 })
                 .ToList();

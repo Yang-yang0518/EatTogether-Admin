@@ -295,6 +295,61 @@ CREATE TABLE [dbo].[MemberFavorites](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+/****** Object:  Table [dbo].[MemberConfirmTokens]    Script Date: 2026/4/16 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MemberConfirmTokens](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[MemberId] [int] NOT NULL,
+	[Token] [varchar](32) NOT NULL,
+	[NewEmail] [varchar](100) NULL,
+	[ExpiresAt] [datetime2](0) NOT NULL,
+	[IsUsed] [bit] NOT NULL DEFAULT 0,
+	[CreatedAt] [datetime2](0) NOT NULL DEFAULT GETDATE(),
+ CONSTRAINT [PK_MemberConfirmTokens] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[MemberExternalLogins]    Script Date: 2026/4/16 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MemberExternalLogins](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[MemberId] [int] NOT NULL,
+	[Provider] [varchar](20) NOT NULL,
+	[ProviderUserId] [varchar](100) NOT NULL,
+	[AvatarUrl] [nvarchar](500) NULL,
+	[CreatedAt] [datetime2](0) NOT NULL DEFAULT GETDATE(),
+ CONSTRAINT [PK_MemberExternalLogins] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[MemberPasswordResetTokens]    Script Date: 2026/4/16 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MemberPasswordResetTokens](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[MemberId] [int] NOT NULL,
+	[Token] [varchar](32) NOT NULL,
+	[ExpiresAt] [datetime2](0) NOT NULL,
+	[IsUsed] [bit] NOT NULL DEFAULT 0,
+	[CreatedAt] [datetime2](0) NOT NULL DEFAULT GETDATE(),
+ CONSTRAINT [PK_MemberPasswordResetTokens] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
 /****** Object:  Table [dbo].[Members]    Script Date: 2026/3/11 下午 10:31:03 ******/
 SET ANSI_NULLS ON
 GO
@@ -746,6 +801,52 @@ CREATE UNIQUE NONCLUSTERED INDEX [IX_MemberFavorites_Mem_Prod] ON [dbo].[MemberF
 GO
 SET ANSI_PADDING ON
 GO
+/****** Object:  Index [IX_MemberConfirmTokens_MemberId]    Script Date: 2026/4/16 ******/
+CREATE NONCLUSTERED INDEX [IX_MemberConfirmTokens_MemberId] ON [dbo].[MemberConfirmTokens]
+(
+	[MemberId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+/****** Object:  Index [IX_MemberConfirmTokens_Token]    Script Date: 2026/4/16 ******/
+CREATE UNIQUE NONCLUSTERED INDEX [IX_MemberConfirmTokens_Token] ON [dbo].[MemberConfirmTokens]
+(
+	[Token] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_MemberExternalLogins_MemberId_Provider]    Script Date: 2026/4/16 ******/
+CREATE UNIQUE NONCLUSTERED INDEX [IX_MemberExternalLogins_MemberId_Provider] ON [dbo].[MemberExternalLogins]
+(
+	[MemberId] ASC,
+	[Provider] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+/****** Object:  Index [IX_MemberExternalLogins_Provider_ProviderUserId]    Script Date: 2026/4/16 ******/
+CREATE UNIQUE NONCLUSTERED INDEX [IX_MemberExternalLogins_Provider_ProviderUserId] ON [dbo].[MemberExternalLogins]
+(
+	[Provider] ASC,
+	[ProviderUserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_MemberPasswordResetTokens_MemberId]    Script Date: 2026/4/16 ******/
+CREATE NONCLUSTERED INDEX [IX_MemberPasswordResetTokens_MemberId] ON [dbo].[MemberPasswordResetTokens]
+(
+	[MemberId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+/****** Object:  Index [IX_MemberPasswordResetTokens_Token]    Script Date: 2026/4/16 ******/
+CREATE UNIQUE NONCLUSTERED INDEX [IX_MemberPasswordResetTokens_Token] ON [dbo].[MemberPasswordResetTokens]
+(
+	[Token] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
 /****** Object:  Index [IX_Members_Account]    Script Date: 2026/3/11 下午 10:31:03 ******/
 CREATE UNIQUE NONCLUSTERED INDEX [IX_Members_Account] ON [dbo].[Members]
 (
@@ -1069,6 +1170,21 @@ REFERENCES [dbo].[Products] ([Id])
 GO
 ALTER TABLE [dbo].[MemberFavorites] CHECK CONSTRAINT [FK_MemberFavorites_Products]
 GO
+ALTER TABLE [dbo].[MemberConfirmTokens]  WITH CHECK ADD  CONSTRAINT [FK_MemberConfirmTokens_Members] FOREIGN KEY([MemberId])
+REFERENCES [dbo].[Members] ([Id])
+GO
+ALTER TABLE [dbo].[MemberConfirmTokens] CHECK CONSTRAINT [FK_MemberConfirmTokens_Members]
+GO
+ALTER TABLE [dbo].[MemberExternalLogins]  WITH CHECK ADD  CONSTRAINT [FK_MemberExternalLogins_Members] FOREIGN KEY([MemberId])
+REFERENCES [dbo].[Members] ([Id])
+GO
+ALTER TABLE [dbo].[MemberExternalLogins] CHECK CONSTRAINT [FK_MemberExternalLogins_Members]
+GO
+ALTER TABLE [dbo].[MemberPasswordResetTokens]  WITH CHECK ADD  CONSTRAINT [FK_MemberPasswordResetTokens_Members] FOREIGN KEY([MemberId])
+REFERENCES [dbo].[Members] ([Id])
+GO
+ALTER TABLE [dbo].[MemberPasswordResetTokens] CHECK CONSTRAINT [FK_MemberPasswordResetTokens_Members]
+GO
 ALTER TABLE [dbo].[OrderDetails]  WITH CHECK ADD  CONSTRAINT [FK_OrderDetails_Orders] FOREIGN KEY([OrderId])
 REFERENCES [dbo].[Orders] ([Id])
 GO
@@ -1314,7 +1430,18 @@ ALTER TABLE [dbo].[Tables]  WITH CHECK ADD  CONSTRAINT [CK_Tables_Status] CHECK 
 GO
 ALTER TABLE [dbo].[Tables] CHECK CONSTRAINT [CK_Tables_Status]
 GO
+CREATE TABLE [dbo].[SchedulerLogs] (
+    [Id]             INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [ExecutedAt]     DATETIME NOT NULL DEFAULT GETDATE(),
+    [DishesEnabled]  INT NOT NULL DEFAULT 0,
+    [DishesDisabled] INT NOT NULL DEFAULT 0,
+    [MealsEnabled]   INT NOT NULL DEFAULT 0,
+    [MealsDisabled]  INT NOT NULL DEFAULT 0,
+    [TriggerType]    NVARCHAR(10) NOT NULL DEFAULT N'自動',
+    [DetailJson]     NVARCHAR(MAX) NULL
+);
+GO
 USE [master]
 GO
-ALTER DATABASE [EatTogetherDB] SET  READ_WRITE 
+ALTER DATABASE [EatTogetherDB] SET  READ_WRITE
 GO

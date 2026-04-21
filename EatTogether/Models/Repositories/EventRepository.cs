@@ -35,7 +35,7 @@ namespace EatTogether.Models.Repositories
 					Summary = e.Summary,
 					MinSpend = e.MinSpend,
 					StartDate = e.StartDate,
-					EndDate = e.EndDate,
+					EndDate = (DateTime)e.EndDate,
 					RewardDishId = e.RewardDishId,
 					RewardDishName = e.RewardDish != null ? e.RewardDish.DishName : null,
 					DiscountType = e.DiscountType,
@@ -82,7 +82,7 @@ namespace EatTogether.Models.Repositories
 				Summary = entity.Summary,
 				MinSpend = entity.MinSpend,
 				StartDate = entity.StartDate,
-				EndDate = entity.EndDate,
+				EndDate = (DateTime)entity.EndDate,
 				RewardDishId = entity.RewardDishId,				
 				DiscountType = entity.DiscountType,
 				DiscountValue = entity.DiscountValue,
@@ -95,24 +95,31 @@ namespace EatTogether.Models.Repositories
             var today    = DateTime.Today;
             var tomorrow = today.AddDays(1);
 
-            var events = await _context.Events
+            var rows = await _context.Events
                 .AsNoTracking()
-                .Include(e => e.RewardDish)
                 .Where(e => e.Status == 1
                          && e.IsAutoDiscount == 1
                          && e.StartDate < tomorrow
-                         && e.EndDate   >= today
+                         && (e.EndDate == null || e.EndDate >= today)
                          && e.MinSpend  <= amount)
                 .OrderByDescending(e => e.MinSpend)
+                .Select(e => new
+                {
+                    e.Id, e.Title, e.Summary, e.MinSpend,
+                    e.DiscountType, e.DiscountValue, e.RewardDishId,
+                    DishName = e.RewardDishId != null
+                        ? _context.Dishes.Where(d => d.Id == e.RewardDishId).Select(d => d.DishName).FirstOrDefault()
+                        : null
+                })
                 .ToListAsync();
 
             var result = new List<EventApplicableDto>();
 
-            foreach (var e in events)
+            foreach (var e in rows)
             {
                 int calculated = 0;
                 string desc    = string.Empty;
-                var dishName   = e.RewardDish?.DishName ?? "";
+                var dishName   = e.DishName ?? "";
 
                 if (e.DiscountType == "FixedAmount")
                 {
@@ -149,28 +156,30 @@ namespace EatTogether.Models.Repositories
 
         public async Task<List<EventApplicableDto>> GetManualEventsAsync(int amount)
         {
-            var today    = DateTime.Today;
-            var tomorrow = today.AddDays(1);
-
-            var events = await _context.Events
+            var today = DateTime.Today;
+            var rows = await _context.Events
                 .AsNoTracking()
-                .Include(e => e.RewardDish)
-                .Where(e => e.Status == 1
-                         && e.StartDate < tomorrow
-                         && e.EndDate   >= today
-                         && e.MinSpend  <= amount
-                         // Gift 型活動需廚房出餐，不論 IsAutoDiscount 設定都允許手動選擇
-                         && (e.IsAutoDiscount == 0 || e.DiscountType == "Gift"))
+                .Where(e => e.StartDate <= today
+                         && (e.EndDate == null || e.EndDate >= today))
                 .OrderByDescending(e => e.MinSpend)
+                .Select(e => new
+                {
+                    e.Id, e.Title, e.Summary, e.MinSpend,
+                    e.DiscountType, e.DiscountValue,
+                    e.RewardDishId,
+                    DishName = e.RewardDishId != null
+                        ? _context.Dishes.Where(d => d.Id == e.RewardDishId).Select(d => d.DishName).FirstOrDefault()
+                        : null
+                })
                 .ToListAsync();
 
             var result = new List<EventApplicableDto>();
-
-            foreach (var e in events)
+            foreach (var e in rows)
             {
+                bool eligible = e.MinSpend <= amount;
                 int calculated = 0;
-                string desc    = string.Empty;
-                var dishName   = e.RewardDish?.DishName ?? "";
+                string desc = string.Empty;
+                var dishName = e.DishName ?? "";
 
                 if (e.DiscountType == "FixedAmount")
                 {
@@ -179,8 +188,13 @@ namespace EatTogether.Models.Repositories
                 }
                 else if (e.DiscountType == "Percent")
                 {
-                    calculated = (int)(amount * e.DiscountValue / 100m);
-                    desc = $"折扣 {e.DiscountValue}%，省 NT${calculated}";
+                    calculated = eligible
+                        ? (int)(amount * e.DiscountValue / 100m)
+                        : 0;
+                    // ↓ 不管是否符合都給描述
+                    desc = eligible
+                        ? $"折扣 {e.DiscountValue}%，省 NT${calculated}"
+                        : $"折扣 {e.DiscountValue}%";
                 }
                 else
                 {
@@ -189,19 +203,19 @@ namespace EatTogether.Models.Repositories
 
                 result.Add(new EventApplicableDto
                 {
-                    Id                  = e.Id,
-                    Title               = e.Title,
-                    Summary             = e.Summary ?? string.Empty,
-                    DiscountType        = e.DiscountType,
-                    DiscountValue       = e.DiscountValue,
-                    RewardDishId        = e.RewardDishId,
-                    RewardDishName      = string.IsNullOrEmpty(dishName) ? null : dishName,
-                    MinSpend            = e.MinSpend,
-                    CalculatedDiscount  = calculated,
-                    DiscountDescription = desc
+                    Id = e.Id,
+                    Title = e.Title,
+                    Summary = e.Summary ?? string.Empty,
+                    DiscountType = e.DiscountType,
+                    DiscountValue = e.DiscountValue,
+                    RewardDishId = e.RewardDishId,
+                    RewardDishName = string.IsNullOrEmpty(dishName) ? null : dishName,
+                    MinSpend = e.MinSpend,
+                    CalculatedDiscount = calculated,
+                    DiscountDescription = desc,
+                    IsEligible = eligible
                 });
             }
-
             return result;
         }
 
@@ -210,16 +224,23 @@ namespace EatTogether.Models.Repositories
             var idSet = ids.ToHashSet();
             if (idSet.Count == 0) return new List<EventApplicableDto>();
 
-            var events = await _context.Events
+            var rows = await _context.Events
                 .AsNoTracking()
-                .Include(e => e.RewardDish)
                 .Where(e => idSet.Contains(e.Id))
+                .Select(e => new
+                {
+                    e.Id, e.Title, e.Summary, e.MinSpend,
+                    e.DiscountType, e.DiscountValue, e.RewardDishId,
+                    DishName = e.RewardDishId != null
+                        ? _context.Dishes.Where(d => d.Id == e.RewardDishId).Select(d => d.DishName).FirstOrDefault()
+                        : null
+                })
                 .ToListAsync();
 
             var result = new List<EventApplicableDto>();
-            foreach (var e in events)
+            foreach (var e in rows)
             {
-                var dishName = e.RewardDish?.DishName ?? "";
+                var dishName = e.DishName ?? "";
                 string desc;
                 int calculated = 0;
 

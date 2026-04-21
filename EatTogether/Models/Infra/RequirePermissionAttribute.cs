@@ -1,4 +1,6 @@
 ﻿using EatTogether.Models.Repositories;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -15,6 +17,10 @@ namespace EatTogether.Models.Infra
 
 		public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
 		{
+			// 若 Action 標記 [AllowAnonymous] 則跳過權限檢查
+			var endpoint = context.HttpContext.GetEndpoint();
+			if (endpoint?.Metadata?.GetMetadata<IAllowAnonymous>() != null) return;
+
 			var user = context.HttpContext.User;
 
 			// 未登入 → 導向登入頁

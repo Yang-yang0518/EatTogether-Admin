@@ -5,7 +5,7 @@
    "FilterSchemas": false,
    "IncludeConnectionString": false,
    "IrregularWords": null,
-   "MinimumProductVersion": "2.6.1382",
+   "MinimumProductVersion": "2.6.1465",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Models\/EfModels",
@@ -51,11 +51,23 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[MemberConfirmTokens]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[MemberCoupons]",
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[MemberExternalLogins]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[MemberFavorites]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[MemberPasswordResetTokens]",
          "ObjectType": 0
       },
       {
@@ -100,6 +112,10 @@
       },
       {
          "Name": "[dbo].[Roles]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SchedulerLogs]",
          "ObjectType": 0
       },
       {

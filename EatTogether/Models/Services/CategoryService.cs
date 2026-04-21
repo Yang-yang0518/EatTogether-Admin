@@ -71,5 +71,20 @@ namespace EatTogether.Models.Services
 		{
 			await _repo.UpdateOrderAsync(orderedIds);
 		}
+
+		public async Task DisableDishesByCategoryAsync(int categoryId)
+		{
+			await _repo.DisableDishesByCategoryAsync(categoryId);
+		}
+
+		public async Task EnableDishesByCategoryAsync(int categoryId)
+		{
+			await _repo.EnableDishesByCategoryAsync(categoryId);
+		}
+
+		public async Task<IEnumerable<DishDto>> GetDishesByCategoryAsync(int categoryId)
+		{
+			return await _repo.GetDishesByCategoryAsync(categoryId);
+		}
 	}
 }

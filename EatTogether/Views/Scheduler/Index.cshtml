@@ -1,0 +1,143 @@
+@model IEnumerable<EatTogether.Models.EfModels.SchedulerLog>
+@{
+    ViewData["Title"] = "限時供應排程紀錄";
+    var lastRun = Model.FirstOrDefault();
+    var todayCount = Model.Count(l => l.ExecutedAt.Date == DateTime.Today && l.TriggerType == "自動");
+}
+
+<div class="container-fluid px-4 py-3">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h4 class="mb-0 fw-bold">限時供應排程紀錄</h4>
+        <form method="post" asp-action="TriggerNow" id="triggerForm">
+            @Html.AntiForgeryToken()
+            <button type="button" class="btn btn-warning px-4"
+                    onclick="confirmTrigger()">
+                <i class="bi bi-play-circle me-1"></i>手動觸發
+            </button>
+        </form>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                        <i class="bi bi-clock-history fs-4 text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">上次執行時間</div>
+                        <div class="fw-semibold fs-6">
+                            @(lastRun != null ? lastRun.ExecutedAt.ToString("yyyy/MM/dd HH:mm:ss") : "尚無紀錄")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                        <i class="bi bi-calendar-check fs-4 text-success"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">今日自動執行次數</div>
+                        <div class="fw-semibold fs-6">@todayCount 次</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="px-4 py-3">執行時間</th>
+                            <th class="py-3">觸發類型</th>
+                            <th class="py-3 text-center">餐點上架</th>
+                            <th class="py-3 text-center">餐點下架</th>
+                            <th class="py-3 text-center">套餐上架</th>
+                            <th class="py-3 text-center">套餐下架</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-5">尚無執行紀錄</td>
+                            </tr>
+                        }
+                        @foreach (var log in Model)
+                        {
+                            <tr>
+                                <td class="px-4 text-nowrap">@log.ExecutedAt.ToString("yyyy/MM/dd HH:mm:ss")</td>
+                                <td>
+                                    @if (log.TriggerType == "手動")
+                                    {
+                                        <span class="badge rounded-pill" style="background-color:#fd7e14">手動</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-primary">自動</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (log.DishesEnabled == 0)
+                                    {
+                                        <span class="text-secondary">—</span>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="Detail" asp-route-id="@log.Id" class="fw-semibold text-success text-decoration-none">+@log.DishesEnabled</a>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (log.DishesDisabled == 0)
+                                    {
+                                        <span class="text-secondary">—</span>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="Detail" asp-route-id="@log.Id" class="fw-semibold text-danger text-decoration-none">@log.DishesDisabled</a>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (log.MealsEnabled == 0)
+                                    {
+                                        <span class="text-secondary">—</span>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="Detail" asp-route-id="@log.Id" class="fw-semibold text-success text-decoration-none">+@log.MealsEnabled</a>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (log.MealsDisabled == 0)
+                                    {
+                                        <span class="text-secondary">—</span>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="Detail" asp-route-id="@log.Id" class="fw-semibold text-danger text-decoration-none">@log.MealsDisabled</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmTrigger() {
+            if (confirm('確定要立即手動觸發限時供應排程嗎？')) {
+                document.getElementById('triggerForm').submit();
+            }
+        }
+    </script>
+}

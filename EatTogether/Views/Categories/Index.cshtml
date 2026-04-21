@@ -1,91 +1,73 @@
 @model IEnumerable<EatTogether.Models.ViewModels.CategoryViewModel>
 @{
-    ViewData["Title"] = "分類管理系統";
+    ViewData["Title"] = "分類管理";
 }
 
 <div class="container-fluid px-4">
-    <h1 class="mt-4 fw-bold">分類管理</h1>
+    <h1 class="mt-4">分類管理</h1>
 
     <!-- 統計卡片 -->
-    <div class="row mb-4">
-        <div class="col-xl-4 col-md-4">
-            <div class="card bg-primary text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('')">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="small text-white-50 fw-bold">總分類數</div>
-                        <div class="h3 mb-0 fw-bold">@Model.Count()</div>
-                    </div>
-                    <i class="fas fa-tags fa-2x text-white-50"></i>
-                </div>
+    <div style="display:flex; gap:16px; margin-bottom:1.5rem;">
+
+        <div style="flex:1; background:#3b82f6; color:white; border-radius:10px;
+                padding:16px 20px; display:flex; align-items:center;
+                justify-content:space-between; cursor:pointer;"
+             onclick="filterByStatus('')" title="點擊顯示所有分類">
+            <div>
+                <div style="font-size:11px; font-weight:600; opacity:0.75;
+                        text-transform:uppercase; letter-spacing:.05em;">總分類數</div>
+                <div style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count()</div>
             </div>
+            <i class="fas fa-tags fa-2x" style="opacity:0.4;"></i>
         </div>
-        <div class="col-xl-4 col-md-4">
-            <div class="card bg-success text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('上架')">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="small text-white-50 fw-bold">上架中</div>
-                        <div class="h3 mb-0 fw-bold">@Model.Count(c => c.IsActive)</div>
-                    </div>
-                    <i class="fas fa-check-circle fa-2x text-white-50"></i>
-                </div>
+
+        <div style="flex:1; background:#22c55e; color:white; border-radius:10px;
+                padding:16px 20px; display:flex; align-items:center;
+                justify-content:space-between; cursor:pointer;"
+             onclick="filterByStatus('上架')" title="點擊篩選上架中分類">
+            <div>
+                <div style="font-size:11px; font-weight:600; opacity:0.75;
+                        text-transform:uppercase; letter-spacing:.05em;">上架中</div>
+                <div style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count(c => c.IsActive)</div>
             </div>
+            <i class="fas fa-check-circle fa-2x" style="opacity:0.4;"></i>
         </div>
-        <div class="col-xl-4 col-md-4">
-            <div class="card bg-secondary text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('下架')">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="small text-white-50 fw-bold">已下架</div>
-                        <div class="h3 mb-0 fw-bold">@Model.Count(c => !c.IsActive)</div>
-                    </div>
-                    <i class="fas fa-ban fa-2x text-white-50"></i>
-                </div>
+
+        <div style="flex:1; background:#9ca3af; color:white; border-radius:10px;
+                padding:16px 20px; display:flex; align-items:center;
+                justify-content:space-between; cursor:pointer;"
+             onclick="filterByStatus('下架')" title="點擊篩選已下架分類">
+            <div>
+                <div style="font-size:11px; font-weight:600; opacity:0.75;
+                        text-transform:uppercase; letter-spacing:.05em;">已下架</div>
+                <div style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count(c => !c.IsActive)</div>
             </div>
+            <i class="fas fa-ban fa-2x" style="opacity:0.4;"></i>
         </div>
+
     </div>
 
     <div id="alertBox"></div>
 
-    <!-- 搜尋與篩選 -->
-    <div class="card mb-3 shadow-sm border-0">
-        <div class="card-body bg-light rounded">
-            <div class="row g-3 align-items-center">
-                <div class="col-md-4">
-                    <div class="input-group shadow-sm">
-                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text" id="searchInput" class="form-control border-start-0"
-                               placeholder="搜尋分類名稱..." oninput="filterCards()">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <select id="statusFilter" class="form-select shadow-sm" onchange="filterCards()">
-                        <option value="">所有狀態</option>
-                        <option value="上架">上架</option>
-                        <option value="下架">下架</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button id="toggleSortBtn" class="btn btn-outline-secondary w-100 shadow-sm" onclick="toggleSortMode()">
-                        <i class="fas fa-arrows-alt me-1"></i>調整排序
-                    </button>
-                </div>
-                <div class="col-md-3 text-end">
-                    <button type="button" class="btn btn-primary shadow-sm px-4 rounded-pill"
-                            data-bs-toggle="modal" data-bs-target="#createCategoryModal">
-                        <i class="fas fa-plus me-1"></i>新增分類
-                    </button>
-                </div>
-            </div>
+    <!-- 搜尋與篩選區 -->
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.75rem; padding:0.75rem; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+        <div style="display:flex; align-items:center; flex:1; gap:8px; background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:5px 10px; min-width:0;">
+            <i class="fas fa-search text-muted" style="font-size:0.85rem; flex-shrink:0;"></i>
+            <input type="text" id="searchInput" class="form-control form-control-sm border-0 p-0 shadow-none"
+                   placeholder="搜尋分類名稱..." oninput="filterCards()" />
         </div>
-    </div>
-
-    <!-- 排序模式提示列 -->
-    <div id="sortModeBar" class="alert alert-warning border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3" role="alert">
-        <i class="fas fa-hand-paper fa-lg"></i>
-        <span class="flex-grow-1 fw-bold">排序模式：拖曳卡片來調整顯示順序</span>
-        <button class="btn btn-sm btn-warning px-3 rounded-pill" onclick="saveOrder()">
-            <i class="fas fa-save me-1"></i>儲存排序
+        <select id="statusFilter" class="form-select form-select-sm" onchange="filterCards()" style="width:auto; min-width:90px; flex-shrink:0;">
+            <option value="">所有狀態</option>
+            <option value="上架">上架中</option>
+            <option value="下架">已下架</option>
+        </select>
+        <button id="toggleSortBtn" class="btn btn-outline-secondary btn-sm" onclick="toggleSortMode()" style="flex-shrink:0; white-space:nowrap;">
+            <i class="fas fa-arrows-alt me-1"></i>調整排序
         </button>
-        <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="toggleSortMode()">取消</button>
+        <button type="button" class="btn btn-primary btn-sm" style="flex-shrink:0; white-space:nowrap;"
+                data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+            <i class="fas fa-plus me-1"></i>新增分類
+        </button>
     </div>
 
     <!-- 批次操作列 -->
@@ -109,127 +91,241 @@
         </div>
     </div>
 
-    <!-- 卡片區 -->
+    <!-- 排序模式提示列 -->
+    <div id="sortModeBar" class="alert alert-warning border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3" role="alert">
+        <i class="fas fa-info-circle fa-lg"></i>
+        <div><strong>排序模式已開啟</strong>：請拖曳列調整順序，完成後點擊右側儲存按鈕。</div>
+        <div class="ms-auto d-flex gap-2">
+            <button class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" onclick="saveOrder()">
+                <i class="fas fa-save me-1"></i>儲存排序
+            </button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="toggleSortMode()">取消</button>
+        </div>
+    </div>
+
     <div class="card mb-4 shadow-sm border-0">
-        <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="card-body p-0">
+
+            <!-- 操作模式切換按鈕 -->
+            <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom bg-gray-50">
                 <small class="text-muted">
-                    <i class="fas fa-info-circle me-1"></i>點擊「調整排序」可拖曳；點擊「批次操作」可多選
+                    <i class="fas fa-info-circle me-1"></i>
+                    <span>點擊列表可查看分類詳情；點擊「批次操作」可多選大量變更</span>
                 </small>
                 <button id="batchModeBtn" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="enterBatchMode()">
                     <i class="fas fa-tasks me-1"></i>批次操作
                 </button>
             </div>
 
-            <div class="row g-4" id="category-card-container">
-                @foreach (var item in Model)
-                {
-                    string statusText = item.IsActive ? "上架" : "下架";
-                    string statusClass = item.IsActive
-                    ? "bg-success-subtle text-success border-success"
-                    : "bg-secondary-subtle text-secondary border-secondary";
+            <!-- Master-Detail 左右分割 -->
+            <div style="display:flex; min-height:600px;">
 
-                    <div class="col-md-6 col-lg-4 col-xl-3 category-card"
-                         data-id="@item.Id"
-                         data-name="@item.CategoryName.ToLower()"
-                         data-status="@statusText"
-                         data-order="@item.DisplayOrder"
-                         data-active="@item.IsActive.ToString().ToLower()">
-                        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden transition-hover position-relative">
+                <!-- ===== 左側：列表面板 ===== -->
+                <div style="width:42%; border-right:1px solid #e5e7eb; display:flex; flex-direction:column; min-width:0;">
 
-                            <!-- 批次勾選框 -->
-                            <div class="batch-check position-absolute top-0 start-0 p-2 d-none" style="z-index:10;">
-                                <input class="form-check-input card-checkbox shadow" type="checkbox"
-                                       data-id="@item.Id" onchange="updateSelectedCount()" style="width:1.2em;height:1.2em;">
-                            </div>
-
-                            <!-- 排序把手 -->
-                            <div class="drag-handle position-absolute top-0 start-0 p-2 d-none" style="z-index:10; cursor:grab;">
-                                <span class="badge bg-dark bg-opacity-60 p-2 rounded-2 shadow-sm">
-                                    <i class="fas fa-grip-vertical"></i>
-                                </span>
-                            </div>
-
-                            <!-- 圖片區 -->
-                            <div class="position-relative">
-                                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                    <div style="overflow-x:auto; flex:1;">
+                        <table style="width:100%; table-layout:fixed; border-collapse:collapse;" class="text-sm text-left">
+                            <colgroup>
+                                <col style="width:28px;" />
+                                <col style="width:28px;" />
+                                <col style="width:68px;" />
+                                <col />
+                                <col style="width:52px;" />
+                                <col style="width:95px;" />
+                            </colgroup>
+                            <thead>
+                                <tr style="background:#f9fafb; border-bottom:1px solid #e5e7eb;">
+                                    <th style="padding:8px 6px;"></th>
+                                    <th style="padding:8px 6px;"></th>
+                                    <th style="padding:8px 10px; font-size:11px; color:#6b7280; font-weight:500;">縮圖</th>
+                                    <th style="padding:8px 10px; font-size:11px; color:#6b7280; font-weight:500;">分類名稱</th>
+                                    <th style="padding:8px 10px; font-size:11px; color:#6b7280; font-weight:500; text-align:center;">餐點</th>
+                                    <th style="padding:8px 10px; font-size:11px; color:#6b7280; font-weight:500; text-align:center;">狀態</th>
+                                </tr>
+                            </thead>
+                            <tbody id="category-card-container">
+                                @foreach (var item in Model)
                                 {
-                                    <img src="@item.ImageUrl" class="card-img-top" style="height:180px; object-fit:cover;"
-                                         onerror="this.parentElement.innerHTML='<div class=\'bg-light d-flex align-items-center justify-content-center\' style=\'height:180px;\'><i class=\'fas fa-image fa-3x text-muted opacity-25\'></i></div>'" />
-                                }
-                                else
-                                {
-                                    <div class="bg-light d-flex align-items-center justify-content-center" style="height:180px;">
-                                        <i class="fas fa-tags fa-3x text-muted opacity-25"></i>
-                                    </div>
-                                }
-                                <!-- 狀態 Badge -->
-                                <div class="position-absolute top-0 end-0 p-2">
-                                    <span class="badge rounded-pill border @statusClass px-3 shadow-sm" style="backdrop-filter:blur(4px);">
-                                        @statusText
-                                    </span>
-                                </div>
-                                <!-- 上層分類 Badge -->
-                                @if (!string.IsNullOrEmpty(item.ParentCategoryName))
-                                {
-                                    <div class="position-absolute bottom-0 start-0 p-2">
-                                        <span class="badge bg-dark bg-opacity-60 text-white shadow-sm">
-                                            <i class="fas fa-level-up-alt me-1"></i>@item.ParentCategoryName
-                                        </span>
-                                    </div>
-                                }
-                            </div>
+                                    <tr class="category-card cat-row"
+                                        data-id="@item.Id"
+                                        data-name="@item.CategoryName.ToLower()"
+                                        data-full-name="@item.CategoryName"
+                                        data-order="@item.DisplayOrder"
+                                        data-is-active="@item.IsActive.ToString().ToLower()"
+                                        data-image="@(item.ImageUrl ?? "")"
+                                        data-parent-name="@(item.ParentCategoryName ?? "")"
+                                        data-parent-id="@(item.ParentCategoryId?.ToString() ?? "")"
+                                        data-status="@(item.IsActive ? "上架" : "下架")"
+                                        onclick="selectItem(this)">
 
-                            <!-- 卡片內容 -->
-                            <div class="card-body d-flex flex-column p-4">
-                                <div class="mb-3">
-                                    <h5 class="fw-bold mb-1 text-dark">@item.CategoryName</h5>
-                                </div>
+                                        <!-- 拖曳把手 -->
+                                        <td style="padding:8px 6px; text-align:center;">
+                                            <div class="drag-handle text-gray-400" style="cursor:move;">
+                                                <i class="fas fa-grip-vertical text-xs"></i>
+                                            </div>
+                                        </td>
 
-                                <div class="mt-auto">
-                                    <div class="row g-2">
-                                        <div class="col-6">
-                                            <button class="btn btn-outline-info w-100 rounded-pill btn-sm py-2 view-category-dishes"
-                                                    data-category-id="@item.Id">
-                                                <i class="fas fa-search me-1"></i>詳情
-                                            </button>
-                                        </div>
-                                        <div class="col-6">
-                                            <button class="btn btn-outline-warning w-100 rounded-pill btn-sm py-2"
-                                                    onclick="openEditModal(@item.Id, '@item.CategoryName', '@item.ParentCategoryId', @item.DisplayOrder, @(item.IsActive.ToString().ToLower()), '@item.ImageUrl')">
-                                                <i class="fas fa-edit me-1"></i>編輯
-                                            </button>
-                                        </div>
-                                        <div class="col-12">
-                                            @if (item.IsActive)
+                                        <!-- 批次勾選框 -->
+                                        <td style="padding:8px 6px; text-align:center;">
+                                            <div class="batch-check">
+                                                <input class="card-checkbox form-check-input" type="checkbox"
+                                                       data-id="@item.Id" onchange="updateSelectedCount()">
+                                            </div>
+                                        </td>
+
+                                        <!-- 縮圖 -->
+                                        <td style="padding:8px 10px;">
+                                            @if (!string.IsNullOrEmpty(item.ImageUrl))
                                             {
-                                                <button class="btn btn-light text-danger w-100 rounded-pill btn-sm py-2 border mt-1"
-                                                        onclick="disableCategory(@item.Id)">
-                                                    <i class="fas fa-trash me-1"></i>下架
-                                                </button>
+                                                <img src="@item.ImageUrl"
+                                                     style="width:44px; height:44px; object-fit:cover; border-radius:6px;"
+                                                     alt="@item.CategoryName"
+                                                     onerror="this.src='/images/no-image.png'; this.onerror=null;" />
                                             }
                                             else
                                             {
-                                                <button class="btn btn-light text-success w-100 rounded-pill btn-sm py-2 border mt-1"
-                                                        onclick="enableCategory(@item.Id)">
-                                                    <i class="fas fa-check-circle me-1"></i>上架
-                                                </button>
+                                                <div style="width:44px; height:44px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; color:#d1d5db;">
+                                                    <i class="fas fa-tags text-xs"></i>
+                                                </div>
                                             }
-                                        </div>
-                                    </div>
+                                        </td>
+
+                                        <!-- 名稱 + 上層分類 -->
+                                        <td style="padding:8px 10px; max-width:160px;">
+                                            <div style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">@item.CategoryName</div>
+                                            @if (!string.IsNullOrEmpty(item.ParentCategoryName))
+                                            {
+                                                <div style="font-size:11px; color:#9ca3af; margin-top:2px;">
+                                                    <i class="fas fa-level-up-alt" style="font-size:10px; margin-right:3px;"></i>@item.ParentCategoryName
+                                                </div>
+                                            }
+                                        </td>
+
+                                        <!-- 餐點數量 -->
+                                        <td style="padding:8px 10px; text-align:center;">
+                                            <span id="dish-count-@item.Id" style="font-size:12px; color:#6b7280;">—</span>
+                                        </td>
+
+                                        <!-- 狀態 badge -->
+                                        <td style="padding:8px 10px; text-align:center;">
+                                            <span class="badge rounded-pill @(item.IsActive ? "bg-success-subtle text-success border-success" : "bg-secondary-subtle text-secondary border-secondary") border px-2"
+                                                  id="active-badge-@item.Id" style="font-size:0.65rem; cursor:pointer;"
+                                                  onclick="event.stopPropagation(); toggleCategoryActive(@item.Id)">
+                                                @(item.IsActive ? "上架" : "下架")
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (!Model.Any())
+                    {
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-tags fa-2x mb-2 opacity-25"></i>
+                            <p class="text-sm">目前尚無分類資料</p>
+                        </div>
+                    }
+
+                    <!-- 分頁控制 -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-top:1px solid #f3f4f6; background:#f9fafb;">
+                        <div class="text-xs text-gray-500" id="pageInfo"></div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                        </nav>
+                    </div>
+                </div>
+
+                <!-- ===== 右側：詳情面板 ===== -->
+                <div style="width:58%; overflow-y:auto;">
+                    <div style="position:sticky; top:0; max-height:calc(100vh - 220px); overflow-y:auto;">
+
+                        <!-- 空白提示（預設顯示） -->
+                        <div id="detailEmpty"
+                             style="display:flex; flex-direction:column; align-items:center;
+                                    justify-content:center; height:100%; min-height:500px;
+                                    color:#9ca3af;">
+                            <i class="fas fa-tags" style="font-size:2rem; margin-bottom:12px; opacity:0.3;"></i>
+                            <p style="font-size:14px; margin:0;">請從左側選取一個分類</p>
+                            <p style="font-size:12px; margin:4px 0 0; color:#d1d5db;">點擊任一列即可查看詳情</p>
+                        </div>
+
+                        <!-- 詳情內容（預設隱藏） -->
+                        <div id="detailContent" style="display:none; padding:1.25rem;">
+
+                            <!-- 縮圖 + 名稱 + badges -->
+                            <div style="display:flex; gap:16px; align-items:flex-start; margin-bottom:16px;">
+                                <img id="detailImg" src="" alt=""
+                                     style="width:120px; height:120px; object-fit:cover; border-radius:10px; flex-shrink:0; display:none;"
+                                     onerror="this.style.display='none'; document.getElementById('detailNoImg').style.display='flex';" />
+                                <div id="detailNoImg"
+                                     style="width:120px; height:120px; border-radius:10px; background:#f3f4f6;
+                                            display:flex; align-items:center; justify-content:center; color:#d1d5db; flex-shrink:0;">
+                                    <i class="fas fa-tags fa-2x"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <h2 id="detailName" style="font-size:1.25rem; font-weight:700; margin-bottom:8px;"></h2>
+                                    <div id="detailBadges" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
                                 </div>
                             </div>
+
+                            <!-- 資訊卡格 2x2 -->
+                            <div class="mb-3" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="text-xs text-gray-400 mb-1">排序</div>
+                                    <div class="font-medium text-gray-700" id="detail-order">—</div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="text-xs text-gray-400 mb-1">餐點數量</div>
+                                    <div class="font-medium text-gray-700" id="detail-dish-count">—</div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="text-xs text-gray-400 mb-1">上層分類</div>
+                                    <div class="font-medium text-gray-700" id="detail-parent">—</div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="text-xs text-gray-400 mb-1">建立時間</div>
+                                    <div class="font-medium text-gray-700" id="detail-created">—</div>
+                                </div>
+                            </div>
+
+                            <!-- 上架 Toggle -->
+                            <div class="bg-gray-50 rounded-lg mb-3" style="display:flex; align-items:center; justify-content:space-between; padding:1rem;">
+                                <div>
+                                    <div class="font-semibold text-gray-700 text-sm">上架狀態</div>
+                                    <div id="detailActiveLabel" class="text-xs text-gray-500 mt-0.5"></div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="detailActiveToggle" onchange="detailCategoryToggleActive()">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <!-- 操作按鈕 -->
+                            <div style="display:flex; gap:12px;">
+                                <button id="detailEditBtn" class="btn btn-warning fw-bold shadow-sm" style="flex:1;" onclick="openEditModalFromDetail()">
+                                    <i class="fas fa-edit me-1"></i>編輯分類
+                                </button>
+                                <button id="detailDisableBtn" class="btn btn-outline-danger px-4" onclick="detailDisableAction()">
+                                    <i class="fas fa-power-off me-1"></i><span id="detailDisableText">下架</span>
+                                </button>
+                            </div>
+
+                            <!-- 餐點列表 -->
+                            <div class="mt-3 bg-gray-50 rounded-lg p-3">
+                                <div class="fw-semibold mb-2" style="font-size:13px; color:#374151;">
+                                    <i class="fas fa-utensils me-1 text-primary"></i>餐點列表
+                                </div>
+                                <div id="detail-dish-list" style="max-height:220px; overflow-y:auto;"></div>
+                            </div>
+
                         </div>
                     </div>
-                }
-            </div>
+                </div>
 
-            <!-- 空狀態 -->
-            <div id="emptyState" class="text-center py-5 d-none">
-                <i class="fas fa-search fa-3x text-muted opacity-25 mb-3 d-block"></i>
-                <p class="text-muted">沒有符合條件的分類</p>
-                <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="clearFilter()">清除篩選</button>
-            </div>
+            </div><!-- end master-detail -->
+
         </div>
     </div>
 </div>
@@ -246,17 +342,13 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- 圖片預覽區 -->
                 <div id="catDetailImageWrap" class="mb-4 d-none">
                     <img id="catDetailImage" src="" alt="分類圖片"
                          class="w-100 rounded-3 shadow-sm"
                          style="max-height:200px; object-fit:cover;"
                          onerror="this.closest('#catDetailImageWrap').classList.add('d-none')" />
                 </div>
-
-                <!-- 分類基本資訊 -->
                 <div id="catDetailMeta" class="mb-3 p-3 bg-light rounded-3 small text-center"></div>
-
                 <div id="viewCategoryDishesList"></div>
             </div>
             <div class="modal-footer border-0">
@@ -444,61 +536,82 @@
     <style>
         .stat-card {
             cursor: pointer;
-            transition: transform .2s, box-shadow .2s;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
         }
 
-            .stat-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
-            }
-
-        .transition-hover {
-            transition: all .3s ease;
+        /* 列表 row */
+        .cat-row {
+            border-left: 2px solid transparent;
+            cursor: pointer;
+            transition: background 0.1s, border-color 0.1s;
+        }
+        .cat-row:hover { background-color: #f9fafb; }
+        .cat-row.active-row {
+            border-left: 2px solid #3b82f6 !important;
+            background-color: #eff6ff !important;
         }
 
-            .transition-hover:hover {
-                transform: translateY(-8px);
-                box-shadow: 0 1rem 2rem rgba(0,0,0,0.12) !important;
-                border-color: #0d6efd !important;
-            }
-
-        /* 排序模式 */
-        #category-card-container.sort-mode .category-card .card {
-            border: 2px dashed #ffc107 !important;
-            cursor: grab;
-        }
-
-        #category-card-container.sort-mode .drag-handle {
-            display: block !important;
-        }
-
-        #category-card-container.sort-mode .batch-check {
-            display: none !important;
-        }
-
-        .sortable-ghost .card {
-            opacity: .35;
-            background: #e0f0ff !important;
-        }
-
-        .sortable-chosen .card {
-            box-shadow: 0 8px 24px rgba(0,0,0,.2) !important;
-            transform: rotate(1.5deg) scale(1.02);
-        }
+        /* 拖曳把手 & 批次勾選：預設隱藏 */
+        .drag-handle { display: none; }
+        .batch-check { display: none; }
 
         /* 批次模式 */
-        #category-card-container.batch-mode .batch-check {
-            display: block !important;
+        #category-card-container.batch-mode .batch-check { display: block !important; }
+        #category-card-container.batch-mode .category-card { cursor: pointer; }
+        #category-card-container.batch-mode .category-card.selected {
+            background-color: rgba(13,110,253,.06) !important;
+            outline: 2px solid #0d6efd;
+            outline-offset: -2px;
         }
+        .card-checkbox { width: 1.1em; height: 1.1em; cursor: pointer; }
 
-        #category-card-container.batch-mode .drag-handle {
-            display: none !important;
-        }
+        /* 排序模式 */
+        #category-card-container.sort-mode .drag-handle { display: block !important; }
+        #category-card-container.sort-mode .category-card { border-left: 2px dashed #ffc107 !important; }
+        .sortable-ghost { opacity: 0.4; background: #fff3cd !important; }
+        .sortable-chosen { box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.15) !important; }
 
-        #category-card-container.batch-mode .category-card.selected .card {
-            border: 2px solid #0d6efd !important;
-            box-shadow: 0 0 0 3px rgba(13,110,253,.18) !important;
+        /* 分頁 */
+        .page-link { cursor: pointer; color: #495057; border-radius: 4px !important; margin: 0 2px; }
+        .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: #fff; }
+
+        .badge { font-weight: 600; font-size: 0.68rem; }
+
+        /* 純 CSS Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
         }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #d1d5db;
+            border-radius: 26px;
+            transition: background-color 0.25s;
+        }
+        .toggle-slider::before {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #fff;
+            border-radius: 50%;
+            transition: transform 0.25s;
+            box-shadow: 0 1px 3px rgba(0,0,0,.2);
+        }
+        .toggle-switch input:checked + .toggle-slider { background-color: #22c55e; }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
 
         #create_imageArea:hover, #edit_imageArea:hover {
             border-color: var(--bs-primary) !important;
@@ -511,84 +624,142 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script>
-        /* ════════════════════════════════════════
-           分頁 / 篩選
-        ════════════════════════════════════════ */
         const PAGE_SIZE = 12;
         let currentPage   = 1;
         let filteredCards = [];
         let sortableInstance = null;
         let isSortMode  = false;
         let isBatchMode = false;
+        let selectedCategoryId = null;
 
         const allCategories = @Html.Raw(ViewBag.CategoriesJson);
 
         document.addEventListener("DOMContentLoaded", () => {
+            // 填入餐點數量（僅上架中），設為可點擊
+            allCategories.forEach(cat => {
+                const el = document.getElementById(`dish-count-${cat.id}`);
+                if (el) {
+                    el.textContent = cat.dishCount;
+                    el.style.cursor = 'pointer';
+                    el.style.color = '#3b82f6';
+                    el.style.textDecoration = 'underline';
+                    el.onclick = (e) => { e.stopPropagation(); showDishesModal(cat.id); };
+                }
+            });
+
             filteredCards = Array.from(document.querySelectorAll(".category-card"));
-            // 預設按 DisplayOrder 排序，讓手動排序生效
             filteredCards.sort((a, b) => parseInt(a.dataset.order) - parseInt(b.dataset.order));
             renderPage();
-
-            /* ── 詳情按鈕事件 ── */
-            document.querySelectorAll(".view-category-dishes").forEach(btn => {
-                btn.addEventListener("click", function () {
-                    const catId = parseInt(this.dataset.categoryId);
-                    const cat = allCategories.find(c => c.id === catId);
-                    if (!cat) return;
-
-                    document.getElementById("viewCategoryName").textContent = cat.categoryName;
-
-                    // 圖片預覽
-                    const imgWrap = document.getElementById("catDetailImageWrap");
-                    const imgEl = document.getElementById("catDetailImage");
-                    if (cat.imageUrl) {
-                        imgEl.src = cat.imageUrl;
-                        imgWrap.classList.remove("d-none");
-                    } else {
-                        imgWrap.classList.add("d-none");
-                    }
-
-                    // 基本資訊
-                    const metaEl = document.getElementById("catDetailMeta");
-                    metaEl.innerHTML = `
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <div class="text-muted mb-1">上層分類</div>
-                                <div class="fw-bold">${cat.parentCategoryName || "無"}</div>
-                            </div>
-                            <div class="col-6">
-                                <div class="text-muted mb-1">餐點數量</div>
-                                <div class="fw-bold text-primary">${cat.dishCount} 道</div>
-                            </div>
-                        </div>`;
-
-                    // 餐點列表
-                    const listContainer = document.getElementById("viewCategoryDishesList");
-                    let listHtml = "";
-                    if (cat.dishes && cat.dishes.length > 0) {
-                        listHtml = `<ul class="list-group list-group-flush border rounded-3 overflow-hidden">`;
-                        cat.dishes.forEach(d => {
-                            const statusBadge = d.isActive ? "" : '<span class="badge bg-secondary-subtle text-secondary border border-secondary ms-2 small">已下架</span>';
-                            listHtml += `
-                                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                    <div>
-                                        <span class="fw-bold text-dark">${d.dishName}</span>
-                                        ${statusBadge}
-                                    </div>
-                                    <span class="text-danger fw-bold">$${d.price.toLocaleString()}</span>
-                                </li>`;
-                        });
-                        listHtml += `</ul>`;
-                    } else {
-                        listHtml = `<div class="text-center py-4 text-muted border rounded-3"><i class="fas fa-info-circle me-2"></i>此分類目前沒有餐點</div>`;
-                    }
-                    listContainer.innerHTML = listHtml;
-
-                    new bootstrap.Modal(document.getElementById("viewCategoryDishesModal")).show();
-                });
-            });
         });
 
+        /* ===== Master-Detail: 選取分類 ===== */
+        function selectItem(row) {
+            if (isBatchMode) return;
+
+            document.querySelectorAll('.cat-row').forEach(r => r.classList.remove('active-row'));
+            row.classList.add('active-row');
+
+            selectedCategoryId = parseInt(row.dataset.id);
+            const d = row.dataset;
+            const isActive = d.isActive === 'true';
+
+            // 圖片
+            const img   = document.getElementById('detailImg');
+            const noImg = document.getElementById('detailNoImg');
+            if (d.image) {
+                img.src = d.image;
+                img.style.display = 'block';
+                noImg.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                noImg.style.display = 'flex';
+            }
+
+            // 名稱
+            document.getElementById('detailName').textContent = d.fullName;
+
+            // 排序 / 上層分類
+            document.getElementById('detail-order').textContent  = '# ' + d.order;
+            document.getElementById('detail-parent').textContent = d.parentName || '無';
+            document.getElementById('detail-created').textContent = '—';
+
+            // 餐點數量（從 allCategories）
+            const cat = allCategories.find(c => c.id === selectedCategoryId);
+            document.getElementById('detail-dish-count').textContent = cat ? cat.dishCount + ' 道' : '—';
+
+            // 餐點列表
+            const dishListEl = document.getElementById('detail-dish-list');
+            if (cat && cat.dishes && cat.dishes.length > 0) {
+                dishListEl.innerHTML = cat.dishes.map(d => `
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom" style="font-size:12px;">
+                        <div>
+                            <span class="badge me-1 rounded-pill border ${d.isActive ? 'bg-success-subtle text-success border-success' : 'bg-secondary-subtle text-secondary border-secondary'}" style="font-size:0.6rem;">${d.isActive ? '上架' : '下架'}</span>
+                            <span class="fw-semibold">${d.dishName}</span>
+                        </div>
+                        <span class="text-muted">$${d.price}</span>
+                    </div>`).join('');
+            } else {
+                dishListEl.innerHTML = '<p class="text-muted text-center py-2 small">此分類尚無餐點</p>';
+            }
+
+            // 上架 Toggle
+            const toggle = document.getElementById('detailActiveToggle');
+            toggle.checked = isActive;
+            document.getElementById('detailActiveLabel').textContent = isActive ? '目前上架中' : '目前已下架';
+
+            // 下架/上架 按鈕
+            document.getElementById('detailDisableText').textContent = isActive ? '下架' : '上架';
+            document.getElementById('detailDisableBtn').className = isActive
+                ? 'btn btn-outline-danger px-4'
+                : 'btn btn-outline-success px-4';
+
+            // Badges（上層分類）
+            const badgesEl = document.getElementById('detailBadges');
+            badgesEl.innerHTML = '';
+            if (d.parentName) {
+                badgesEl.innerHTML = `<span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary px-2"><i class="fas fa-level-up-alt me-1"></i>${d.parentName}</span>`;
+            }
+
+            document.getElementById('detailEmpty').style.display   = 'none';
+            document.getElementById('detailContent').style.display = 'block';
+        }
+
+        function openEditModalFromDetail() {
+            if (!selectedCategoryId) return;
+            const row = document.querySelector(`.cat-row[data-id="${selectedCategoryId}"]`);
+            if (!row) return;
+            openEditModal(
+                selectedCategoryId,
+                row.dataset.fullName,
+                row.dataset.parentId || '',
+                parseInt(row.dataset.order),
+                row.dataset.isActive === 'true',
+                row.dataset.image || ''
+            );
+        }
+
+        function detailCategoryToggleActive() {
+            if (!selectedCategoryId) return;
+            const toggle = document.getElementById('detailActiveToggle');
+            if (toggle.checked) enableCategory(selectedCategoryId);
+            else disableCategory(selectedCategoryId);
+        }
+
+        function detailDisableAction() {
+            if (!selectedCategoryId) return;
+            const toggle = document.getElementById('detailActiveToggle');
+            if (toggle.checked) disableCategory(selectedCategoryId);
+            else enableCategory(selectedCategoryId);
+        }
+
+        function toggleCategoryActive(id) {
+            const badge = document.getElementById('active-badge-' + id);
+            const isActive = badge && badge.textContent.trim() === '上架';
+            if (isActive) disableCategory(id);
+            else enableCategory(id);
+        }
+
+        /* ===== 篩選 ===== */
         function filterCards() {
             const search = document.getElementById("searchInput").value.toLowerCase();
             const status = document.getElementById("statusFilter").value;
@@ -598,7 +769,6 @@
                 const matchStatus = !status || card.dataset.status === status;
                 return matchSearch && matchStatus;
             });
-            // 預設按 ID 倒序，讓最新新增的在最前面
             filteredCards.sort((a, b) => parseInt(b.dataset.id) - parseInt(a.dataset.id));
             currentPage = 1;
             renderPage();
@@ -607,7 +777,7 @@
         function filterByStatus(status) {
             document.getElementById("statusFilter").value = status;
             filterCards();
-            document.getElementById("category-card-container").scrollIntoView({ behavior:'smooth', block:'start' });
+            document.getElementById("category-card-container").scrollIntoView({ behavior: 'smooth', block: 'start' });
             showAlert("info", `已篩選：${status || "所有"} 分類`);
         }
 
@@ -617,30 +787,65 @@
             filterCards();
         }
 
+        /* ===== 分頁 ===== */
         function renderPage() {
-            const container = document.getElementById("category-card-container");
             const allCards = Array.from(document.querySelectorAll(".category-card"));
-            
-            // 隱藏所有卡片
             allCards.forEach(c => c.style.display = "none");
+
+            const total      = filteredCards.length;
+            const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
             const start = (currentPage - 1) * PAGE_SIZE;
             const end   = start + PAGE_SIZE;
+            const container = document.getElementById("category-card-container");
             filteredCards.slice(start, end).forEach(c => {
                 c.style.display = "";
-                container.appendChild(c); // 物理重新排序，確保最新 ID 的卡片在最前面
+                container.appendChild(c);
             });
 
-            const total = filteredCards.length;
-            document.getElementById("emptyState").classList.toggle("d-none", total > 0);
+            document.getElementById("pageInfo").textContent =
+                `${total} 筆，顯示 ${Math.min(start + 1, total)}–${Math.min(end, total)}`;
+
+            renderPaginationButtons("pagination", totalPages);
+
+            const paginationContainer = document.getElementById("pagination")?.parentElement?.parentElement;
+            if (paginationContainer) {
+                paginationContainer.classList.toggle("d-none", totalPages <= 1);
+            }
         }
 
-        /* 移除 pagination 相關函式 */
+        function renderPaginationButtons(elementId, totalPages) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = "";
 
-        function goToPage(page) { currentPage = page; renderPage(); }
+            const prevLi = document.createElement("li");
+            prevLi.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
+            prevLi.innerHTML = `<a class="page-link shadow-none" onclick="goToPage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></a>`;
+            container.appendChild(prevLi);
 
-        /* ════════════════════════════════════════
-           排序拖曳
-        ════════════════════════════════════════ */
+            for (let i = 1; i <= totalPages; i++) {
+                const li = document.createElement("li");
+                li.className = `page-item ${i === currentPage ? "active" : ""}`;
+                li.innerHTML = `<a class="page-link shadow-none" onclick="goToPage(${i})">${i}</a>`;
+                container.appendChild(li);
+            }
+
+            const nextLi = document.createElement("li");
+            nextLi.className = `page-item ${currentPage === totalPages ? "disabled" : ""}`;
+            nextLi.innerHTML = `<a class="page-link shadow-none" onclick="goToPage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></a>`;
+            container.appendChild(nextLi);
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(filteredCards.length / PAGE_SIZE) || 1;
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderPage();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ===== 排序拖曳 ===== */
         function toggleSortMode() {
             if (isBatchMode) exitBatchMode();
             isSortMode = !isSortMode;
@@ -673,7 +878,6 @@
         }
 
         async function saveOrder() {
-            // 抓取 DOM 中所有 .category-card 的順序 (包含隱藏的)，這反映了目前 Sortable 調整後的結果
             const ids = Array.from(document.querySelectorAll(".category-card")).map(c => parseInt(c.dataset.id));
             try {
                 const res = await fetch("/Categories/UpdateOrder", {
@@ -681,18 +885,12 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ orderedIds: ids })
                 });
-                if (res.ok) { 
-                    showAlert("success", "排序已儲存 ✓"); 
-                    // 重新加載頁面以反映後端排序
-                    setTimeout(() => location.reload(), 1000);
-                }
+                if (res.ok) { showAlert("success", "排序已儲存 ✓"); setTimeout(() => location.reload(), 1000); }
                 else showAlert("danger", "儲存失敗，請稍後再試");
             } catch { showAlert("danger", "發生錯誤，請稍後再試"); }
         }
 
-        /* ════════════════════════════════════════
-           批次操作
-        ════════════════════════════════════════ */
+        /* ===== 批次操作 ===== */
         function enterBatchMode() {
             if (isSortMode) toggleSortMode();
             isBatchMode = true;
@@ -760,9 +958,7 @@
         function batchDisable() { batchOperation("/Categories/BatchDisable", "確定要下架所選分類嗎？"); }
         function batchDelete()  { batchOperation("/Categories/BatchDelete",  "⚠️ 確定要永久刪除嗎？此操作無法還原！"); }
 
-        /* ════════════════════════════════════════
-           單筆操作
-        ════════════════════════════════════════ */
+        /* ===== 單筆操作 ===== */
         async function disableCategory(id) {
             if (!confirm("確定要下架嗎？")) return;
             const res = await fetch(`/Categories/Disable/${id}`, { method: "POST" });
@@ -777,21 +973,54 @@
             else showAlert("danger", "操作失敗");
         }
 
-        /* ════════════════════════════════════════
-           Alert
-        ════════════════════════════════════════ */
+        /* ===== 餐點 Modal ===== */
+        function showDishesModal(categoryId) {
+            const cat = allCategories.find(c => c.id === categoryId);
+            if (!cat) return;
+
+            document.getElementById('viewCategoryName').textContent = cat.categoryName;
+
+            const imgWrap = document.getElementById('catDetailImageWrap');
+            const img     = document.getElementById('catDetailImage');
+            if (cat.imageUrl) { img.src = cat.imageUrl; imgWrap.classList.remove('d-none'); }
+            else imgWrap.classList.add('d-none');
+
+            const total  = cat.dishes ? cat.dishes.length : 0;
+            document.getElementById('catDetailMeta').innerHTML =
+                `共 <strong>${total}</strong> 道餐點，其中 <strong>${cat.dishCount}</strong> 道上架中`;
+
+            const listEl = document.getElementById('viewCategoryDishesList');
+            if (total === 0) {
+                listEl.innerHTML = '<p class="text-muted text-center py-3">此分類尚無餐點</p>';
+            } else {
+                listEl.innerHTML = cat.dishes.map(d => `
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                            <span class="badge me-2 rounded-pill border ${d.isActive ? 'bg-success-subtle text-success border-success' : 'bg-secondary-subtle text-secondary border-secondary'}" style="font-size:0.65rem;">${d.isActive ? '上架' : '下架'}</span>
+                            <span class="fw-semibold" style="font-size:14px;">${d.dishName}</span>
+                        </div>
+                        <span class="text-muted fw-semibold">$${d.price}</span>
+                    </div>`).join('');
+            }
+
+            new bootstrap.Modal(document.getElementById('viewCategoryDishesModal')).show();
+        }
+
+        /* ===== Alert ===== */
         function showAlert(type, message) {
             const box = document.getElementById("alertBox");
-            box.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+            box.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible border-0 shadow-sm fade show" role="alert">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2"></i>${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
             setTimeout(() => {
                 const el = box.querySelector(".alert");
                 if (el) { el.classList.remove("show"); setTimeout(() => box.innerHTML = "", 400); }
             }, 3000);
         }
 
-        /* ════════════════════════════════════════
-           圖片裁切（新增 / 編輯共用）
-        ════════════════════════════════════════ */
+        /* ===== 圖片裁切（新增 / 編輯共用）===== */
         let cropper       = null;
         let activePanelId = null;
         let croppedBase64 = { create: null, edit: null };
@@ -814,11 +1043,9 @@
 
         function editOrUploadCategoryImage() {
             const previewImg = document.getElementById("edit_previewImg");
-            // 如果目前顯示的是剛裁切完的 Base64，則點擊後開啟裁切器再次調整
             if (!previewImg.classList.contains('d-none') && previewImg.src.startsWith('data:image')) {
                 openCropperWithUrl(previewImg.src, 'edit');
             } else {
-                // 如果是伺服器既有圖片，或沒有圖片，點擊則直接選新檔案
                 document.getElementById('edit_imageInput').click();
             }
         }
@@ -869,9 +1096,7 @@
             const cropModalEl = document.getElementById("cropperModal");
             if (cropModalEl) {
                 const modalInstance = bootstrap.Modal.getInstance(cropModalEl);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
+                if (modalInstance) modalInstance.hide();
             }
             if (cropper) { cropper.destroy(); cropper = null; }
         }
@@ -886,9 +1111,7 @@
             document.getElementById(`${panel}_clearBtn`).style.display = "none";
         }
 
-        /* ════════════════════════════════════════
-           新增 Modal
-        ════════════════════════════════════════ */
+        /* ===== 新增 Modal ===== */
         document.getElementById("createCategoryModal").addEventListener("hidden.bs.modal", () => {
             clearImage('create');
             document.getElementById("create_CategoryName").value = "";
@@ -921,9 +1144,7 @@
             else showAlert("danger", "新增失敗，請稍後再試");
         }
 
-        /* ════════════════════════════════════════
-           編輯 Modal
-        ════════════════════════════════════════ */
+        /* ===== 編輯 Modal ===== */
         function openEditModal(id, name, parentId, order, isActive, imageUrl) {
             document.getElementById("edit_Id").value               = id;
             document.getElementById("edit_CategoryName").value     = name;
@@ -956,23 +1177,16 @@
             if (!name) { showAlert("warning", "請輸入分類名稱"); return; }
 
             const previewImg = document.getElementById("edit_previewImg");
-            
-            // 關鍵：如果 previewImg 是隱藏的或是 src 為空，代表圖片已被移除
             let imageUrl = (previewImg.classList.contains("d-none") || !previewImg.src) ? null : previewImg.src;
 
-            // 如果有新裁切的圖片，優先上傳
             if (croppedBase64.edit) {
                 imageUrl = await uploadImage(croppedBase64.edit, name);
                 if (!imageUrl) return;
             }
 
-            // 瀏覽器會把相對路徑補成完整 URL (例如 http://.../images/xxx.jpg)，這裡轉回相對路徑以符合資料庫存儲
             if (imageUrl && imageUrl.startsWith("http")) {
-                try {
-                    imageUrl = new URL(imageUrl).pathname;
-                } catch(e) {
-                    console.error("URL 解析失敗:", e);
-                }
+                try { imageUrl = new URL(imageUrl).pathname; }
+                catch(e) { console.error("URL 解析失敗:", e); }
             }
 
             const res = await fetch(`/Categories/Edit/${id}`, {
@@ -992,23 +1206,18 @@
             else showAlert("danger", "儲存失敗，請稍後再試");
         }
 
-        /* ════════════════════════════════════════
-           圖片上傳 API
-        ════════════════════════════════════════ */
+        /* ===== 圖片上傳 API ===== */
         async function uploadImage(base64Data, categoryName) {
             try {
                 const res = await fetch("/Categories/UploadImage", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        Base64Data: base64Data, 
-                        CategoryName: categoryName 
-                    })
+                    body: JSON.stringify({ Base64Data: base64Data, CategoryName: categoryName })
                 });
-                if (!res.ok) { 
+                if (!res.ok) {
                     const err = await res.json();
-                    showAlert("danger", "圖片上傳失敗: " + (err.message || "未知錯誤")); 
-                    return null; 
+                    showAlert("danger", "圖片上傳失敗: " + (err.message || "未知錯誤"));
+                    return null;
                 }
                 return (await res.json()).imageUrl;
             } catch (e) {
@@ -1018,4 +1227,3 @@
         }
     </script>
 }
-
