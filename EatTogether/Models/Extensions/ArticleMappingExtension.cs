@@ -193,6 +193,21 @@ namespace EatTogether.Models.Extensions
 			};
 		}
 
+		//Entity -> ItemViewModel
+		//→ ToViewStatsItemVm(this Article entity)
+		public static ArticleViewStatsItemViewModel ToViewStatsItemVm(this Article entity)
+		{
+			return new ArticleViewStatsItemViewModel
+			{
+				Id = entity.Id,
+				Title = entity.Title,
+				CategoryName = entity.Category?.Name,
+				Status = entity.Status,
+				PublishDate = entity.PublishDate.GetValueOrDefault(),
+				ViewCount = entity.ViewCount
+			};
+		}
+
 
 	}
 }

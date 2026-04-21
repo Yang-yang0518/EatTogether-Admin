@@ -1,6 +1,8 @@
 ﻿using EatTogether.Models.DTOs;
 using EatTogether.Models.EfModels;
+using EatTogether.Models.Extensions;
 using EatTogether.Models.Repositories;
+using EatTogether.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
@@ -55,7 +57,7 @@ namespace EatTogether.Models.Services
 		public async Task<List<ArticleDto>> GetAllForIndexAsync()
 		{
 			return await _repo.GetAllAsync();
-			
+
 		}
 
 		// 取得資料
@@ -91,6 +93,27 @@ namespace EatTogether.Models.Services
 			await _repo.DeleteAsync(id);
 		}
 
+		//點閱統計數字
+		public async Task<ArticleViewStatsViewModel> GetViewStatsAsync()
+		{
+			//計算統計數字（Sum、Max、Average）				
+			//逐筆轉成 ItemViewModel
 
+			var entity = await _repo.GetAllForStatsAsync();
+
+			var vm = new ArticleViewStatsViewModel
+			{
+				TotalViewCount = entity.Sum(e => e.ViewCount),
+				MaxViewCount = entity.Max(e => e.ViewCount),
+				MaxViewTitle = entity.OrderByDescending(e => e.ViewCount).First().Title,
+				ZeroViewCount = entity.Count(e => e.ViewCount == 0),
+				AverageViewCount = entity.Where(e => e.Status == 1).Any()
+						  ? entity.Where(e => e.Status == 1).Average(e => e.ViewCount)
+						  : 0,
+				Articles = entity.Select(e => e.ToViewStatsItemVm()).ToList()
+			};
+
+			return vm;
+		}
 	}
 }

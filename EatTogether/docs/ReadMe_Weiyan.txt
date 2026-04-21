@@ -412,7 +412,7 @@ IEventService.GetSelectList())
 
 [Working]add 文章點閱統計頁面
     url: /Articles/ViewStats
-    [Working]add ViewModel, Dto, 擴充方法
+    [V]add ViewModel, Dto, 擴充方法
         ArticleViewStatsViewModel class
             // 統計卡片用
             int TotalViewCount          // 所有文章總點閱
@@ -432,7 +432,7 @@ IEventService.GetSelectList())
             DateTime PublishDate
             int ViewCount
 
-    [ ]modify ArticleMappingExtension class
+    [working]modify ArticleMappingExtension class
         Entity -> ItemViewModel
         → ToViewStatsItemVm(this Article entity)
 
