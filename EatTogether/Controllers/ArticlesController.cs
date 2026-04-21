@@ -132,6 +132,9 @@ namespace EatTogether.Controllers
 			if (dto == null) return NotFound();
 			var vm = dto.ToArticleEditVm();
 
+			if (!string.IsNullOrEmpty(vm.ExistingCoverImageUrl))
+				vm.ExistingCoverImageUrl = "/images/articles/" + vm.ExistingCoverImageUrl;
+
 			vm.CategorySelectList = await _service.GetCategorySelectListAsync();
 			vm.EventSelectList = await _service.GetEventSelectListAsync();
 
@@ -224,11 +227,22 @@ namespace EatTogether.Controllers
 			return RedirectToAction(nameof(Index));
 		}
 
-		// GET: Articles/ViewStats
-		//public async Task<IActionResult> ViewStats()
-		//{
 
-		//}
+		//GET: Articles/ViewStats
+		[HttpGet]
+		public async Task<IActionResult> ViewStats()
+		{
+			var vm = await _service.GetViewStatsAsync();
+			return View(vm);
+		}
+
+
+		[HttpGet]
+		public async Task<IActionResult> GetViewStatsJson()
+		{
+			var result = await _service.GetViewStatsJsonAsync();
+			return Json(result);
+		}
 
 
 	}

@@ -120,7 +120,7 @@
                     <label class="form-label">內文</label>
                     <input type="hidden" asp-for="Description" id="hiddenDescription" data-val="false"  />
                     <div id="editor" style="height: 400px;">
-                        @Html.Raw(Model.Description)
+                        @* @Html.Raw(Model.Description) *@
                     </div>
                     <span asp-validation-for="Description" class="text-danger"></span>
                 </div>
@@ -295,6 +295,11 @@
                     ]
                 }
             });
+
+            var existingContent = @Html.Raw(Json.Serialize(Model.Description));
+            if (existingContent) {
+                quill.clipboard.dangerouslyPasteHTML(existingContent);
+            }
 
             // 同步 Quill 內容到 hidden input
             function syncQuill() {

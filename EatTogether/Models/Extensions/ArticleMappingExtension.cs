@@ -124,10 +124,7 @@ namespace EatTogether.Models.Extensions
 				Title = dto.Title,
 				Description = dto.Description,
 				CoverImageUrl = dto.CoverImageUrl,
-				//ExistingCoverImageUrl = dto.CoverImageUrl,
-				ExistingCoverImageUrl = !string.IsNullOrEmpty(dto.CoverImageUrl)
-										? "/images/articles/" + dto.CoverImageUrl  // ← 補這個
-										: null,
+				ExistingCoverImageUrl = dto.CoverImageUrl,
 				PublishDate = dto.PublishDate,
 				ExpiryDate = dto.ExpiryDate,
 				IsPinned = dto.IsPinned,
@@ -204,6 +201,25 @@ namespace EatTogether.Models.Extensions
 				CategoryName = entity.Category?.Name,
 				Status = entity.Status,
 				PublishDate = entity.PublishDate.GetValueOrDefault(),
+				ViewCount = entity.ViewCount
+			};
+		}
+
+		// Entity -> JsonDto（給 Ajax 列表用）
+		public static ArticleViewStatsDto ToViewStatsJsonDto(this Article entity) { 
+			return new ArticleViewStatsDto
+			{
+				Id = entity.Id,
+				Title = entity.Title,
+				CategoryName = entity.Category?.Name,
+				StatusLabel = entity.Status == 1 && entity.PublishDate > DateTime.Now ? "待上架"
+							: entity.Status == 1 ? "已發佈"
+							: entity.Status == 0 ? "草稿"
+							: "已下架",
+				//PublishDate = entity.PublishDate.ToString("yyyy/MM/dd"),
+				PublishDate = entity.PublishDate.HasValue
+							? entity.PublishDate.Value.ToString("yyyy/MM/dd")
+							: "",
 				ViewCount = entity.ViewCount
 			};
 		}

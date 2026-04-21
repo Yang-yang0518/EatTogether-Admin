@@ -8,8 +8,6 @@
 
 		public string MaxViewTitle { get; set; }         // 最高點閱的文章標題
 
-		public int ZeroViewCount { get; set; }           // 零點閱文章篇數
-
 		public double AverageViewCount { get; set; }     // 已發佈文章平均點閱
 
 		public IEnumerable<ArticleViewStatsItemViewModel> Articles { get; set; }

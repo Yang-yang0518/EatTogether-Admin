@@ -432,16 +432,16 @@ IEventService.GetSelectList())
             DateTime PublishDate
             int ViewCount
 
-    [working]modify ArticleMappingExtension class
+    [V]modify ArticleMappingExtension class
         Entity -> ItemViewModel
         → ToViewStatsItemVm(this Article entity)
 
-    [ ]modify ArticleRepository
+    [V]modify ArticleRepository
         IArticleRepository interface
             add IEnumerable<Article> GetAllForStats()
             // 直接回傳 Entity 讓 Service 層計算統計數字
 
-    [ ]modify ArticleService
+    [V]modify ArticleService
         add ArticleViewStatsViewModel GetViewStats()
             // 統計卡片數字在 Service 層計算
             TotalViewCount  = entities.Sum(a => a.ViewCount)
@@ -454,7 +454,7 @@ IEventService.GetSelectList())
             Articles = entities.OrderByDescending(a => a.ViewCount)
                                 .Select(a => a.ToViewStatsItemVm())
 
-    [ ]modify ArticlesController
+    [WORKING ]modify ArticlesController
         add IActionResult ViewStats()[Authorize]
             ViewStats.cshtml
                 統計卡片區（4 張）
