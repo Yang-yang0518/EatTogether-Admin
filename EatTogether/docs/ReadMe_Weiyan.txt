@@ -406,3 +406,57 @@ IEventService.GetSelectList())
 	[HttpPost]
 	[Authorize]
 	IActionResult Unpublish(int id)
+
+
+
+
+[Working]add 文章點閱統計頁面
+    url: /Articles/ViewStats
+    [Working]add ViewModel, Dto, 擴充方法
+        ArticleViewStatsViewModel class
+            // 統計卡片用
+            int TotalViewCount          // 所有文章總點閱
+            int MaxViewCount            // 最高點閱數
+            string MaxViewTitle         // 最高點閱的文章標題
+            int ZeroViewCount           // 零點閱文章篇數
+            double AverageViewCount     // 已發佈文章平均點閱
+
+            // 列表用
+            IEnumerable<ArticleViewStatsItemViewModel> Articles
+
+        ArticleViewStatsItemViewModel class
+            int Id
+            string Title
+            string CategoryName
+            int Status
+            DateTime PublishDate
+            int ViewCount
+
+    [ ]modify ArticleMappingExtension class
+        Entity -> ItemViewModel
+        → ToViewStatsItemVm(this Article entity)
+
+    [ ]modify ArticleRepository
+        IArticleRepository interface
+            add IEnumerable<Article> GetAllForStats()
+            // 直接回傳 Entity 讓 Service 層計算統計數字
+
+    [ ]modify ArticleService
+        add ArticleViewStatsViewModel GetViewStats()
+            // 統計卡片數字在 Service 層計算
+            TotalViewCount  = entities.Sum(a => a.ViewCount)
+            MaxViewCount    = entities.Max(a => a.ViewCount)
+            MaxViewTitle    = entities.OrderByDescending(...).First().Title
+            ZeroViewCount   = entities.Count(a => a.ViewCount == 0)
+            AverageViewCount = entities
+                                .Where(a => a.Status == 1)
+                                .Average(a => a.ViewCount)
+            Articles = entities.OrderByDescending(a => a.ViewCount)
+                                .Select(a => a.ToViewStatsItemVm())
+
+    [ ]modify ArticlesController
+        add IActionResult ViewStats()[Authorize]
+            ViewStats.cshtml
+                統計卡片區（4 張）
+                文章點閱列表（標題、分類、狀態、上架日期、點閱數）
+                列表依點閱數降序排列
