@@ -48,7 +48,8 @@ namespace EatTogether.Models.Extensions
 				Id = dto.Id,
 				Name = dto.Name,
 				SortOrder = dto.SortOrder,
-				IsEnabled = dto.IsEnabled
+				IsEnabled = dto.IsEnabled,
+				ArticleCount = dto.ArticleCount
 			};
 		}
 

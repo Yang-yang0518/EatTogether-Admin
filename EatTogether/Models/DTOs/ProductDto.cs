@@ -20,6 +20,12 @@ namespace EatTogether.Models.DTOs
         public decimal? SetMealPrice { get; set; }
         public string? SetMealImageUrl { get; set; }
 
+        public string? DishDescription { get; set; }
+        public bool DishIsRecommended { get; set; }
+        public bool DishIsVegetarian { get; set; }
+        public int DishSpicyLevel { get; set; }
+        public bool DishIsPopular { get; set; }
+
         // 統一顯示用（不管單點或套餐都可以用這兩個）
         public string DisplayName => ProductType == "Dish" ? DishName! : SetMealName!;
         public decimal? DisplayPrice => ProductType == "Dish" ? DishPrice : SetMealPrice;

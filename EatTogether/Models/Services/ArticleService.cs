@@ -1,6 +1,8 @@
 ﻿using EatTogether.Models.DTOs;
 using EatTogether.Models.EfModels;
+using EatTogether.Models.Extensions;
 using EatTogether.Models.Repositories;
+using EatTogether.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,33 +31,20 @@ namespace EatTogether.Models.Services
 		// 取得類別
 		public async Task<IEnumerable<SelectListItem>> GetCategorySelectListAsync()
 		{
-			return await _context.ArticleCategories
-				.Where(x => x.IsEnabled) // 撈啟用的
-				.OrderBy(x => x.SortOrder)
-				.Select(x => new SelectListItem
-				{
-					Value = x.Id.ToString(),
-					Text = x.Name
-				}).ToListAsync();
+			return await _repo.GetCategorySelectListAsync();
 		}
 
 		// 取得活動
 		public async Task<IEnumerable<SelectListItem>> GetEventSelectListAsync()
 		{
-			return await _context.Events
-				.Where(x => x.Status == 1 || x.Status == 0) // 取進行中及未開始活動
-				.Select(x => new SelectListItem
-				{
-					Value = x.Id.ToString(),
-					Text = x.Title
-				}).ToListAsync();
+			return await _repo.GetEventSelectListAsync();
 		}
 
 		// 取得首頁列表
 		public async Task<List<ArticleDto>> GetAllForIndexAsync()
 		{
 			return await _repo.GetAllAsync();
-			
+
 		}
 
 		// 取得資料
@@ -91,6 +80,33 @@ namespace EatTogether.Models.Services
 			await _repo.DeleteAsync(id);
 		}
 
+		//點閱統計數字
+		public async Task<ArticleViewStatsViewModel> GetViewStatsAsync()
+		{
+			//計算統計數字（Sum、Max、Average）				
+			//逐筆轉成 ItemViewModel
+
+			var entity = await _repo.GetAllForStatsAsync();
+
+			var vm = new ArticleViewStatsViewModel
+			{
+				TotalViewCount = entity.Sum(e => e.ViewCount),
+				MaxViewCount = entity.Max(e => e.ViewCount),
+				MaxViewTitle = entity.OrderByDescending(e => e.ViewCount).First().Title,
+				AverageViewCount = entity.Where(e => e.Status == 1).Any()
+						  ? entity.Where(e => e.Status == 1).Average(e => e.ViewCount)
+						  : 0,
+				Articles = entity.Select(e => e.ToViewStatsItemVm()).ToList()
+			};
+
+			return vm;
+		}
+
+		public async Task<IEnumerable<ArticleViewStatsDto>> GetViewStatsJsonAsync()
+		{
+			var entity = await _repo.GetAllForStatsAsync();
+			return entity.Select(a => a.ToViewStatsJsonDto());
+		}
 
 	}
 }

@@ -75,8 +75,12 @@ namespace EatTogether.Controllers
 					string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "articles");
 					if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-					string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(vm.CoverImageFile.FileName);
-					string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+					//string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(vm.CoverImageFile.FileName);
+					string uniqueFileName = Guid.NewGuid().ToString("N")[..12] + fileExt;
+					string filePath = Path.Combine(uploadsFolder, uniqueFileName); 
+
+
+
 
 					using (var fileStream = new FileStream(filePath, FileMode.Create))
 					{
@@ -84,7 +88,8 @@ namespace EatTogether.Controllers
 					}
 
 					// 將檔案路徑存入 VM (稍後轉給 DTO 存入資料庫)
-					vm.CoverImageUrl = "/images/articles/" + uniqueFileName;
+					//vm.CoverImageUrl = "/images/articles/" + uniqueFileName;
+					vm.CoverImageUrl = uniqueFileName;
 
 				}
 
@@ -111,7 +116,7 @@ namespace EatTogether.Controllers
 			return View(vm);
 		}
 
-		// 輔助方法：統一處理選單重載，避免程式碼重複
+		// create輔助方法：統一處理選單重載，避免程式碼重複
 		private async Task PopulateSelectListsAsync(ArticleCreateViewModel vm)
 		{
 			vm.CategorySelectList = await _service.GetCategorySelectListAsync();
@@ -126,6 +131,9 @@ namespace EatTogether.Controllers
 			var dto = await _service.GetByIdAsync(id);
 			if (dto == null) return NotFound();
 			var vm = dto.ToArticleEditVm();
+
+			if (!string.IsNullOrEmpty(vm.ExistingCoverImageUrl))
+				vm.ExistingCoverImageUrl = "/images/articles/" + vm.ExistingCoverImageUrl;
 
 			vm.CategorySelectList = await _service.GetCategorySelectListAsync();
 			vm.EventSelectList = await _service.GetEventSelectListAsync();
@@ -154,13 +162,15 @@ namespace EatTogether.Controllers
 
 					string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "articles");
 					if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-					string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(vm.CoverImageFile.FileName);
+					//string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(vm.CoverImageFile.FileName);
+					string uniqueFileName = Guid.NewGuid().ToString("N")[..12] + fileExt;
 					string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 					using (var fileStream = new FileStream(filePath, FileMode.Create))
 					{
 						await vm.CoverImageFile.CopyToAsync(fileStream);
 					}
-					vm.CoverImageUrl = "/images/articles/" + uniqueFileName;
+					//vm.CoverImageUrl = "/images/articles/" + uniqueFileName;
+					vm.CoverImageUrl = uniqueFileName;
 				}
 				else
 				{
@@ -188,6 +198,15 @@ namespace EatTogether.Controllers
 			return View(vm);
 		}
 
+
+		// edit輔助方法：統一處理選單重載，避免程式碼重複
+		private async Task PopulateEditSelectListsAsync(ArticleEditViewModel vm)
+		{
+			vm.CategorySelectList = await _service.GetCategorySelectListAsync();
+			vm.EventSelectList = await _service.GetEventSelectListAsync();
+		}
+
+
 		// Unpublish action
 		/// <summary>下架文章(軟刪除)</summary>
 		[HttpGet]
@@ -208,13 +227,22 @@ namespace EatTogether.Controllers
 			return RedirectToAction(nameof(Index));
 		}
 
-		private async Task PopulateEditSelectListsAsync(ArticleEditViewModel vm)
+
+		//GET: Articles/ViewStats
+		[HttpGet]
+		public async Task<IActionResult> ViewStats()
 		{
-			vm.CategorySelectList = await _service.GetCategorySelectListAsync();
-			vm.EventSelectList = await _service.GetEventSelectListAsync();
+			var vm = await _service.GetViewStatsAsync();
+			return View(vm);
 		}
 
 
+		[HttpGet]
+		public async Task<IActionResult> GetViewStatsJson()
+		{
+			var result = await _service.GetViewStatsJsonAsync();
+			return Json(result);
+		}
 
 
 	}
