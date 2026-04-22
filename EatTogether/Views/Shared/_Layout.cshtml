@@ -245,6 +245,7 @@
                                     <nav class="sb-sidenav-menu-nested nav">
                                         <a class="nav-link @(ctrl == "Articles" && action == "Index" ? "active" : "")" asp-controller="Articles" asp-action="Index">文章列表</a>
                                         <a class="nav-link @(ctrl == "ArticleCategories" && action == "Index" ? "active" : "")" asp-controller="ArticleCategories" asp-action="Index">文章類別</a>
+                                        <a class="nav-link @(ctrl == "Articles" && action == "ViewStats" ? "active" : "")" asp-controller="Articles" asp-action="ViewStats">文章點閱統計</a>
                                     </nav>
                                 </div>
                             }

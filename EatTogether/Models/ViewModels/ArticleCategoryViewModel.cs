@@ -16,5 +16,7 @@ namespace EatTogether.Models.ViewModels
 
 		[Display(Name = "是否啟用")]
 		public bool IsEnabled { get; set; }
+
+		public int ArticleCount { get; set; }
 	}
 }
