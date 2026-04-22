@@ -12,5 +12,7 @@ namespace EatTogether.Models.DTOs
 
 		public bool IsEnabled { get; set; }
 
+		public int ArticleCount { get; set; }
+
 	}
 }

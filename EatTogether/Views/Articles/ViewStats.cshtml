@@ -1,0 +1,209 @@
+﻿@model EatTogether.Models.ViewModels.ArticleViewStatsViewModel
+@{
+    ViewData["Title"] = "文章點閱統計";
+}
+@section Styles {
+    <style>
+        .stat-card {
+            border: 1;
+            box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+            border-bottom-width: 4px;
+            border-bottom-style: solid;
+        }
+
+        .stat-card-blue {
+            border-bottom-color: #4e73df;
+        }
+
+        .stat-card-yellow {
+            border-bottom-color: #f6c23e;
+        }
+
+        .stat-card-green {
+            border-bottom-color: #1cc88a;
+        }
+
+        .stat-card-red {
+            border-bottom-color: #e74a3b;
+        }
+
+        .stat-card-icon-blue {
+            color: #4e73df;
+            opacity: 0.4;
+        }
+
+        .stat-card-icon-yellow {
+            color: #f6c23e;
+            opacity: 0.4;
+        }
+
+        .stat-card-icon-green {
+            color: #1cc88a;
+            opacity: 0.4;
+        }
+
+        .stat-card-icon-red {
+            color: #e74a3b;
+            opacity: 0.4;
+        }
+
+        #StatsTable tbody tr {
+            height: 60px;
+        }
+
+        #StatsTable tbody td {
+            vertical-align: middle;
+        }
+
+        .rank-badge {
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 6px;
+            color: #fff;
+        }
+
+        .rank-1 {
+            background: #f6c23e;
+        }
+
+        .rank-2 {
+            background: #a0aec0;
+        }
+
+        .rank-3 {
+            background: #c07b3a;
+        }
+
+        .rank-other {
+            background: #f0f0f0;
+            color: #555;
+        }
+    </style>
+}
+
+
+<div class="container-fluid mt-4" style="max-width: 90%;">
+    <h1>文章點閱統計</h1>
+    <div class="row mt-4 mb-4 justify-content-around">
+        <div class="col-xl-4 col-md-5 col-sm-6">
+            <div class="card stat-card stat-card-blue">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted" title="所有文章的總計點閱數">總點閱數</div>
+                        <div class="fs-3 mt-3 fw-bold">@Model.TotalViewCount.ToString("N0")</div>
+                        <p></p>
+                    </div>
+                    <i class="fas fa-eye fa-2x stat-card-icon-blue"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-5 col-sm-6">
+            <div class="card stat-card stat-card-yellow">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted" title="最高點閱數的文章">最高點閱</div>
+                        <div class="fs-3 mt-3 fw-bold">@Model.MaxViewCount.ToString("N0")</div>
+                        <div class="small text-truncate" style="max-width:100%;" title="@Model.MaxViewTitle">@Model.MaxViewTitle</div>
+                    </div>
+                    <i class="fas fa-trophy fa-2x stat-card-icon-yellow"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-5 col-sm-6">
+            <div class="card stat-card stat-card-green">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted" title="所有文章的平均點閱數">平均點閱</div>
+                        <div class="fs-3 mt-3 fw-bold">@Model.AverageViewCount.ToString("F1")</div>
+                        <p></p>
+                    </div>
+                    <i class="fas fa-chart-bar fa-2x stat-card-icon-green"></i>
+                </div>
+            </div>
+        </div>        
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="m-0 font-weight-bold text-dark">
+                <i class="bi bi-table me-2"></i>點閱列表
+            </h5>
+        </div>
+
+        <div class="card-body w-100">
+            <table id="StatsTable" class="table w-100">
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>標題</th>
+                        <th>分類</th>
+                        <th>狀態</th>
+                        <th>上架日期</th>
+                        <th class="text-end">點閱數</th>
+                    </tr>
+                </thead>                
+            </table>
+        </div>
+    </div>
+
+</div>
+
+
+@section Scripts { 
+    <script>
+        $(document).ready(function () {
+            $('#StatsTable').DataTable({
+                ajax: {
+                    type: "GET",
+                    url: "/Articles/GetViewStatsJson",
+                    dataSrc: ""
+                },
+                order: [],
+                pageLength: 5,
+                lengthMenu: [[5, 10, 20, 50], [5, 10, 20, 50]],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/zh-HANT.json'
+                },
+                columns: [
+                    {
+                        data: null,
+                        orderable: false,
+                        render: function (data, type, row, meta) {
+                            var rank = meta.row + 1;  // 排名從1開始，換頁也正確
+                                if (rank === 1) {
+                                    return '<span class="rank-badge rank-1">#1</span>';
+                                } else if (rank === 2) {
+                                    return '<span class="rank-badge rank-2">#2</span>';
+                                } else if (rank === 3) {
+                                    return '<span class="rank-badge rank-3">#3</span>';
+                                } else {
+                                    return '<span class="rank-badge rank-other">#' + rank + '</span>';
+                                }
+                        }
+                    },
+                    { data: "title" },
+                    { data: "categoryName" },
+                    {
+                        data: "statusLabel",
+                        render: function (data, type) {
+                            if (type === 'filter' || type === 'sort') return data;
+                            if (data === '已發佈') return '<span class="badge bg-success">已發佈</span>';
+                            if (data === '待上架') return '<span class="badge bg-warning text-dark">待上架</span>';
+                            if (data === '已下架') return '<span class="badge bg-dark">已下架</span>';
+                            return '<span class="badge bg-secondary">草稿</span>';
+                        }
+                    },
+                    { data: "publishDate" },
+                    {
+                        data: "viewCount",
+                        className: "text-end fw-bold",
+                        render: function (data) {
+                            return data.toLocaleString();
+                        }
+                    }
+                ]
+            });
+        });
+    </script>
+
+}

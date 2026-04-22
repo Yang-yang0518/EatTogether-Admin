@@ -32,7 +32,8 @@ namespace EatTogether.Models.Repositories
 					Id = e.Id,
 					Name = e.Name,
 					SortOrder = e.SortOrder,
-					IsEnabled = e.IsEnabled					
+					IsEnabled = e.IsEnabled,
+					ArticleCount = e.Articles.Count()
 				})
 				.ToListAsync();
 
