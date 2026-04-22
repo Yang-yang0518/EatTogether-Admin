@@ -6,6 +6,7 @@
     bool isUnpublished = Model.Status == 2;
     bool isScheduled = Model.Status == 1 && Model.PublishDate.HasValue && Model.PublishDate.Value.Date > DateTime.Today;
     bool isPublished = Model.Status == 1 && !isScheduled;
+    bool isReadOnly = isUnpublished; //完全唯讀
 }
 
 @section Styles{
@@ -87,104 +88,121 @@
 
             <div class="card-body">
 
-                <div class="row mb-3 align-items-start">
-                    <div class="col-md-4">
-                        <label asp-for="CategoryId" class="form-label">類別</label>
-                        <select asp-for="CategoryId" asp-items="Model.CategorySelectList" class="form-select">
-                            <option value="">-- 請選擇類別 --</option>
-                        </select>
-                        <span asp-validation-for="CategoryId" class="text-danger"></span>
+                @if (isReadOnly)
+                {
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-lock-fill me-1"></i> 此文章已下架，僅供檢視。
                     </div>
-                    <div class="col-md-4">
-                        <label asp-for="EventId" class="form-label">活動</label>
-                        <select asp-for="EventId" asp-items="Model.EventSelectList" class="form-select">
-                            <option value="">-- 不關聯活動 --</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="d-none d-md-block">&nbsp;</label>
-                        <div class="form-check form-switch pt-2">
-                            <input class="form-check-input" type="checkbox" role="switch" asp-for="IsPinned">
-                            <label class="form-check-label" asp-for="IsPinned">置頂文章</label>
+                }
+                <fieldset disabled="@(isReadOnly ? "disabled" : null)">
+                    <div class="row mb-3 align-items-start">
+                        <div class="col-md-4">
+                            <label asp-for="CategoryId" class="form-label">類別</label>
+                            <select asp-for="CategoryId" asp-items="Model.CategorySelectList" class="form-select">
+                                <option value="">-- 請選擇類別 --</option>
+                            </select>
+                            <span asp-validation-for="CategoryId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="EventId" class="form-label">活動</label>
+                            <select asp-for="EventId" asp-items="Model.EventSelectList" class="form-select">
+                                <option value="">-- 不關聯活動 --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="d-none d-md-block">&nbsp;</label>
+                            <div class="form-check form-switch pt-2">
+                                <input class="form-check-input" type="checkbox" role="switch" asp-for="IsPinned">
+                                <label class="form-check-label" asp-for="IsPinned">置頂文章</label>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="mb-3">
-                    <label asp-for="Title" class="form-label">標題</label>
-                    <input asp-for="Title" class="form-control" placeholder="請輸入文章標題"  />
-                    <span asp-validation-for="Title" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">內文</label>
-                    <input type="hidden" asp-for="Description" id="hiddenDescription" data-val="false"  />
-                    <div id="editor" style="height: 400px;">
-                        @* @Html.Raw(Model.Description) *@
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label">標題</label>
+                        <input asp-for="Title" class="form-control" placeholder="請輸入文章標題" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
                     </div>
-                    <span asp-validation-for="Description" class="text-danger"></span>
-                </div>
 
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <label asp-for="CoverImageFile" class="form-label">上傳封面圖片</label>
-                        <input asp-for="CoverImageFile" type="file" class="form-control" accept="image/*" />
-                        <input type="hidden" asp-for="ExistingCoverImageUrl" />
-                        <span asp-validation-for="CoverImageFile" class="text-danger"></span>
+                    <div class="mb-3">
+                        <label class="form-label">內文</label>
+                        <input type="hidden" asp-for="Description" id="hiddenDescription" data-val="false" />
+                        <div id="editor" style="height: 400px;">
+                            @* @Html.Raw(Model.Description) *@
+                        </div>
+                        <span asp-validation-for="Description" class="text-danger"></span>
                     </div>
-                    <div class="col-12 mb-3">
-                        <label class="form-label d-block">圖片預覽</label>
-                        <div class="image-preview-wrapper border rounded bg-light d-flex align-items-center justify-content-center overflow-hidden">
-                            @if (!string.IsNullOrEmpty(Model.ExistingCoverImageUrl))
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="CoverImageFile" class="form-label">上傳封面圖片</label>
+                            <input asp-for="CoverImageFile" type="file" class="form-control" accept="image/*" />
+                            <input type="hidden" asp-for="ExistingCoverImageUrl" />
+                            <span asp-validation-for="CoverImageFile" class="text-danger"></span>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label d-block">圖片預覽</label>
+                            <div class="image-preview-wrapper border rounded bg-light d-flex align-items-center justify-content-center overflow-hidden">
+                                @if (!string.IsNullOrEmpty(Model.ExistingCoverImageUrl))
+                                {
+                                    <img id="imagePreview" src="@Model.ExistingCoverImageUrl" alt="預覽圖" style="display:block;" />
+                                    <div id="previewPlaceholder" class="text-muted text-center p-3" style="display:none;">
+                                        <i class="bi bi-image fs-1 d-block mb-2"></i>
+                                        <span>選取檔案後顯示預覽</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <img id="imagePreview" src="#" alt="預覽圖" style="display:none;" />
+                                    <div id="previewPlaceholder" class="text-muted text-center p-3">
+                                        <i class="bi bi-image fs-1 d-block mb-2"></i>
+                                        <span>選取檔案後顯示預覽</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label asp-for="PublishDate" class="form-label">上架日期</label>
+                            @if (isPublished)
                             {
-                                <img id="imagePreview" src="@Model.ExistingCoverImageUrl" alt="預覽圖" style="display:block;" />
-                                <div id="previewPlaceholder" class="text-muted text-center p-3" style="display:none;">
-                                    <i class="bi bi-image fs-1 d-block mb-2"></i>
-                                    <span>選取檔案後顯示預覽</span>
+                                <div class="readonly-field">
+                                    @Model.PublishDate?.ToString("yyyy/MM/dd")
                                 </div>
+                                <input type="hidden" asp-for="PublishDate" />
                             }
                             else
                             {
-                                <img id="imagePreview" src="#" alt="預覽圖" style="display:none;" />
-                                <div id="previewPlaceholder" class="text-muted text-center p-3">
-                                    <i class="bi bi-image fs-1 d-block mb-2"></i>
-                                    <span>選取檔案後顯示預覽</span>
-                                </div>
+                                <input asp-for="PublishDate" class="form-control"
+                                       min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                                <span asp-validation-for="PublishDate" class="text-danger"></span>
                             }
+                        </div>
+
+                        <div class="col-md-3">
+                            <label asp-for="ExpiryDate" class="form-label">下架日期</label>
+                            <input asp-for="ExpiryDate" class="form-control"
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                         </div>
                     </div>
 
-                    <div class="col-md-3">
-                        <label asp-for="PublishDate" class="form-label">上架日期</label>
-                        @if (isPublished)
-                        {
-                            <div class="readonly-field">
-                                @Model.PublishDate?.ToString("yyyy/MM/dd")
-                            </div>
-                            <input type="hidden" asp-for="PublishDate"/>
-                        }
-                        else
-                        {
-                            <input asp-for="PublishDate" class="form-control"
-                                   min="@DateTime.Today.ToString("yyyy-MM-dd")"/>
-                            <span asp-validation-for="PublishDate" class="text-danger"></span>
-                        }
-                    </div>
+                </fieldset>
 
-                    <div class="col-md-3">
-                        <label asp-for="ExpiryDate" class="form-label">下架日期</label>
-                        <input asp-for="ExpiryDate" class="form-control"
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")"/>
-                    </div>
-                </div>
+
+
 
             </div>
 
             <div class="card-footer bg-light d-flex justify-content-end gap-2 py-3">
 
-                @if (isDraft)
+                @if (isUnpublished)
                 {
-
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                        <i class="bi bi-arrow-left me-1"></i> 返回列表
+                    </a>
+                }
+                else if (isDraft)
+                {
                     <a asp-action="Index" class="btn btn-outline-secondary">取消</a>
 
                     <div class="btn-group">
@@ -207,13 +225,8 @@
                                     <i class="bi bi-send-fill me-1"></i>刪除草稿
                                 </button>
                             </li>
-
                         </ul>
                     </div>
-
-                    
-
-
                 }
                 else
                 {
@@ -221,8 +234,7 @@
                         <i class="bi bi-check-lg me-1"></i>完成更改
                     </button>
 
-                    <a asp-action="Index" class="btn btn-secondary px-4">取消</a>
-
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">取消</a>
                 }
 
             </div>
@@ -282,7 +294,7 @@
         $(document).ready(function () {
             $.validator.setDefaults({ ignore: [] });
 
-            // 初始化 Quill
+            // 初始化 Quill    
             var quill = new Quill('#editor', {
                 theme: 'snow',
                 modules: {
@@ -295,6 +307,15 @@
                     ]
                 }
             });
+
+            @if (isUnpublished)
+            {
+                        <text>
+                        quill.enable(false);
+                        document.getElementById('editor').style.backgroundColor = '#e9ecef';
+                        document.getElementById('editor').style.color = '#6c757d';
+                        </text>
+            }
 
             var existingContent = @Html.Raw(Json.Serialize(Model.Description));
             if (existingContent) {

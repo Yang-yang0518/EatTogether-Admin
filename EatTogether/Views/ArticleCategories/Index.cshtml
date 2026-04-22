@@ -105,11 +105,11 @@
                 dom: '<"d-flex justify-content-between"f>t<"d-flex justify-content-between mt-3"ip>',                
                 columns: [
                     { data: "sortOrder",
-                      width: "5%",
+                      width: "8%",
                       className: "text-center",
                     },
                     { data: "name", 
-                      width: "55%"
+                      width: "52%"
                     },
                     {
                         data: "articleCount",
@@ -146,8 +146,8 @@
                         orderable: false, //這一欄不需要排序功能
                         render: function(data) {
                             return `
-                                <button type="button" class="btn-edit btn btn-primary btn-sm px-3" data-id="${data}">
-                                    <i class="bi bi-pencil-square me-1"></i> 編輯
+                                <button type="button" class="btn-edit btn btn-primary btn-sm" data-id="${data}">
+                                    <i class="bi bi-pencil-square"></i> 編輯
                                 </button>
                             `;
                         }
