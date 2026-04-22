@@ -14,5 +14,13 @@ namespace EatTogether.Models.ViewModels
         public bool IsSetMeal { get; set; }
         public int? ParentIndex { get; set; }
         public string? CategoryName { get; set; }
+
+        // 前台顯示用欄位
+        public string? ImageUrl { get; set; }
+        public string? Description { get; set; }
+        public bool IsRecommended { get; set; }
+        public bool IsVegetarian { get; set; }
+        public int SpicyLevel { get; set; }
+        public bool IsPopular { get; set; }
     }
 }
