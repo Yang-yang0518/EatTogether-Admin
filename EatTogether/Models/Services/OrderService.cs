@@ -10,6 +10,9 @@ namespace EatTogether.Models.Services
 {
     public interface IOrderService
     {
+        // Tables
+        Task<IEnumerable<TableDto>> GetTablesAsync();
+
         // CreatePreOrder
         Task<string> CreatePreOrderAsync(CreatePreOrderDto dto);
         Task<List<SelectListItem>> GetTableOptionsAsync(int? includeTableId = null);
@@ -258,6 +261,9 @@ namespace EatTogether.Models.Services
             // D4 = 補零到4位，例如 0001, 0010
         }
 
+        public async Task<IEnumerable<TableDto>> GetTablesAsync()
+            => await _tableRepo.GetAllAsync();
+
         public async Task<List<SelectListItem>> GetTableOptionsAsync(int? includeTableId = null)
         {
             var tables = await _tableRepo.GetAllAsync();
@@ -291,14 +297,25 @@ namespace EatTogether.Models.Services
 
                 if (string.IsNullOrEmpty(name)) continue;
 
+                // DB 若沒有存圖片路徑，依命名慣例推斷（/images/{菜名}.jpg）
+                var imageUrl = p.DisplayImageUrl;
+                if (string.IsNullOrEmpty(imageUrl))
+                    imageUrl = $"/images/{name}.jpg";
+
                 result.Add(new CreatePreOrderItemViewModel
                 {
-                    ProductId = p.Id,
-                    ProductName = name,
-                    UnitPrice = (int)(price ?? 0),
-                    Qty = 0,
-                    IsSetMeal = p.ProductType == "SetMeal",
-                    CategoryName = p.ProductType == "Dish" ? p.DishCategoryName : null
+                    ProductId     = p.Id,
+                    ProductName   = name,
+                    UnitPrice     = (int)(price ?? 0),
+                    Qty           = 0,
+                    IsSetMeal     = p.ProductType == "SetMeal",
+                    CategoryName  = p.ProductType == "Dish" ? p.DishCategoryName : "套餐",
+                    ImageUrl      = imageUrl,
+                    Description   = p.ProductType == "Dish" ? p.DishDescription : null,
+                    IsRecommended = p.ProductType == "Dish" && p.DishIsRecommended,
+                    IsVegetarian  = p.ProductType == "Dish" && p.DishIsVegetarian,
+                    SpicyLevel    = p.ProductType == "Dish" ? p.DishSpicyLevel : 0,
+                    IsPopular     = p.ProductType == "Dish" && p.DishIsPopular,
                 });
             }
             return result;
