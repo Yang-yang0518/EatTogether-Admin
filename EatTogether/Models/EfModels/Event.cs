@@ -2,7 +2,6 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EatTogether.Models.EfModels;
 
@@ -18,7 +17,7 @@ public partial class Event
 
     public DateTime StartDate { get; set; }
 
-    public DateTime? EndDate { get; set; }
+    public DateTime EndDate { get; set; }
 
     public int? RewardDishId { get; set; }
 

@@ -4,6 +4,13 @@ GO
 -- 檢查資料庫是否存在(注意資料庫名稱是否正確)，若存在則刪除 (開發階段方便重置，正式環境請小心)
 IF EXISTS (SELECT name FROM sys.databases WHERE name = N'EatTogetherDB')
 BEGIN
+    -- 先 KILL 所有其他連線，再切 SINGLE_USER，避免 SSMS 自身連線搶佔導致卡住
+    DECLARE @kill NVARCHAR(MAX) = '';
+    SELECT @kill += 'KILL ' + CAST(session_id AS NVARCHAR(10)) + '; '
+    FROM sys.dm_exec_sessions
+    WHERE database_id = DB_ID(N'EatTogetherDB') AND session_id <> @@SPID;
+    IF LEN(@kill) > 0 EXEC sp_executesql @kill;
+
     ALTER DATABASE EatTogetherDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
     DROP DATABASE EatTogetherDB;
 END

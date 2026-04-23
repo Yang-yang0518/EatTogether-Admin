@@ -573,6 +573,7 @@ public partial class EatTogetherDBContext : DbContext
                 .IsRequired()
                 .HasMaxLength(10)
                 .IsUnicode(false);
+            entity.Property(e => e.CancelledAt).HasPrecision(0);
             entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(100)
@@ -589,6 +590,10 @@ public partial class EatTogetherDBContext : DbContext
             entity.Property(e => e.ReservedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.Member).WithMany(p => p.Reservations)
+                .HasForeignKey(d => d.MemberId)
+                .HasConstraintName("FK_Reservations_Members");
         });
 
         modelBuilder.Entity<Role>(entity =>
@@ -621,7 +626,7 @@ public partial class EatTogetherDBContext : DbContext
 
         modelBuilder.Entity<SchedulerLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0724E7CC8E");
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0780D69FCC");
 
             entity.Property(e => e.ExecutedAt)
                 .HasDefaultValueSql("(getdate())")

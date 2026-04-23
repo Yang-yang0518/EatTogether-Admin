@@ -49,6 +49,8 @@ public partial class Member
 
     public virtual ICollection<PreOrder> PreOrders { get; set; } = new List<PreOrder>();
 
+    public virtual ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
+
     public virtual ICollection<SubscriptionPreference> SubscriptionPreferences { get; set; } = new List<SubscriptionPreference>();
 
     public virtual ICollection<UserNotification> UserNotifications { get; set; } = new List<UserNotification>();
