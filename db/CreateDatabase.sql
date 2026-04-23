@@ -531,7 +531,7 @@ CREATE TABLE [dbo].[Products](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Reservations]    Script Date: 2026/3/11 下午 10:31:03 ******/
+/****** Object:  Table [dbo].[Reservations]    Script Date: 2026/3/11 下午 10:31:03 (v2 - 新增 MemberId, CancelledAt) ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -548,6 +548,8 @@ CREATE TABLE [dbo].[Reservations](
 	[Status] [int] NOT NULL,
 	[Remark] [nvarchar](200) NULL,
 	[ReservedAt] [datetime2](0) NOT NULL,
+	[MemberId] [int] NULL,
+	[CancelledAt] [datetime2](0) NULL,
  CONSTRAINT [PK_Reservations] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
@@ -1400,6 +1402,12 @@ GO
 ALTER TABLE [dbo].[Reservations]  WITH CHECK ADD  CONSTRAINT [CK_Reservations_Status] CHECK  (([Status]>=(0) AND [Status]<=(3)))
 GO
 ALTER TABLE [dbo].[Reservations] CHECK CONSTRAINT [CK_Reservations_Status]
+GO
+/****** Object:  ForeignKey [FK_Reservations_Members]  ******/
+ALTER TABLE [dbo].[Reservations]  WITH CHECK ADD CONSTRAINT [FK_Reservations_Members]
+    FOREIGN KEY([MemberId]) REFERENCES [dbo].[Members] ([Id])
+GO
+ALTER TABLE [dbo].[Reservations] CHECK CONSTRAINT [FK_Reservations_Members]
 GO
 ALTER TABLE [dbo].[SetMealItems]  WITH CHECK ADD  CONSTRAINT [CK_SetMealItems_DisplayOrder] CHECK  (([DisplayOrder]>=(0)))
 GO
