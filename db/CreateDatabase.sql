@@ -4,6 +4,13 @@ GO
 -- 檢查資料庫是否存在(注意資料庫名稱是否正確)，若存在則刪除 (開發階段方便重置，正式環境請小心)
 IF EXISTS (SELECT name FROM sys.databases WHERE name = N'EatTogetherDB')
 BEGIN
+    -- 先 KILL 所有其他連線，再切 SINGLE_USER，避免 SSMS 自身連線搶佔導致卡住
+    DECLARE @kill NVARCHAR(MAX) = '';
+    SELECT @kill += 'KILL ' + CAST(session_id AS NVARCHAR(10)) + '; '
+    FROM sys.dm_exec_sessions
+    WHERE database_id = DB_ID(N'EatTogetherDB') AND session_id <> @@SPID;
+    IF LEN(@kill) > 0 EXEC sp_executesql @kill;
+
     ALTER DATABASE EatTogetherDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
     DROP DATABASE EatTogetherDB;
 END
@@ -531,7 +538,7 @@ CREATE TABLE [dbo].[Products](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Reservations]    Script Date: 2026/3/11 下午 10:31:03 ******/
+/****** Object:  Table [dbo].[Reservations]    Script Date: 2026/3/11 下午 10:31:03 (v2 - 新增 MemberId, CancelledAt) ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -548,6 +555,8 @@ CREATE TABLE [dbo].[Reservations](
 	[Status] [int] NOT NULL,
 	[Remark] [nvarchar](200) NULL,
 	[ReservedAt] [datetime2](0) NOT NULL,
+	[MemberId] [int] NULL,
+	[CancelledAt] [datetime2](0) NULL,
  CONSTRAINT [PK_Reservations] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
@@ -1400,6 +1409,12 @@ GO
 ALTER TABLE [dbo].[Reservations]  WITH CHECK ADD  CONSTRAINT [CK_Reservations_Status] CHECK  (([Status]>=(0) AND [Status]<=(3)))
 GO
 ALTER TABLE [dbo].[Reservations] CHECK CONSTRAINT [CK_Reservations_Status]
+GO
+/****** Object:  ForeignKey [FK_Reservations_Members]  ******/
+ALTER TABLE [dbo].[Reservations]  WITH CHECK ADD CONSTRAINT [FK_Reservations_Members]
+    FOREIGN KEY([MemberId]) REFERENCES [dbo].[Members] ([Id])
+GO
+ALTER TABLE [dbo].[Reservations] CHECK CONSTRAINT [FK_Reservations_Members]
 GO
 ALTER TABLE [dbo].[SetMealItems]  WITH CHECK ADD  CONSTRAINT [CK_SetMealItems_DisplayOrder] CHECK  (([DisplayOrder]>=(0)))
 GO

@@ -21,5 +21,5 @@ public partial class SchedulerLog
 
     public string TriggerType { get; set; }
 
-    public string? DetailJson { get; set; }
+    public string DetailJson { get; set; }
 }
