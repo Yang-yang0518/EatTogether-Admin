@@ -3,6 +3,19 @@
 @{
     ViewData["Title"] = "訂單明細";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string GetOrderNote(string note)
+    {
+        if (string.IsNullOrEmpty(note)) return "";
+        foreach (var line in note.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith("整單備註："))
+                return trimmed.Substring("整單備註：".Length).Trim();
+        }
+        return "";
+    }
+    var orderNote = GetOrderNote(Model.Note);
 }
 
 <style>
@@ -443,7 +456,7 @@
                 </div>
             }
 
-            @if (!string.IsNullOrEmpty(Model.EventTitle) || !string.IsNullOrEmpty(Model.CouponName) || !string.IsNullOrEmpty(Model.Note))
+            @if (!string.IsNullOrEmpty(Model.EventTitle) || !string.IsNullOrEmpty(Model.CouponName) || !string.IsNullOrEmpty(orderNote))
             {
                 <hr class="info-sep" />
 
@@ -469,11 +482,11 @@
                     </div>
                 }
 
-                @if (!string.IsNullOrEmpty(Model.Note))
+                @if (!string.IsNullOrEmpty(orderNote))
                 {
                     <div class="note-box">
                         <span>⚠️</span>
-                        <span>@Model.Note</span>
+                        <span>@orderNote</span>
                     </div>
                 }
             }

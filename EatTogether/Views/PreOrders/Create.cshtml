@@ -1,7 +1,7 @@
 ﻿@model EatTogether.Models.ViewModels.CreatePreOrderViewModel
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "點餐";
 }
 
 <style>
@@ -22,7 +22,7 @@
 
     /* ── 左側購物車 ── */
     .cart-panel {
-        width: 450px;
+        width: 400px;
         flex-shrink: 0;
         display: flex;
         flex-direction: column;
@@ -1029,12 +1029,23 @@
         <input type="hidden" id="hiddenEventId"        name="EventId"        value="" />
         <input type="hidden" id="hiddenDiscountAmount" name="DiscountAmount"  value="0" />
         <input type="hidden" id="hiddenItemNotesJson"  name="ItemNotesJson"  value="" />
+        <input type="hidden" id="hiddenNoteField"      name="Note"           value="" />
 
         <!-- ── 右側購物車（先放 HTML，CSS order 讓它靠右） ── -->
         <div class="cart-panel" style="order:2;">
             <div class="cart-header" style="display:flex;align-items:center;justify-content:space-between;">
                 <span>🛒 已選餐點</span>
-                <span id="cartItemCount" style="font-size:0.82rem;color:#888;font-weight:400;"></span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span id="cartItemCount" style="font-size:0.82rem;color:#888;font-weight:400;"></span>
+                    <button type="button" id="clearCartBtn" onclick="openClearCartModal()"
+                            style="display:none;padding:3px 10px;font-size:0.78rem;font-weight:700;
+                                   background:#fff;border:1.5px solid #e0b4b4;border-radius:8px;
+                                   color:#c0392b;cursor:pointer;transition:all 0.15s;font-family:inherit;"
+                            onmouseover="this.style.background='#fff5f5'"
+                            onmouseout="this.style.background='#fff'">
+                        🗑️ 清除
+                    </button>
+                </div>
             </div>
             <div class="cart-items" id="cartItems">
                 <div class="cart-empty" id="cartEmpty">尚未選擇任何餐點</div>
@@ -1275,8 +1286,22 @@
 
         </div><!-- /menu-scroll-area -->
 
-        <!-- 整筆備註改成隱藏，由個別品項備註取代 -->
-        <input type="hidden" name="Note" value="" />
+        <!-- 整單備註 -->
+        <div class="order-bottom" style="padding:10px 16px 14px;border-top:2px solid #e8e0d8;background:#fff;">
+            <div style="flex:1;">
+                <label style="font-size:0.82rem;font-weight:700;color:#555;margin-bottom:4px;display:block;">
+                    📝 整單備註
+                </label>
+                <textarea id="orderNoteInput" rows="2"
+                          placeholder="如有特殊需求請在此說明…"
+                          style="width:100%;padding:8px 12px;font-size:0.88rem;font-family:inherit;
+                                 border:1.5px solid #e0e0e0;border-radius:8px;color:#333;
+                                 background:#fafafa;resize:none;outline:none;box-sizing:border-box;
+                                 transition:border-color 0.15s;"
+                          onfocus="this.style.borderColor='#c0392b';this.style.background='#fff'"
+                          onblur="this.style.borderColor='#e0e0e0';this.style.background='#fafafa'"></textarea>
+            </div>
+        </div>
 
         </div><!-- /order-right -->
 
@@ -2383,6 +2408,9 @@
         // 共計項數
         const countEl = document.getElementById('cartItemCount');
         if (countEl) countEl.textContent = totalQty > 0 ? `共計 ${totalQty} 項` : '';
+        // 清除按鈕顯示控制
+        const clearBtn = document.getElementById('clearCartBtn');
+        if (clearBtn) clearBtn.style.display = hasAny ? 'inline-block' : 'none';
         // 若選取的折扣在金額變動後超出範圍，refreshCartDiscounts 內部會重置
         // 先更新顯示（用舊的 selectedDiscount），refreshCartDiscounts 結束後再校正
         updateCartTotalDisplay();
@@ -2441,6 +2469,22 @@
             const itemNotesJson = Object.keys(notesFiltered).length ? JSON.stringify(notesFiltered) : '';
             document.getElementById('hiddenItemNotesJson').value = itemNotesJson;
 
+            // ── 組合 Note 欄位：個別備註 + 整單備註 → 存入 PreOrders.Note ──
+            const orderNote = document.getElementById('orderNoteInput').value.trim();
+            const noteParts = [];
+            // 個別餐點備註
+            if (Object.keys(notesFiltered).length) {
+                const itemLines = Object.entries(notesFiltered)
+                    .map(([name, note]) => `【${name}】${note}`)
+                    .join('；');
+                noteParts.push('餐點備註：' + itemLines);
+            }
+            // 整單備註
+            if (orderNote) {
+                noteParts.push('整單備註：' + orderNote);
+            }
+            document.getElementById('hiddenNoteField').value = noteParts.join('\n');
+
             const formData = new FormData(this);
 
             try {
@@ -2466,6 +2510,30 @@
             }
         });
     });
+
+    // ── 清空所有購物車 ──────────────────────────────────────────
+    function openClearCartModal() {
+        document.getElementById('clearCartModal').style.display = 'flex';
+    }
+    function closeClearCartModal() {
+        document.getElementById('clearCartModal').style.display = 'none';
+    }
+
+    function clearAllCart() {
+        closeClearCartModal();
+        document.querySelectorAll('.menu-card.selected').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('input[name^="Items["][name$=".Qty"]').forEach(i => i.value = 0);
+        // 清除套餐子項目
+        document.querySelectorAll('#extraItemsContainer input').forEach(i => i.remove());
+        setMealServings.length = 0;
+        rawCartTotal = 0;
+        cartItemNotes = {};
+        document.getElementById('hiddenItemNotesJson').value = '';
+        document.getElementById('hiddenNoteField').value = '';
+        const noteInp = document.getElementById('orderNoteInput');
+        if (noteInp) noteInp.value = '';
+        refreshCart();
+    }
 
     // ── 個別餐點備註 ──────────────────────────────────────────
     function updateItemNote(name, value) {
@@ -2566,6 +2634,10 @@
         clearStaff();
         document.getElementById('hiddenDiscountAmount').value = '0';
         document.getElementById('cartRewardRow').style.display = 'none';
+        // 清除整單備註
+        const noteInput = document.getElementById('orderNoteInput');
+        if (noteInput) noteInput.value = '';
+        document.getElementById('hiddenNoteField').value = '';
         refreshCart();
         refreshEventBtn();
         // 清除桌號 & 人數
@@ -2576,12 +2648,40 @@
         // 跳回第一個分類（套餐起始畫面）
         const firstTab = document.querySelector('.cat-tab-btn');
         if (firstTab) firstTab.click();
+        // 重置為內用
+        setInOrOut(true);
         // 重置送出按鈕
         const btn = document.getElementById('submitOrderBtn');
         btn.disabled = false;
         btn.textContent = '送出';
     }
 </script>
+
+<!-- ── 清除購物車確認 Modal ── -->
+<div id="clearCartModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+     z-index:10000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:18px;padding:36px 40px 28px;text-align:center;
+                box-shadow:0 8px 40px rgba(0,0,0,.2);min-width:300px;max-width:380px;
+                font-family:'Noto Sans TC',sans-serif;animation:smIn 0.18s cubic-bezier(0.34,1.56,0.64,1);">
+        <div style="font-size:2.4rem;margin-bottom:12px;">🗑️</div>
+        <div style="font-size:1.1rem;font-weight:700;color:#1a1a1a;margin-bottom:8px;">清除所有餐點？</div>
+        <div style="color:#777;font-size:0.9rem;margin-bottom:24px;">購物車內的餐點將全部移除，此動作無法還原。</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+            <button onclick="closeClearCartModal()"
+                    style="flex:1;padding:11px 0;border:2px solid #ddd;border-radius:10px;
+                           background:#fff;color:#555;font-size:0.95rem;font-weight:700;
+                           cursor:pointer;font-family:inherit;transition:all 0.15s;"
+                    onmouseover="this.style.background='#f5f5f5'"
+                    onmouseout="this.style.background='#fff'">取消</button>
+            <button onclick="clearAllCart()"
+                    style="flex:1;padding:11px 0;border:none;border-radius:10px;
+                           background:#c0392b;color:#fff;font-size:0.95rem;font-weight:700;
+                           cursor:pointer;font-family:inherit;transition:all 0.15s;"
+                    onmouseover="this.style.background='#a93226'"
+                    onmouseout="this.style.background='#c0392b'">確定清除</button>
+        </div>
+    </div>
+</div>
 
 <!-- ── 點餐成功 Modal ── -->
 <div id="orderSuccessModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
