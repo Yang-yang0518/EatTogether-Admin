@@ -3,6 +3,7 @@ using EatTogether.Models.EfModels;
 using EatTogether.Models.Extensions;
 using EatTogether.Models.Repositories;
 using EatTogether.Models.ViewModels;
+using Ganss.Xss;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,20 +13,34 @@ namespace EatTogether.Models.Services
 	{
 		private readonly IArticleRepository _repo;
 		private readonly EatTogetherDBContext _context;
+		private readonly HtmlSanitizer _sanitizer;
 
 		public ArticleService(IArticleRepository repo, EatTogetherDBContext context)
 		{
 			_repo = repo;
 			_context = context;
+
+			// 初始化並設定html白名單，以防止XSS攻擊
+			_sanitizer = new HtmlSanitizer();
+			_sanitizer.AllowedTags.Clear();
+			_sanitizer.AllowedTags.UnionWith(new[]
+			{
+				"p", "br", "b", "i", "strong", "em",
+				"ul", "ol", "li", "h2", "h3", "img", "a"
+			});
+			_sanitizer.AllowedAttributes.Clear();
+			_sanitizer.AllowedAttributes.UnionWith(new[]
+			{
+				"src", "alt", "href"
+			});
 		}
 
 		public async Task CreateAsync(ArticleCreateDto dto)
 		{
-
+			dto.Description = _sanitizer.Sanitize(dto.Description); // 過濾後再存
 			await _repo.CreateAsync(dto);
 
 		}
-
 
 
 		// 取得類別
@@ -61,6 +76,7 @@ namespace EatTogether.Models.Services
 
 		public async Task EditAsync(ArticleEditDto dto)
 		{
+			dto.Description = _sanitizer.Sanitize(dto.Description); // 過濾後再存
 			await _repo.EditAsync(dto);
 		}
 
