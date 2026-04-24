@@ -3,8 +3,6 @@
 @{
     ViewData["Title"] = "結帳";
     var takeOrders = Model.TakeoutOrders;
-    // TODO: 登入系統完成後，改成從 Session 或 ClaimsPrincipal 讀取
-    // 有「訂單管理（含結帳）FunctionId=4」權限：店長、副店長、收銀員
     bool canCancelOrder = true; // 暫時以店長身份模擬
 }
 

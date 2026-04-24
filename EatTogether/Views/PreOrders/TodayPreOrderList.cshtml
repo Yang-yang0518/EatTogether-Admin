@@ -4,6 +4,19 @@
     ViewData["Title"] = "待處理訂單";
     var expanded = Model.Take(3).ToList();
     var listed = Model.Skip(3).ToList();
+
+    // 從組合備註中只取「整單備註：」後的內容
+    string GetOrderNote(string note)
+    {
+        if (string.IsNullOrEmpty(note)) return "";
+        foreach (var line in note.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith("整單備註："))
+                return trimmed.Substring("整單備註：".Length).Trim();
+        }
+        return "";
+    }
 }
 
 <style>
@@ -644,9 +657,12 @@
                         </span>
                     </div>
                     <div class="card-body">
-                        @if (!string.IsNullOrEmpty(order.Note))
+                        @{
+                            var displayNote = GetOrderNote(order.Note);
+                        }
+                        @if (!string.IsNullOrEmpty(displayNote))
                         {
-                            <div class="note-box">⚠️ @order.Note</div>
+                            <div class="note-box">⚠️ @displayNote</div>
                         }
                         @{
                             var parentItems2 = order.Items.Where(i => !i.ParentDetailId.HasValue).ToList();
@@ -774,9 +790,12 @@
                             </div>
                         </div>
                         <div class="list-detail-area" id="list-details-@order.PreOrderId">
-                            @if (!string.IsNullOrEmpty(order.Note))
+                            @{
+                                var displayNote2 = GetOrderNote(order.Note);
+                            }
+                            @if (!string.IsNullOrEmpty(displayNote2))
                             {
-                                <div class="note-box" style="margin-top:10px;">⚠️ @order.Note</div>
+                                <div class="note-box" style="margin-top:10px;">⚠️ @displayNote2</div>
                             }
                             @{
                                 var listParents = order.Items.Where(i => !i.ParentDetailId.HasValue).ToList();
