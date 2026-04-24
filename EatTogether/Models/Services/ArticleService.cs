@@ -25,13 +25,37 @@ namespace EatTogether.Models.Services
 			_sanitizer.AllowedTags.Clear();
 			_sanitizer.AllowedTags.UnionWith(new[]
 			{
-				"p", "br", "b", "i", "strong", "em",
-				"ul", "ol", "li", "h2", "h3", "img", "a"
+				"p", "br",
+				"strong", "b",
+				"em", "i",
+				"u",
+				"span",
+				"a"
 			});
+
 			_sanitizer.AllowedAttributes.Clear();
 			_sanitizer.AllowedAttributes.UnionWith(new[]
 			{
-				"src", "alt", "href"
+				"href",
+				"style",
+				"class"
+			});
+
+			// 限制 style（字色用）
+			_sanitizer.AllowedCssProperties.Clear();
+			_sanitizer.AllowedCssProperties.UnionWith(new[]
+			{
+				"color",
+				"background-color"
+			});
+
+			// 限制 Quill 字體大小 class
+			_sanitizer.AllowedClasses.Clear();
+			_sanitizer.AllowedClasses.UnionWith(new[]
+			{
+				"ql-size-small",
+				"ql-size-large",
+				"ql-size-huge"
 			});
 		}
 
