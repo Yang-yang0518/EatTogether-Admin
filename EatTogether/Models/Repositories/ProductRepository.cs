@@ -29,6 +29,11 @@ namespace EatTogether.Models.Repositories
                     DishImageUrl      = p.Dish != null ? p.Dish.ImageUrl : null,
                     DishCategoryName  = p.Dish != null && p.Dish.Category != null
                                         ? p.Dish.Category.CategoryName : null,
+                    DishDescription   = p.Dish != null ? p.Dish.Description : null,
+                    DishIsRecommended = p.Dish != null && p.Dish.IsRecommended,
+                    DishIsVegetarian  = p.Dish != null && p.Dish.IsVegetarian,
+                    DishSpicyLevel    = p.Dish != null ? p.Dish.SpicyLevel : 0,
+                    DishIsPopular     = p.Dish != null && p.Dish.IsPopular,
                     SetMealId         = p.SetMealId,
                     SetMealName       = p.SetMeal != null ? p.SetMeal.SetMealName : null,
                     SetMealPrice      = p.SetMeal != null ? p.SetMeal.SetPrice : null,

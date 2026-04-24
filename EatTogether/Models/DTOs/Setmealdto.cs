@@ -30,6 +30,6 @@
 		public bool IsRecommended { get; set; }
 
 		public List<SetmealItemDto> Items { get; set; } = new ();
-
+		public object SetMealItems { get; set; }
 	}
 }

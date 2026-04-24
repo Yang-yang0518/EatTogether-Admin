@@ -73,6 +73,7 @@ namespace EatTogether.Models.Repositories
                 {
                         return await _context.SetMeals
                                 .Where(s => s.IsActive)
+                                .OrderByDescending(s => s.DisplayOrder)
                                 .Include(s => s.SetMealItems)
                                 .ThenInclude(i => i.Dish)
                                 .ThenInclude(d => d.Category)
