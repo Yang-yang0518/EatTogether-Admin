@@ -45,6 +45,8 @@ public partial class Member
 
     public virtual ICollection<MemberPasswordResetToken> MemberPasswordResetTokens { get; set; } = new List<MemberPasswordResetToken>();
 
+    public virtual ICollection<MemberRefreshToken> MemberRefreshTokens { get; set; } = new List<MemberRefreshToken>();
+
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
     public virtual ICollection<PreOrder> PreOrders { get; set; } = new List<PreOrder>();
