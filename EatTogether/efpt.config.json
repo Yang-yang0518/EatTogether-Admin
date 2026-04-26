@@ -71,6 +71,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[MemberRefreshTokens]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Members]",
          "ObjectType": 0
       },

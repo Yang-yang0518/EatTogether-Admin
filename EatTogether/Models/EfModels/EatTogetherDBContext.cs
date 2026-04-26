@@ -41,6 +41,8 @@ public partial class EatTogetherDBContext : DbContext
 
     public virtual DbSet<MemberPasswordResetToken> MemberPasswordResetTokens { get; set; }
 
+    public virtual DbSet<MemberRefreshToken> MemberRefreshTokens { get; set; }
+
     public virtual DbSet<Order> Orders { get; set; }
 
     public virtual DbSet<OrderDetail> OrderDetails { get; set; }
@@ -378,6 +380,27 @@ public partial class EatTogetherDBContext : DbContext
                 .HasConstraintName("FK_MemberPasswordResetTokens_Members");
         });
 
+        modelBuilder.Entity<MemberRefreshToken>(entity =>
+        {
+            entity.HasIndex(e => e.MemberId, "IX_MemberRefreshTokens_MemberId");
+
+            entity.HasIndex(e => e.Token, "IX_MemberRefreshTokens_Token").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.ExpiresAt).HasPrecision(0);
+            entity.Property(e => e.Token)
+                .IsRequired()
+                .HasMaxLength(64)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.Member).WithMany(p => p.MemberRefreshTokens)
+                .HasForeignKey(d => d.MemberId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MemberRefreshTokens_Members");
+        });
+
         modelBuilder.Entity<Order>(entity =>
         {
             entity.HasIndex(e => e.OrderAt, "IX_Orders_OrderAt");
@@ -626,7 +649,7 @@ public partial class EatTogetherDBContext : DbContext
 
         modelBuilder.Entity<SchedulerLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0780D69FCC");
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0750ED4AC8");
 
             entity.Property(e => e.ExecutedAt)
                 .HasDefaultValueSql("(getdate())")
