@@ -4,6 +4,13 @@ GO
 -- 檢查資料庫是否存在(注意資料庫名稱是否正確)，若存在則刪除 (開發階段方便重置，正式環境請小心)
 IF EXISTS (SELECT name FROM sys.databases WHERE name = N'EatTogetherDB')
 BEGIN
+    -- 先 KILL 所有其他連線，再切 SINGLE_USER，避免 SSMS 自身連線搶佔導致卡住
+    DECLARE @kill NVARCHAR(MAX) = '';
+    SELECT @kill += 'KILL ' + CAST(session_id AS NVARCHAR(10)) + '; '
+    FROM sys.dm_exec_sessions
+    WHERE database_id = DB_ID(N'EatTogetherDB') AND session_id <> @@SPID;
+    IF LEN(@kill) > 0 EXEC sp_executesql @kill;
+
     ALTER DATABASE EatTogetherDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
     DROP DATABASE EatTogetherDB;
 END
@@ -119,6 +126,7 @@ CREATE TABLE [dbo].[Articles](
 	[ExpiryDate] [datetime2](0) NULL,
 	[IsPinned] [bit] NOT NULL,
 	[Status] [int] NOT NULL,
+	[ViewCount] [int] NOT NULL,
  CONSTRAINT [PK_Articles] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
@@ -530,7 +538,7 @@ CREATE TABLE [dbo].[Products](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Reservations]    Script Date: 2026/3/11 下午 10:31:03 ******/
+/****** Object:  Table [dbo].[Reservations]    Script Date: 2026/3/11 下午 10:31:03 (v2 - 新增 MemberId, CancelledAt) ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -547,6 +555,8 @@ CREATE TABLE [dbo].[Reservations](
 	[Status] [int] NOT NULL,
 	[Remark] [nvarchar](200) NULL,
 	[ReservedAt] [datetime2](0) NOT NULL,
+	[MemberId] [int] NULL,
+	[CancelledAt] [datetime2](0) NULL,
  CONSTRAINT [PK_Reservations] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
@@ -997,6 +1007,8 @@ ALTER TABLE [dbo].[Articles] ADD  DEFAULT ((0)) FOR [IsPinned]
 GO
 ALTER TABLE [dbo].[Articles] ADD  DEFAULT ((0)) FOR [Status]
 GO
+ALTER TABLE [dbo].[Articles] ADD  DEFAULT ((0)) FOR [ViewCount]
+GO
 ALTER TABLE [dbo].[Categories] ADD  DEFAULT ((1)) FOR [IsActive]
 GO
 ALTER TABLE [dbo].[Categories] ADD  DEFAULT (getdate()) FOR [CreatedAt]
@@ -1398,6 +1410,12 @@ ALTER TABLE [dbo].[Reservations]  WITH CHECK ADD  CONSTRAINT [CK_Reservations_St
 GO
 ALTER TABLE [dbo].[Reservations] CHECK CONSTRAINT [CK_Reservations_Status]
 GO
+/****** Object:  ForeignKey [FK_Reservations_Members]  ******/
+ALTER TABLE [dbo].[Reservations]  WITH CHECK ADD CONSTRAINT [FK_Reservations_Members]
+    FOREIGN KEY([MemberId]) REFERENCES [dbo].[Members] ([Id])
+GO
+ALTER TABLE [dbo].[Reservations] CHECK CONSTRAINT [FK_Reservations_Members]
+GO
 ALTER TABLE [dbo].[SetMealItems]  WITH CHECK ADD  CONSTRAINT [CK_SetMealItems_DisplayOrder] CHECK  (([DisplayOrder]>=(0)))
 GO
 ALTER TABLE [dbo].[SetMealItems] CHECK CONSTRAINT [CK_SetMealItems_DisplayOrder]
@@ -1430,7 +1448,18 @@ ALTER TABLE [dbo].[Tables]  WITH CHECK ADD  CONSTRAINT [CK_Tables_Status] CHECK 
 GO
 ALTER TABLE [dbo].[Tables] CHECK CONSTRAINT [CK_Tables_Status]
 GO
+CREATE TABLE [dbo].[SchedulerLogs] (
+    [Id]             INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [ExecutedAt]     DATETIME NOT NULL DEFAULT GETDATE(),
+    [DishesEnabled]  INT NOT NULL DEFAULT 0,
+    [DishesDisabled] INT NOT NULL DEFAULT 0,
+    [MealsEnabled]   INT NOT NULL DEFAULT 0,
+    [MealsDisabled]  INT NOT NULL DEFAULT 0,
+    [TriggerType]    NVARCHAR(10) NOT NULL DEFAULT N'自動',
+    [DetailJson]     NVARCHAR(MAX) NULL
+);
+GO
 USE [master]
 GO
-ALTER DATABASE [EatTogetherDB] SET  READ_WRITE 
+ALTER DATABASE [EatTogetherDB] SET  READ_WRITE
 GO

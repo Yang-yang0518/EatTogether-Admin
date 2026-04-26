@@ -190,6 +190,40 @@ namespace EatTogether.Models.Extensions
 			};
 		}
 
+		//Entity -> ItemViewModel
+		//→ ToViewStatsItemVm(this Article entity)
+		public static ArticleViewStatsItemViewModel ToViewStatsItemVm(this Article entity)
+		{
+			return new ArticleViewStatsItemViewModel
+			{
+				Id = entity.Id,
+				Title = entity.Title,
+				CategoryName = entity.Category?.Name,
+				Status = entity.Status,
+				PublishDate = entity.PublishDate.GetValueOrDefault(),
+				ViewCount = entity.ViewCount
+			};
+		}
+
+		// Entity -> JsonDto（給 Ajax 列表用）
+		public static ArticleViewStatsDto ToViewStatsJsonDto(this Article entity) { 
+			return new ArticleViewStatsDto
+			{
+				Id = entity.Id,
+				Title = entity.Title,
+				CategoryName = entity.Category?.Name,
+				StatusLabel = entity.Status == 1 && entity.PublishDate > DateTime.Now ? "待上架"
+							: entity.Status == 1 ? "已發佈"
+							: entity.Status == 0 ? "草稿"
+							: "已下架",
+				//PublishDate = entity.PublishDate.ToString("yyyy/MM/dd"),
+				PublishDate = entity.PublishDate.HasValue
+							? entity.PublishDate.Value.ToString("yyyy/MM/dd")
+							: "",
+				ViewCount = entity.ViewCount
+			};
+		}
+
 
 	}
 }

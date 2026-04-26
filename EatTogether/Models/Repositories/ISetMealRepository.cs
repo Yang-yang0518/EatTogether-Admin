@@ -19,5 +19,6 @@ namespace EatTogether.Models.Repositories
 		Task RemoveItemAsync(int itemId);
 		Task UpdateItemsAsync(int setMealId, IEnumerable<SetmealItemDto> itemDtos);
 		Task UpdateOrderAsync(IEnumerable<int> orderedIds);
+		Task<int> CloneSetMealAsync(int id);
 	}
 }

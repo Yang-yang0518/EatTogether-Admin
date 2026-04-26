@@ -58,7 +58,6 @@
             background-color: #A3D0E2;
             color: #fff;
         }
-
     </style>
 }
 
@@ -168,10 +167,17 @@
                                 width: "7%",
                                 className: "text-center",
                                 orderable: false, //這一欄不需要排序功能
-                                render: function(data) {
+                             render: function(data, type, row) {
+                                   if (row.statusLabel === '已下架') {
+                                        return `
+                                         <button type="button" class="btn-edit btn btn-outline-secondary btn-light btn-sm" data-id="${data}">
+                                                <i class="bi bi-eye"></i> 詳情
+                                            </button>
+                                        `;
+                                    }
                                     return `
-                                  <button type="button" class="btn-edit btn btn-outline-dark btn-sm px-3" data-id="${data}">
-                                            <i class="bi bi-pencil-square me-1"></i> 編輯
+                                        <button type="button" class="btn-edit btn btn-primary btn-sm" data-id="${data}">
+                                            <i class="bi bi-pencil-square"></i> 編輯
                                         </button>
                                     `;
                                 }

@@ -1,5 +1,6 @@
 ﻿using EatTogether.Models.DTOs;
 using EatTogether.Models.EfModels;
+using EatTogether.Models.Infra;
 using EatTogether.Models.Repositories;
 using EatTogether.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -9,6 +10,9 @@ namespace EatTogether.Models.Services
 {
     public interface IOrderService
     {
+        // Tables
+        Task<IEnumerable<TableDto>> GetTablesAsync();
+
         // CreatePreOrder
         Task<string> CreatePreOrderAsync(CreatePreOrderDto dto);
         Task<List<SelectListItem>> GetTableOptionsAsync(int? includeTableId = null);
@@ -34,10 +38,15 @@ namespace EatTogether.Models.Services
         Task<PaymentCheckoutViewModel?> GetCheckoutByTableAsync(int tableId);
         Task CancelUnservedByTableAsync(int tableId);
         Task<int> CheckoutByTableAsync(int tableId, string payMethod);
-        Task<int> SplitCheckoutAsync(List<int> detailIds, string payMethod);
+        Task<int> SplitCheckoutAsync(List<int> detailIds, string payMethod,
+            int? memberId = null, int? couponId = null, int? eventId = null);
         Task UpdateOrderTableAsync(int preOrderId, int? newTableId, bool inOrOut);
         Task<List<EventApplicableDto>> GetApplicableEventsAsync(int amount);
         Task<bool> HasActiveOrderForTableAsync(int tableId);
+
+        // 拆單折扣查詢（依金額直接查，不依賴訂單 context）
+        Task<List<EventApplicableDto>> GetEventsForSplitAsync(int amount);
+        Task<List<CouponDto>> GetCouponsForSplitAsync(int amount, int? memberId = null);
 
         // Checkout discount selection
         Task<List<EventApplicableDto>> GetManualEventsForOrderAsync(int? tableId, int? preOrderId);
@@ -45,7 +54,18 @@ namespace EatTogether.Models.Services
         Task<(bool Success, string? Error, PaymentCheckoutViewModel? Data)> ApplyEventToOrderAsync(int? tableId, int? preOrderId, int? eventId);
         Task<(bool Success, string? Error, PaymentCheckoutViewModel? Data)> ApplyCouponToOrderAsync(int? tableId, int? preOrderId, string couponCode);
         Task<PaymentCheckoutViewModel?> ApplyCouponByIdToOrderAsync(int? tableId, int? preOrderId, int? couponId);
+
+        // Member on checkout
+        Task<MemberListDto?> SearchMemberByPhoneAsync(string phone);
+        Task<PaymentCheckoutViewModel?> ApplyMemberToOrderAsync(int? tableId, int? preOrderId, int? memberId);
+
+        // Staff lookup
+        Task<(int Id, string Name)?> SearchStaffByEmployeeNumberAsync(string employeeNumber);
+
+        // ECPay 付款確認（callback 未收到時的 DB 備援查詢）
+        Task<bool> IsOrderCompletedAsync(char tradePrefix, int id);
     }
+
     public class OrderService : IOrderService
     {
         private readonly IPreOrderRepository _preOrderRepo;
@@ -54,6 +74,9 @@ namespace EatTogether.Models.Services
         private readonly IOrderRepository _orderRepo;
         private readonly ICouponRepository _couponRepo;
         private readonly IEventRepository _eventRepo;
+        private readonly IMemberRepository _memberRepo;
+        private readonly IMemberCouponRepository _memberCouponRepo;
+        private readonly IUserRepository _userRepo;
 
         public OrderService(
             IPreOrderRepository preOrderRepo,
@@ -61,7 +84,10 @@ namespace EatTogether.Models.Services
             IProductRepository productRepo,
             IOrderRepository orderRepo,
             ICouponRepository couponRepo,
-            IEventRepository eventRepo)
+            IEventRepository eventRepo,
+            IMemberRepository memberRepo,
+            IMemberCouponRepository memberCouponRepo,
+            IUserRepository userRepo)
         {
             _preOrderRepo = preOrderRepo;
             _tableRepo = tableRepo;
@@ -69,6 +95,9 @@ namespace EatTogether.Models.Services
             _orderRepo = orderRepo;
             _couponRepo = couponRepo;
             _eventRepo = eventRepo;
+            _memberRepo = memberRepo;
+            _memberCouponRepo = memberCouponRepo;
+            _userRepo = userRepo;
         }
 
         // ── CreatePreOrder ──────────────────────────────────────────────────
@@ -83,20 +112,45 @@ namespace EatTogether.Models.Services
             var discountAmount = dto.DiscountAmount;
 
             // 加點不重複套用贈品活動
-            var allGiftEvents = dto.IsAddOrder
-                ? new List<EventApplicableDto>()
-                : await _eventRepo.GetApplicableEventsAsync((int)originalAmount);
-            foreach (var giftEv in allGiftEvents.Where(e => e.DiscountType == "Gift" && !string.IsNullOrEmpty(e.RewardDishName)))
+            if (!dto.IsAddOrder)
             {
-                dto.Items.Add(new PreOrderDetailDto
+                // 自動贈品（IsAutoDiscount=1）
+                var allGiftEvents = await _eventRepo.GetApplicableEventsAsync((int)originalAmount);
+                foreach (var giftEv in allGiftEvents.Where(e => e.DiscountType == "Gift" && !string.IsNullOrEmpty(e.RewardDishName)))
                 {
-                    ProductId   = 0,
-                    ProductName = $"🎁 {giftEv.RewardDishName}（活動贈品）",
-                    Qty         = 1,
-                    UnitPrice   = 0,
-                    IsSetMeal   = false,
-                    ParentIndex = null
-                });
+                    dto.Items.Add(new PreOrderDetailDto
+                    {
+                        ProductId   = 0,
+                        ProductName = $"🎁 {giftEv.RewardDishName}（活動贈品）",
+                        Qty         = 1,
+                        UnitPrice   = 0,
+                        IsSetMeal   = false,
+                        ParentIndex = null
+                    });
+                }
+
+                // 手動選擇的 Gift 活動（若尚未被自動贈品涵蓋）
+                if (dto.EventId.HasValue)
+                {
+                    var alreadyAdded = allGiftEvents.Any(e => e.Id == dto.EventId.Value);
+                    if (!alreadyAdded)
+                    {
+                        var giftInfo = await _eventRepo.GetEventGiftInfoAsync(dto.EventId.Value);
+                        if (giftInfo.HasValue && giftInfo.Value.DiscountType == "Gift"
+                            && !string.IsNullOrEmpty(giftInfo.Value.RewardDishName))
+                        {
+                            dto.Items.Add(new PreOrderDetailDto
+                            {
+                                ProductId   = 0,
+                                ProductName = $"🎁 {giftInfo.Value.RewardDishName}（活動贈品）",
+                                Qty         = 1,
+                                UnitPrice   = 0,
+                                IsSetMeal   = false,
+                                ParentIndex = null
+                            });
+                        }
+                    }
+                }
             }
 
             // ── 展開：每份拆成獨立一筆（Qty=1），方便廚房逐份追蹤 ──
@@ -173,6 +227,8 @@ namespace EatTogether.Models.Services
                 Note           = dto.Note,
                 PeopleNum      = dto.PeopleNum,
                 PayMethod      = dto.PayMethod,
+                MemberId       = dto.MemberId,
+                UserId         = dto.UserId,
                 DoneOrCancel   = PreOrderStatus.Pending,
                 PreOrderDetails = details
             };
@@ -204,6 +260,9 @@ namespace EatTogether.Models.Services
             return today.ToString("yyyyMMdd") + "-" + (count + 1).ToString("D4");
             // D4 = 補零到4位，例如 0001, 0010
         }
+
+        public async Task<IEnumerable<TableDto>> GetTablesAsync()
+            => await _tableRepo.GetAllAsync();
 
         public async Task<List<SelectListItem>> GetTableOptionsAsync(int? includeTableId = null)
         {
@@ -238,14 +297,25 @@ namespace EatTogether.Models.Services
 
                 if (string.IsNullOrEmpty(name)) continue;
 
+                // DB 若沒有存圖片路徑，依命名慣例推斷（/images/{菜名}.jpg）
+                var imageUrl = p.DisplayImageUrl;
+                if (string.IsNullOrEmpty(imageUrl))
+                    imageUrl = $"/images/{name}.jpg";
+
                 result.Add(new CreatePreOrderItemViewModel
                 {
-                    ProductId = p.Id,
-                    ProductName = name,
-                    UnitPrice = (int)(price ?? 0),
-                    Qty = 0,
-                    IsSetMeal = p.ProductType == "SetMeal",
-                    CategoryName = p.ProductType == "Dish" ? p.DishCategoryName : null
+                    ProductId     = p.Id,
+                    ProductName   = name,
+                    UnitPrice     = (int)(price ?? 0),
+                    Qty           = 0,
+                    IsSetMeal     = p.ProductType == "SetMeal",
+                    CategoryName  = p.ProductType == "Dish" ? p.DishCategoryName : "套餐",
+                    ImageUrl      = imageUrl,
+                    Description   = p.ProductType == "Dish" ? p.DishDescription : null,
+                    IsRecommended = p.ProductType == "Dish" && p.DishIsRecommended,
+                    IsVegetarian  = p.ProductType == "Dish" && p.DishIsVegetarian,
+                    SpicyLevel    = p.ProductType == "Dish" ? p.DishSpicyLevel : 0,
+                    IsPopular     = p.ProductType == "Dish" && p.DishIsPopular,
                 });
             }
             return result;
@@ -298,30 +368,36 @@ namespace EatTogether.Models.Services
             var list = await _preOrderRepo.GetByStatusAsync(PreOrderStatus.Pending);
             var today = DateTime.Today;
 
-            return list
-                .Where(p => p.OrderAt.Date == today)   // ← 只顯示當日
+            var result = new List<PreOrderListItemViewModel>();
+            foreach (var p in list
+                .Where(p => p.OrderAt.Date == today)
                 .Where(p => p.PreOrderDetails.Any(d => d.DoneOrCancel == 0))
-                .OrderBy(p => p.OrderAt)
-                .Select(p => new PreOrderListItemViewModel
+                .OrderBy(p => p.OrderAt))
+            {
+                var noteDto = OrderNoteHelper.Parse(p.Note);   // 每筆只解析一次
+                result.Add(new PreOrderListItemViewModel
                 {
-                    PreOrderId = p.Id,
-                    OrderNumber = p.OrderNumber,
-                    InOrOut = p.InOrOut,
-                    TableName = p.Table?.TableName ?? "外帶",
-                    OrderAt = p.OrderAt,
-                    Note = p.Note,
+                    PreOrderId   = p.Id,
+                    OrderNumber  = p.OrderNumber,
+                    InOrOut      = p.InOrOut,
+                    TableName    = p.Table?.TableName ?? "外帶",
+                    OrderAt      = p.OrderAt,
+                    Note         = noteDto.Order,              // 整筆備註
                     PendingCount = p.PreOrderDetails.Count(d => d.DoneOrCancel == 0),
-                    Items = p.PreOrderDetails.Select(d => new PreOrderDetailItemViewModel
+                    Items        = p.PreOrderDetails.Select(d => new PreOrderDetailItemViewModel
                     {
-                        DetailId = d.Id,
-                        PreOrderId = p.Id,
-                        ProductName = d.ProductName,
-                        Qty = d.Qty,
-                        Status = d.DoneOrCancel,
-                        IsSetMeal = d.IsSetMeal,
-                        ParentDetailId = d.ParentDetailId
+                        DetailId       = d.Id,
+                        PreOrderId     = p.Id,
+                        ProductName    = d.ProductName,
+                        Qty            = d.Qty,
+                        Status         = d.DoneOrCancel,
+                        IsSetMeal      = d.IsSetMeal,
+                        ParentDetailId = d.ParentDetailId,
+                        ItemNote       = noteDto.Items?.GetValueOrDefault(d.ProductName)
                     }).ToList()
-                }).ToList();
+                });
+            }
+            return result;
         }
 
         public async Task UpdatePreOrderDetailStatusAsync(int detailId, int status)
@@ -453,6 +529,8 @@ namespace EatTogether.Models.Services
                     : $"打 {(100 - p.Coupon.DiscountValue) / 10.0:0.#} 折";
             }
 
+            var noteDto = OrderNoteHelper.Parse(p.Note);   // 只解析一次
+
             return new PreOrderListItemViewModel
             {
                 PreOrderId = p.Id,
@@ -475,7 +553,7 @@ namespace EatTogether.Models.Services
                 OriginalAmount = p.OriginalAmount,
                 DiscountAmount = p.DiscountAmount,
                 TotalAmount = p.TotalAmount,
-                Note = p.Note,
+                Note = noteDto.Order,
                 PayMethod = p.PayMethod,
                 DoneOrCancel = p.DoneOrCancel,
                 Items = p.PreOrderDetails.Select(d => new PreOrderDetailItemViewModel
@@ -484,7 +562,8 @@ namespace EatTogether.Models.Services
                     ProductName = d.ProductName,
                     Qty = d.Qty,
                     UnitPrice = d.UnitPrice,
-                    Status = d.DoneOrCancel
+                    Status = d.DoneOrCancel,
+                    ItemNote = noteDto.Items?.GetValueOrDefault(d.ProductName)
                 }).ToList()
             };
         }
@@ -543,6 +622,9 @@ namespace EatTogether.Models.Services
                 DiscountAmount = discountAmount,
                 TotalAmount = originalAmount - discountAmount,
                 HasUnserved = p.PreOrderDetails.Any(d => d.DoneOrCancel == 0),
+                MemberId    = p.MemberId,
+                MemberName  = await ResolveOrderMemberNameAsync(p),
+                MemberPhone = await ResolveOrderMemberPhoneAsync(p),
                 Items = p.PreOrderDetails.Select(d => new PaymentDetailItemViewModel
                 {
                     DetailId  = d.Id,
@@ -637,46 +719,82 @@ namespace EatTogether.Models.Services
         {
             var preOrder = await _preOrderRepo.GetByIdAsync(preOrderId);
 
+            // ── 以已出餐明細重算金額（不採用建單時的舊值）─────────────────────
+            var servedDetails = preOrder.PreOrderDetails
+                .Where(d => d.DoneOrCancel == 1)
+                .ToList();
+
+            // Gift 活動門檻不足 → 贈品改原價
+            if (preOrder.EventId.HasValue)
+            {
+                var ev = await _eventRepo.GetEditByIdAsync(preOrder.EventId.Value);
+                if (ev?.DiscountType == "Gift")
+                {
+                    var nonGiftAmount = servedDetails.Where(d => d.SubTotal > 0).Sum(d => d.SubTotal);
+                    if (ev.MinSpend > nonGiftAmount)
+                    {
+                        preOrder.EventId = null;
+                        foreach (var d in servedDetails.Where(d =>
+                            d.UnitPrice == 0 && d.ProductName.Contains("活動贈品")))
+                        {
+                            var rawName = d.ProductName.Replace("🎁 ", "").Replace("（活動贈品）", "").Trim();
+                            var price   = await _productRepo.GetPriceByNameAsync(rawName) ?? 0;
+                            d.UnitPrice = price;
+                            d.SubTotal  = price;
+                        }
+                    }
+                }
+            }
+
+            int originalAmount  = servedDetails.Sum(d => d.SubTotal);
+            var discountResult  = await ComputeDiscountAsync(new List<PreOrder> { preOrder }, originalAmount);
+            int discountAmount  = discountResult.Amount;
+            int? effectiveCouponId = discountResult.InvalidCouponOrderIds.Contains(preOrder.Id)
+                                     ? null : preOrder.CouponId;
+
             var payment = new Payment
             {
                 PreOrderId = preOrderId,
-                Method = payMethod,       // ← 用傳入的，不用 preOrder.PayMethod
-                PaidAt = DateTime.Now,
+                Method     = payMethod,
+                PaidAt     = DateTime.Now,
                 DoneOrCancel = 1
             };
 
             var order = new Order
             {
-                PreOrderId = preOrderId,
-                OrderNumber = preOrder.OrderNumber,
-                MemberId = preOrder.MemberId,
-                InOrOut = preOrder.InOrOut,
-                TableId = preOrder.TableId,
-                UserId = preOrder.UserId,
-                OrderAt = preOrder.OrderAt,
-                CouponId = preOrder.CouponId,
-                OriginalAmount = preOrder.OriginalAmount,
-                DiscountAmount = preOrder.DiscountAmount,
-                TotalAmount = preOrder.TotalAmount,
-                Note = preOrder.Note,
-                PayMethod = payMethod,     // ← 用傳入的
-                OrderDetails = preOrder.PreOrderDetails
-                    .Where(d => d.DoneOrCancel == 1)   // ← 只存已完成
-                    .Select(d => new OrderDetail
-                    {
-                        ProductId = d.ProductId,
-                        ProductName = d.ProductName,
-                        Qty = d.Qty,
-                        UnitPrice = d.UnitPrice,
-                        SubTotal = d.SubTotal
-                    }).ToList()
+                PreOrderId     = preOrderId,
+                OrderNumber    = preOrder.OrderNumber,
+                MemberId       = preOrder.MemberId,
+                InOrOut        = preOrder.InOrOut,
+                TableId        = preOrder.TableId,
+                UserId         = preOrder.UserId,
+                OrderAt        = preOrder.OrderAt,
+                CouponId       = effectiveCouponId,
+                OriginalAmount = originalAmount,
+                DiscountAmount = discountAmount,
+                TotalAmount    = originalAmount - discountAmount,
+                Note           = preOrder.Note,
+                PayMethod      = payMethod,
+                OrderDetails   = servedDetails.Select(d => new OrderDetail
+                {
+                    ProductId   = d.ProductId,
+                    ProductName = d.ProductName,
+                    Qty         = d.Qty,
+                    UnitPrice   = d.UnitPrice,
+                    SubTotal    = d.SubTotal
+                }).ToList()
             };
 
             await _orderRepo.AddWithPaymentAsync(order, payment);
+            preOrder.PayMethod = payMethod;  // 同步回寫，讓 AllOrders 顯示正確付款方式
             await _preOrderRepo.UpdateStatusAsync(preOrderId, PreOrderStatus.Done);
 
-            foreach (var d in preOrder.PreOrderDetails.Where(d => d.DoneOrCancel == 1))
+            foreach (var d in servedDetails)
                 await _preOrderRepo.UpdateDetailBilledAsync(d.Id);
+
+            // 結帳成功後，若優惠券有效才標記已使用
+            if (effectiveCouponId.HasValue && preOrder.MemberId.HasValue)
+                await _memberCouponRepo.MarkAsUsedAsync(preOrder.MemberId.Value, effectiveCouponId.Value);
 
             // SplitCheckoutAsync 最後判斷是否關桌
             if (preOrder.TableId.HasValue)
@@ -801,6 +919,42 @@ namespace EatTogether.Models.Services
             var discountResult = await ComputeDiscountAsync(tableOrders, originalAmount);
             int discountAmount = discountResult.Amount;
 
+            // ── Gift 活動門檻不足 → 贈品改原價，並重算金額 ────────────────────
+            var invalidGiftItems = new Dictionary<int, int>(); // detailId → 原價
+            foreach (var order in tableOrders.Where(p =>
+                p.EventId.HasValue && discountResult.InvalidEventOrderIds.Contains(p.Id)))
+            {
+                var ev = await _eventRepo.GetEditByIdAsync(order.EventId!.Value);
+                if (ev?.DiscountType != "Gift") continue;
+
+                foreach (var d in allItems.Where(d =>
+                    d.PreOrderId == order.Id &&
+                    d.UnitPrice == 0 && d.SubTotal == 0 &&
+                    d.ProductName.Contains("活動贈品") && d.Status != 2))
+                {
+                    var rawName = d.ProductName.Replace("🎁 ", "").Replace("（活動贈品）", "").Trim();
+                    var price   = await _productRepo.GetPriceByNameAsync(rawName) ?? 0;
+                    invalidGiftItems[d.DetailId] = price;
+                }
+            }
+            if (invalidGiftItems.Any())
+            {
+                originalAmount += invalidGiftItems.Values.Sum();
+                // 更新 allItems 的顯示價格，並標記 IsInvalidGift
+                foreach (var item in allItems)
+                {
+                    if (invalidGiftItems.TryGetValue(item.DetailId, out var gp))
+                    {
+                        item.UnitPrice     = gp;
+                        item.SubTotal      = gp;
+                        item.IsInvalidGift = true;
+                    }
+                }
+                // 重算折扣（不含贈品型活動，因為已失效）
+                discountResult = await ComputeDiscountAsync(tableOrders, originalAmount);
+                discountAmount = discountResult.Amount;
+            }
+
             // 優惠券/活動標籤：用 FK scalar 判斷（避免 EF 導覽屬性在同一請求內未載入的問題）
             var couponOrder = tableOrders.FirstOrDefault(p =>
                 p.CouponId.HasValue && !discountResult.InvalidCouponOrderIds.Contains(p.Id));
@@ -822,14 +976,26 @@ namespace EatTogether.Models.Services
                 couponName = coupons.FirstOrDefault()?.Name;
             }
 
+            // SubOrders 用 allItems（已含贈品改價後的 SubTotal）
+            // 折扣歸屬：優惠券綁在 couponOrder、活動綁在 eventOrder，整桌折扣放到對應那筆
+            var discountOwnerIds = new HashSet<int>();
+            if (couponOrder != null) discountOwnerIds.Add(couponOrder.Id);
+            if (eventOrder  != null) discountOwnerIds.Add(eventOrder.Id);
+
             var subOrders = tableOrders.Select(p => new SubOrderSummary
             {
-                PreOrderId  = p.Id,
-                OrderNumber = p.OrderNumber,
-                Amount      = p.PreOrderDetails
-                               .Where(d => !d.IsBilled && d.DoneOrCancel != 2 && d.SubTotal > 0)
-                               .Sum(d => d.SubTotal),
-                HasUnserved = p.PreOrderDetails.Any(d => d.DoneOrCancel == 0 && !d.IsBilled)
+                PreOrderId     = p.Id,
+                OrderNumber    = p.OrderNumber,
+                Amount         = allItems
+                                   .Where(d => d.PreOrderId == p.Id && !d.IsBilled && d.Status != 2 && d.SubTotal > 0)
+                                   .Sum(d => d.SubTotal),
+                DiscountAmount = discountOwnerIds.Contains(p.Id) ? discountAmount : 0,
+                // 每筆子單自己的優惠券 / 活動（選了特定子單時只顯示該筆的折扣按鈕）
+                CouponId   = (couponOrder?.Id == p.Id) ? p.CouponId   : null,
+                CouponName = (couponOrder?.Id == p.Id) ? couponName   : null,
+                EventId    = (eventOrder?.Id  == p.Id) ? p.EventId    : null,
+                EventTitle = (eventOrder?.Id  == p.Id) ? eventTitle   : null,
+                HasUnserved    = p.PreOrderDetails.Any(d => d.DoneOrCancel == 0 && !d.IsBilled)
             }).ToList();
 
             return new PaymentCheckoutViewModel
@@ -850,8 +1016,12 @@ namespace EatTogether.Models.Services
                 CouponName = couponName,
                 EventId    = eventOrder?.EventId,
                 EventTitle = eventTitle,
+                MemberId    = tableOrders.Select(o => o.MemberId).FirstOrDefault(id => id.HasValue),
+                MemberName  = await ResolveTableMemberNameAsync(tableOrders),
+                MemberPhone = await ResolveTableMemberPhoneAsync(tableOrders),
                 Items      = allItems,
-                SubOrders  = subOrders
+                SubOrders  = subOrders,
+                OrderMembers = await BuildOrderMembersAsync(tableOrders)
             };
         }
 
@@ -879,10 +1049,15 @@ namespace EatTogether.Models.Services
             foreach (var p in list)
                 lastOrderId = await CheckoutAsync(p.Id, payMethod);  // 逐筆結帳
 
+            // 整桌結帳完畢，直接關桌（不依賴 CheckoutAsync 內的逐筆判斷）
+            await _tableRepo.UpdateStatusAsync(tableId, 0);
+
             return lastOrderId;
         }
 
-        public async Task<int> SplitCheckoutAsync(List<int> detailIds, string payMethod)
+        public async Task<int> SplitCheckoutAsync(
+            List<int> detailIds, string payMethod,
+            int? memberId = null, int? couponId = null, int? eventId = null)
         {
             // 找到這些 detail 屬於哪些 PreOrder
             var allPending = await _preOrderRepo.GetByStatusAsync(PreOrderStatus.Pending);
@@ -897,6 +1072,28 @@ namespace EatTogether.Models.Services
 
             int originalAmount = selected.Sum(d => d.SubTotal);
 
+            // 計算折扣（優惠券 + 活動可同時使用）
+            int couponDiscount = 0;
+            if (couponId.HasValue)
+            {
+                var coupon = await _couponRepo.GetByIdAsync(couponId.Value);
+                if (coupon != null && coupon.MinSpend <= originalAmount)
+                    couponDiscount = coupon.DiscountType == 0
+                        ? coupon.DiscountValue
+                        : (int)(originalAmount * coupon.DiscountValue / 100m);
+            }
+            int eventDiscount = 0;
+            if (eventId.HasValue)
+            {
+                var ev = await _eventRepo.GetEditByIdAsync(eventId.Value);
+                if (ev != null && ev.DiscountType != "Gift" && ev.MinSpend <= originalAmount)
+                    eventDiscount = ev.DiscountType == "FixedAmount"
+                        ? (int)ev.DiscountValue
+                        : (int)(originalAmount * ev.DiscountValue / 100m);
+            }
+            int discountAmount = Math.Min(couponDiscount + eventDiscount, originalAmount);
+            int totalAmount    = originalAmount - discountAmount;
+
             var payment = new Payment
             {
                 PreOrderId = firstPreOrderId,
@@ -909,14 +1106,14 @@ namespace EatTogether.Models.Services
             {
                 PreOrderId = firstPreOrderId,
                 OrderNumber = preOrder.OrderNumber + "-S" + DateTime.Now.ToString("mmss"),
-                MemberId = preOrder.MemberId,
+                MemberId = memberId ?? preOrder.MemberId,
                 InOrOut = preOrder.InOrOut,
                 TableId = preOrder.TableId,
                 UserId = preOrder.UserId,
                 OrderAt = preOrder.OrderAt,
                 OriginalAmount = originalAmount,
-                DiscountAmount = 0,   // 拆單不套用優惠券
-                TotalAmount = originalAmount,
+                DiscountAmount = discountAmount,
+                TotalAmount = totalAmount,
                 Note = preOrder.Note,
                 PayMethod = payMethod,
                 OrderDetails = selected.Select(d => new OrderDetail
@@ -930,6 +1127,11 @@ namespace EatTogether.Models.Services
             };
 
             await _orderRepo.AddWithPaymentAsync(order, payment);
+
+            // 拆單結帳成功後，將該會員的優惠券標記為已使用
+            var effectiveMemberId = memberId ?? preOrder.MemberId;
+            if (couponId.HasValue && effectiveMemberId.HasValue)
+                await _memberCouponRepo.MarkAsUsedAsync(effectiveMemberId.Value, couponId.Value);
 
             foreach (var d in selected)
                 await _preOrderRepo.UpdateDetailBilledAsync(d.Id);
@@ -994,15 +1196,39 @@ namespace EatTogether.Models.Services
             return new List<PreOrder>();
         }
 
+        public async Task<List<EventApplicableDto>> GetEventsForSplitAsync(int amount)
+            => await _eventRepo.GetManualEventsAsync(amount);
+
+        public async Task<List<CouponDto>> GetCouponsForSplitAsync(int amount, int? memberId = null)
+            => await _couponRepo.GetApplicableCouponsAsync(amount, memberId);
+
         public async Task<List<EventApplicableDto>> GetManualEventsForOrderAsync(int? tableId, int? preOrderId)
         {
             var orders = await GetOrdersForContextAsync(tableId, preOrderId);
-            int unbilledAmount = orders
+            int orderAmount = orders
                 .SelectMany(o => o.PreOrderDetails)
-                .Where(d => !d.IsBilled && d.DoneOrCancel != 2 && d.SubTotal > 0)
+                .Where(d => d.DoneOrCancel != 2 && d.SubTotal > 0)
                 .Sum(d => d.SubTotal);
 
-            var eligible = await _eventRepo.GetManualEventsAsync(unbilledAmount);
+            // 若已套用優惠券，活動門檻應以「扣除優惠券折扣後」的金額判斷
+            int couponDiscount = 0;
+            var appliedCouponIds = orders
+                .Where(o => o.CouponId.HasValue)
+                .Select(o => o.CouponId!.Value)
+                .ToList();
+            if (appliedCouponIds.Any())
+            {
+                var coupon = await _couponRepo.GetByIdAsync(appliedCouponIds.First());
+                if (coupon != null && coupon.MinSpend <= orderAmount)
+                {
+                    couponDiscount = coupon.DiscountType == 0
+                        ? coupon.DiscountValue
+                        : (int)(orderAmount * coupon.DiscountValue / 100m);
+                }
+            }
+            int effectiveAmountForEvent = Math.Max(0, orderAmount - couponDiscount);
+
+            var eligible = await _eventRepo.GetManualEventsAsync(effectiveAmountForEvent);
 
             // 目前使用中的活動 ID
             var inUseIds = orders
@@ -1030,12 +1256,32 @@ namespace EatTogether.Models.Services
         public async Task<List<CouponDto>> GetApplicableCouponsForOrderAsync(int? tableId, int? preOrderId)
         {
             var orders = await GetOrdersForContextAsync(tableId, preOrderId);
-            int unbilledAmount = orders
+            int orderAmount = orders
                 .SelectMany(o => o.PreOrderDetails)
-                .Where(d => !d.IsBilled && d.DoneOrCancel != 2 && d.SubTotal > 0)
+                .Where(d => d.DoneOrCancel != 2 && d.SubTotal > 0)
                 .Sum(d => d.SubTotal);
 
-            var eligible = await _couponRepo.GetApplicableCouponsAsync(unbilledAmount);
+            // 若已套用活動，優惠券門檻應以「扣除活動折扣後」的金額判斷
+            int eventDiscount = 0;
+            var appliedEventIds = orders
+                .Where(o => o.EventId.HasValue)
+                .Select(o => o.EventId!.Value)
+                .ToList();
+            if (appliedEventIds.Any())
+            {
+                var ev = await _eventRepo.GetEditByIdAsync(appliedEventIds.First());
+                if (ev != null && ev.DiscountType != "Gift" && ev.MinSpend <= orderAmount)
+                {
+                    eventDiscount = ev.DiscountType == "FixedAmount"
+                        ? (int)ev.DiscountValue
+                        : (int)(orderAmount * ev.DiscountValue / 100m);
+                }
+            }
+            int effectiveAmountForCoupon = Math.Max(0, orderAmount - eventDiscount);
+
+            // 取得有效會員 ID（單桌多筆時取第一筆有設定的）
+            var contextMemberId = orders.FirstOrDefault(o => o.MemberId.HasValue)?.MemberId;
+            var eligible = await _couponRepo.GetApplicableCouponsAsync(effectiveAmountForCoupon, contextMemberId);
 
             // 目前使用中的優惠券 ID
             var inUseIds = orders
@@ -1051,7 +1297,7 @@ namespace EatTogether.Models.Services
             if (missingIds.Count > 0)
             {
                 var extra = await _couponRepo.GetCouponsByIdsAsync(missingIds);
-                foreach (var c in extra) c.IsInUse = true;
+                foreach (var c in extra) { c.IsInUse = true; c.IsEligible = c.MinSpend <= effectiveAmountForCoupon; }
                 eligible.AddRange(extra);
             }
 
@@ -1089,6 +1335,28 @@ namespace EatTogether.Models.Services
                     target.CouponId = couponId;
                 }
             }
+
+            await _preOrderRepo.SaveChangesAsync();
+
+            if (tableId.HasValue)    return await GetCheckoutByTableAsync(tableId.Value);
+            if (preOrderId.HasValue) return await GetCheckoutDetailAsync(preOrderId.Value);
+            return null;
+        }
+
+        // ── 會員綁定 ─────────────────────────────────────────────────────────
+        public async Task<MemberListDto?> SearchMemberByPhoneAsync(string phone)
+            => await _memberRepo.GetByPhoneAsync(phone);
+
+        public async Task<(int Id, string Name)?> SearchStaffByEmployeeNumberAsync(string employeeNumber)
+            => await _userRepo.GetByEmployeeNumberAsync(employeeNumber);
+
+        public async Task<PaymentCheckoutViewModel?> ApplyMemberToOrderAsync(int? tableId, int? preOrderId, int? memberId)
+        {
+            var orders = await GetOrdersForContextAsync(tableId, preOrderId);
+            if (!orders.Any()) return null;
+
+            foreach (var o in orders)
+                o.MemberId = memberId; // null = 清除
 
             await _preOrderRepo.SaveChangesAsync();
 
@@ -1245,6 +1513,64 @@ namespace EatTogether.Models.Services
         }
 
         // ── 共用：依目前未結金額重新判斷活動＆優惠券折扣 ──────────────────────────
+        // ── 會員姓名 / 電話：優先用 EF 導覽屬性，導覽屬性為 null 時補查 DB ──
+        private async Task<string?> ResolveOrderMemberNameAsync(PreOrder order)
+        {
+            if (order.Member?.Name != null) return order.Member.Name;
+            if (!order.MemberId.HasValue)   return null;
+            return (await _memberRepo.GetByIdAsync(order.MemberId.Value))?.Name;
+        }
+
+        private async Task<string?> ResolveOrderMemberPhoneAsync(PreOrder order)
+        {
+            if (order.Member?.Phone != null) return order.Member.Phone;
+            if (!order.MemberId.HasValue)    return null;
+            return (await _memberRepo.GetByIdAsync(order.MemberId.Value))?.Phone;
+        }
+
+        private async Task<List<OrderMemberInfo>> BuildOrderMembersAsync(List<PreOrder> orders)
+        {
+            var result = new List<OrderMemberInfo>();
+            foreach (var o in orders)
+            {
+                string? name  = o.Member?.Name;
+                string? phone = o.Member?.Phone;
+                if (o.MemberId.HasValue && name == null)
+                {
+                    var m = await _memberRepo.GetByIdAsync(o.MemberId.Value);
+                    name  = m?.Name;
+                    phone = m?.Phone;
+                }
+                result.Add(new OrderMemberInfo
+                {
+                    PreOrderId  = o.Id,
+                    OrderNumber = o.OrderNumber,
+                    MemberId    = o.MemberId,
+                    MemberName  = name,
+                    MemberPhone = phone
+                });
+            }
+            return result;
+        }
+
+        private async Task<string?> ResolveTableMemberNameAsync(List<PreOrder> orders)
+        {
+            var nav = orders.Select(o => o.Member?.Name).FirstOrDefault(n => n != null);
+            if (nav != null) return nav;
+            var memberId = orders.Select(o => o.MemberId).FirstOrDefault(id => id.HasValue);
+            if (!memberId.HasValue) return null;
+            return (await _memberRepo.GetByIdAsync(memberId.Value))?.Name;
+        }
+
+        private async Task<string?> ResolveTableMemberPhoneAsync(List<PreOrder> orders)
+        {
+            var nav = orders.Select(o => o.Member?.Phone).FirstOrDefault(n => n != null);
+            if (nav != null) return nav;
+            var memberId = orders.Select(o => o.MemberId).FirstOrDefault(id => id.HasValue);
+            if (!memberId.HasValue) return null;
+            return (await _memberRepo.GetByIdAsync(memberId.Value))?.Phone;
+        }
+
         private record DiscountResult(int Amount, HashSet<int> InvalidEventOrderIds, HashSet<int> InvalidCouponOrderIds);
 
         private async Task<DiscountResult> ComputeDiscountAsync(List<PreOrder> orders, int unbilledAmount)
@@ -1258,22 +1584,31 @@ namespace EatTogether.Models.Services
             {
                 int orderDiscount = 0;
 
-                // 活動折扣（非贈品，整桌只套一次，且須達最低消費）
+                // 活動折扣（整桌只套一次，且須達最低消費）
                 if (order.EventId.HasValue)
                 {
                     var ev = await _eventRepo.GetEditByIdAsync(order.EventId.Value);
-                    if (ev != null && ev.DiscountType != "Gift")
+                    if (ev != null)
                     {
-                        if (!eventApplied && ev.MinSpend <= unbilledAmount)
+                        if (ev.DiscountType == "Gift")
                         {
-                            orderDiscount += ev.DiscountType == "Percent"
-                                ? (int)(unbilledAmount * ev.DiscountValue / 100m)
-                                : (int)ev.DiscountValue;
-                            eventApplied = true;
+                            // 贈品型：只驗門檻，無金額折扣
+                            if (ev.MinSpend > unbilledAmount)
+                                invalidEvents.Add(order.Id);
                         }
                         else
                         {
-                            invalidEvents.Add(order.Id);
+                            if (!eventApplied && ev.MinSpend <= unbilledAmount)
+                            {
+                                orderDiscount += ev.DiscountType == "Percent"
+                                    ? (int)(unbilledAmount * ev.DiscountValue / 100m)
+                                    : (int)ev.DiscountValue;
+                                eventApplied = true;
+                            }
+                            else
+                            {
+                                invalidEvents.Add(order.Id);
+                            }
                         }
                     }
                 }
@@ -1297,6 +1632,30 @@ namespace EatTogether.Models.Services
             }
 
             return new DiscountResult(Math.Min(total, unbilledAmount), invalidEvents, invalidCoupons);
+        }
+
+        // ── ECPay callback 備援：直接查 DB 確認訂單是否已結帳 ────────────────
+        public async Task<bool> IsOrderCompletedAsync(char tradePrefix, int id)
+        {
+            switch (tradePrefix)
+            {
+                case 'O':
+                    // 單筆外帶：PreOrder.DoneOrCancel == 1 即已結帳
+                    var preOrder = await _preOrderRepo.GetByIdAsync(id);
+                    return preOrder?.DoneOrCancel == PreOrderStatus.Done;
+
+                case 'T':
+                    // 整桌：若桌位已無 active（pending）訂單，視為已結帳完成
+                    var active = await _preOrderRepo.GetActiveByTableIdAsync(id);
+                    return !active.Any();
+
+                case 'S':
+                    // 拆單：難以唯一對應，回傳 false（交由 polling 繼續等待）
+                    return false;
+
+                default:
+                    return false;
+            }
         }
     }
 }

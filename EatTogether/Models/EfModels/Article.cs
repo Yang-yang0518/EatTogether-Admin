@@ -27,6 +27,8 @@ public partial class Article
 
     public int Status { get; set; }
 
+    public int ViewCount { get; set; }
+
     public virtual ArticleCategory Category { get; set; }
 
     public virtual Event Event { get; set; }

@@ -1,0 +1,160 @@
+@{
+    Layout = null;
+    bool known   = ViewBag.Known   is bool k && k;
+    bool success = ViewBag.Success is bool s && s;
+    string tradeNo = ViewBag.TradeNo ?? "";
+}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>付款結果</title>
+    <style>
+        body { background: #f8f9fa; margin: 0; font-family: sans-serif; }
+        .result-box {
+            max-width: 440px;
+            margin: 80px auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 48px 40px;
+            text-align: center;
+        }
+        .result-icon  { font-size: 3.5rem; margin-bottom: 16px; }
+        .result-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+        .result-sub   { font-size: 0.92rem; color: #888; margin-bottom: 32px; }
+        .btn-back {
+            display: inline-block;
+            padding: 12px 32px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: opacity 0.15s;
+        }
+        .btn-back:hover { opacity: 0.85; }
+        .spinner {
+            display: inline-block;
+            width: 36px; height: 36px;
+            border: 4px solid #ddd;
+            border-top-color: #1a77c9;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+        }
+        @@keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="result-box" id="box">
+
+    @if (known && success)
+    {
+        <!-- 已知：成功，3 秒後自動跳轉 -->
+        <div class="result-icon">✅</div>
+        <div class="result-title" style="color:#27ae60;">付款成功</div>
+        <div class="result-sub">付款完成，感謝您的消費！</div>
+        <a href="/Payments/Create" class="btn-back" style="background:#27ae60;color:#fff;">立即返回結帳頁</a>
+        <script>
+            setTimeout(function(){ location.href='/Payments/Create'; }, 1500);
+        </script>
+    }
+    else if (known && !success)
+    {
+        <!-- 已知：失敗 -->
+        <div class="result-icon">❌</div>
+        <div class="result-title" style="color:#c0392b;">付款失敗</div>
+        <div class="result-sub">付款未完成或已取消，請重新嘗試。</div>
+        <a href="/Payments/Create" class="btn-back" style="background:#c0392b;color:#fff;">返回結帳頁</a>
+    }
+    else
+    {
+        <!-- 未知：顯示 polling 畫面 -->
+        <div class="spinner" id="spinner"></div>
+        <div class="result-title" style="color:#1a77c9;" id="pendingTitle">確認付款中…</div>
+        <div class="result-sub" id="pendingSub">正在等待付款確認，請稍候。</div>
+    }
+
+</div>
+
+@if (!known)
+{
+    <script>
+        const tradeNo  = '@Html.Raw(tradeNo)';
+        const maxTries = 30;   // 最多等 60 秒（每 2 秒一次）
+        let   tries    = 0;
+        let   polling  = true;
+
+        async function poll() {
+            if (!polling) return;
+            tries++;
+            try {
+                const res  = await fetch(`/Payments/EcPayStatus?tradeNo=${encodeURIComponent(tradeNo)}`);
+                const data = await res.json();
+
+                if (data.known) {
+                    polling = false;
+                    renderResult(data.success);
+                    return;
+                }
+            } catch { /* 靜默，繼續重試 */ }
+
+            if (tries >= maxTries) {
+                polling = false;
+                renderTimeout();
+                return;
+            }
+            setTimeout(poll, 2000);
+        }
+
+        function renderResult(success) {
+            if (success) {
+                // 成功：顯示成功畫面並 1.5 秒後自動跳轉
+                document.getElementById('box').innerHTML =
+                    `<div class="result-icon">✅</div>
+                     <div class="result-title" style="color:#27ae60;">付款成功</div>
+                     <div class="result-sub">付款完成，感謝您的消費！</div>
+                     <a href="/Payments/Create" class="btn-back" style="background:#27ae60;color:#fff;">立即返回結帳頁</a>`;
+                setTimeout(function(){ location.href='/Payments/Create'; }, 1500);
+            } else {
+                document.getElementById('box').innerHTML =
+                    `<div class="result-icon">❌</div>
+                     <div class="result-title" style="color:#c0392b;">付款失敗</div>
+                     <div class="result-sub">付款未完成或已取消，請重新嘗試。</div>
+                     <a href="/Payments/Create" class="btn-back" style="background:#c0392b;color:#fff;">返回結帳頁</a>`;
+            }
+        }
+
+        function renderTimeout() {
+            document.getElementById('box').innerHTML =
+                `<div class="result-icon">⚠️</div>
+                 <div class="result-title" style="color:#e67e22;">付款狀態未知</div>
+                 <div class="result-sub">無法自動確認，請點「再次確認」或至後台確認是否有付款記錄。</div>
+                 <button onclick="retryPoll()" class="btn-back"
+                         style="background:#1a77c9;color:#fff;border:none;cursor:pointer;margin-bottom:10px;">
+                     🔄 再次確認
+                 </button>
+                 <br>
+                 <a href="/Payments/Create" class="btn-back"
+                    style="background:#e67e22;color:#fff;">返回結帳頁</a>`;
+        }
+
+        function retryPoll() {
+            tries  = 0;
+            polling = true;
+            document.getElementById('box').innerHTML =
+                `<div class="spinner" style="display:inline-block;width:36px;height:36px;
+                     border:4px solid #ddd;border-top-color:#1a77c9;border-radius:50%;
+                     animation:spin 0.8s linear infinite;margin-bottom:20px;"></div>
+                 <div class="result-title" style="color:#1a77c9;">確認付款中…</div>
+                 <div class="result-sub" style="font-size:0.92rem;color:#888;">正在重新查詢，請稍候。</div>`;
+            setTimeout(poll, 500);
+        }
+
+        // 頁面載入後立即開始 polling
+        setTimeout(poll, 1000);
+    </script>
+}
+</body>
+</html>

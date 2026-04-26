@@ -5,97 +5,76 @@
 
 <div class="container-fluid px-4">
     <h1 class="mt-4">餐點管理</h1>
+    <div id="stockWarningBar"></div>
 
     <!-- 統計卡片 -->
-    <div class="row mb-4">
-        <div class="col-xl-4 col-md-4">
-            <div class="card bg-primary text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('')" title="點擊顯示所有餐點">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="small text-white-50 fw-bold">總餐點數</div>
-                        <div class="h3 mb-0 fw-bold">@Model.Count()</div>
-                    </div>
-                    <i class="fas fa-utensils fa-2x text-white-50"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-4 col-md-4">
-            <div class="card bg-success text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('上架中')" title="點擊篩選上架中餐點">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="small text-white-50 fw-bold">上架中</div>
-                        <div class="h3 mb-0 fw-bold">@Model.Count(d => d.IsActive)</div>
-                    </div>
-                    <i class="fas fa-check-circle fa-2x text-white-50"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-4 col-md-4">
-            <div class="card bg-secondary text-white mb-4 shadow-sm border-0 stat-card" onclick="filterByStatus('已下架')" title="點擊篩選已下架餐點">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="small text-white-50 fw-bold">已下架</div>
-                        <div class="h3 mb-0 fw-bold">@Model.Count(d => !d.IsActive)</div>
-                    </div>
-                    <i class="fas fa-ban fa-2x text-white-50"></i>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div style="display:flex; gap:16px; margin-bottom:1.5rem;">
 
-    <div id="alertBox"></div>
+        <div style="flex:1; background:#3b82f6; color:white; border-radius:10px;
+                padding:16px 20px; display:flex; align-items:center;
+                justify-content:space-between; cursor:pointer;"
+             onclick="filterByStatus('')" title="點擊顯示所有餐點">
+            <div>
+                <div style="font-size:11px; font-weight:600; opacity:0.75;
+                        text-transform:uppercase; letter-spacing:.05em;">
+                    總餐點數
+                </div>
+                <div id="stat-total" style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count()</div>
+            </div>
+            <i class="fas fa-utensils fa-2x" style="opacity:0.4;"></i>
+        </div>
 
-    <!-- 分類 Tab 篩選 -->
+        <div style="flex:1; background:#22c55e; color:white; border-radius:10px;
+                padding:16px 20px; display:flex; align-items:center;
+                justify-content:space-between; cursor:pointer;"
+             onclick="filterByStatus('上架中')" title="點擊篩選上架中餐點">
+            <div>
+                <div style="font-size:11px; font-weight:600; opacity:0.75;
+                        text-transform:uppercase; letter-spacing:.05em;">
+                    上架中
+                </div>
+                <div id="stat-active" style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count(d => d.IsActive)</div>
+            </div>
+            <i class="fas fa-check-circle fa-2x" style="opacity:0.4;"></i>
+        </div>
 
-    <div class="mb-4">
-        <ul class="nav nav-pills flex-wrap gap-2" id="categoryTabs">
-            <li class="nav-item">
-                <button class="nav-link active rounded-pill shadow-sm" onclick="filterByCategory('', this)">
-                    <i class="fas fa-th me-1"></i>全部
-                </button>
-            </li>
-            @foreach (var cat in Model.Select(d => d.CategoryName).Where(c => !string.IsNullOrEmpty(c)).Distinct().OrderBy(c => c))
-            {
-                <li class="nav-item">
-                    <button class="nav-link rounded-pill shadow-sm" onclick="filterByCategory('@cat', this)">@cat</button>
-                </li>
-            }
-        </ul>
+        <div style="flex:1; background:#9ca3af; color:white; border-radius:10px;
+                padding:16px 20px; display:flex; align-items:center;
+                justify-content:space-between; cursor:pointer;"
+             onclick="filterByStatus('已下架')" title="點擊篩選已下架餐點">
+            <div>
+                <div style="font-size:11px; font-weight:600; opacity:0.75;
+                        text-transform:uppercase; letter-spacing:.05em;">
+                    已下架
+                </div>
+                <div id="stat-inactive" style="font-size:2rem; font-weight:700; margin-top:4px;">@Model.Count(d => !d.IsActive)</div>
+            </div>
+            <i class="fas fa-ban fa-2x" style="opacity:0.4;"></i>
+        </div>
+
     </div>
 
     <!-- 搜尋與篩選區 -->
-    <div class="card mb-3 shadow-sm border-0">
-        <div class="card-body bg-light rounded">
-            <div class="row g-3 align-items-center">
-                <div class="col-xl-4 col-lg-3 col-md-4">
-                    <div class="input-group shadow-sm">
-                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text" id="searchInput" class="form-control border-start-0"
-                               placeholder="搜尋餐點名稱..." oninput="filterCards(true)" />
-                    </div>
-                </div>
-                <div class="col-xl-2 col-lg-2 col-md-4">
-                    <select id="statusFilter" class="form-select shadow-sm" onchange="filterCards(true)">
-                        <option value="">所有狀態</option>
-                        <option value="上架中">上架中</option>
-                        <option value="已下架">已下架</option>
-                    </select>
-                </div>
-                <div class="col-xl-2 col-lg-2 col-md-4">
-                    <button id="toggleSortBtn" class="btn btn-outline-secondary w-100 shadow-sm" onclick="toggleSortMode()">
-                        <i class="fas fa-arrows-alt me-1"></i>調整排序
-                    </button>
-                </div>
-                <div class="col-xl-4 col-lg-5 col-md-12 text-end d-flex justify-content-end align-items-center gap-2">
-                    <a asp-action="Create" class="btn btn-primary shadow-sm px-4 rounded-pill text-nowrap">
-                        <i class="fas fa-plus me-1"></i>新增餐點
-                    </a>
-                </div>
-            </div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.75rem; padding:0.75rem; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+        <div style="display:flex; align-items:center; flex:1; gap:8px; background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:5px 10px; min-width:0;">
+            <i class="fas fa-search text-muted" style="font-size:0.85rem; flex-shrink:0;"></i>
+            <input type="text" id="searchInput" class="form-control form-control-sm border-0 p-0 shadow-none"
+                   placeholder="搜尋餐點名稱..." oninput="filterCards(true)" />
         </div>
+        <select id="statusFilter" class="form-select form-select-sm" onchange="filterCards(true)" style="width:auto; min-width:90px; flex-shrink:0;">
+            <option value="">所有狀態</option>
+            <option value="上架中">上架中</option>
+            <option value="已下架">已下架</option>
+        </select>
+        <button id="toggleSortBtn" class="btn btn-outline-secondary btn-sm" onclick="toggleSortMode()" style="flex-shrink:0; white-space:nowrap; display:none;">
+            <i class="fas fa-arrows-alt me-1"></i>調整排序
+        </button>
+        <a asp-action="Create" class="btn btn-primary btn-sm" style="flex-shrink:0; white-space:nowrap;">
+            <i class="fas fa-plus me-1"></i>新增餐點
+        </a>
     </div>
 
-    <!-- 【新功能】批次操作列 -->
+    <!-- 批次操作列 -->
     <div id="batchBar" class="alert alert-info border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3 flex-wrap" role="alert">
         <div class="form-check mb-0">
             <input class="form-check-input" type="checkbox" id="selectAllCheck" onchange="toggleSelectAll(this.checked)">
@@ -119,10 +98,10 @@
     </div>
 
     <!-- 排序模式提示列 -->
-    <div id="sortModeBar" class="alert alert-warning border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3" role="alert">
+    <div id="sortModeBar" class="alert alert-warning border-0 shadow-sm d-none mb-3 d-flex align-items-center gap-3" role="alert" style="display:none !important;">
         <i class="fas fa-info-circle fa-lg"></i>
         <div>
-            <strong>排序模式已開啟</strong>：請拖曳卡片調整順序，完成後點擊右側儲存按鈕。
+            <strong>排序模式已開啟</strong>：請拖曳列調整順序，完成後點擊右側儲存按鈕。
         </div>
         <div class="ms-auto d-flex gap-2">
             <button class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" onclick="saveOrder()">
@@ -134,182 +113,256 @@
         </div>
     </div>
 
+    <div id="alertBox" style="position:fixed; top:1rem; right:1rem; z-index:9999; min-width:280px;"></div>
     <div class="card mb-4 shadow-sm border-0">
-        <div class="card-body p-4 bg-light bg-opacity-10">
+        <div class="card-body p-0">
 
             <!-- 操作模式切換按鈕 -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom bg-gray-50">
                 <small class="text-muted">
                     <i class="fas fa-info-circle me-1"></i>
-                    <span>點擊「批次操作」可多選進行大量狀態變更</span>
+                    <span>點擊列表可查看餐點詳情；點擊「批次操作」可多選大量變更</span>
                 </small>
                 <button id="batchModeBtn" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="enterBatchMode()">
                     <i class="fas fa-tasks me-1"></i>批次操作
                 </button>
             </div>
 
-            <!-- 餐點展示區域 -->
-            <div class="row g-4" id="dishCardContainer">
-                @foreach (var item in Model)
-                {
-                    <div class="col-6 col-md-4 col-lg-3 dish-card"
-                         data-id="@item.Id"
-                         data-category="@item.CategoryName"
-                         data-name="@item.DishName.ToLower()"
-                         data-order="@item.DisplayOrder">
-                        <div class="card h-100 border-0 shadow-sm dish-card-inner position-relative rounded-4 overflow-hidden">
+            <!-- Master-Detail 左右分割 -->
+            <div style="display:flex; min-height:600px;">
 
-                            <!-- 拖曳把手 -->
-                            <div class="drag-handle position-absolute top-0 end-0 p-2 d-none" style="z-index:20; cursor:move;">
-                                <i class="fas fa-grip-vertical fa-lg text-secondary opacity-50"></i>
-                            </div>
+                <!-- ===== 左側：列表面板 ===== -->
+                <div style="width:42%; border-right:1px solid #e5e7eb; display:flex; flex-direction:column; min-width:0;">
 
-                            <!-- 批次勾選框 -->
-                            <div class="batch-check position-absolute top-0 start-0 p-2 d-none" style="z-index:20;">
-                                <div class="form-check">
-                                    <input class="form-check-input card-checkbox shadow" type="checkbox"
-                                           data-id="@item.Id" onchange="updateSelectedCount()">
-                                </div>
-                            </div>
-
-                            <div class="position-relative overflow-hidden" style="padding-top:75%; background:#fff;">
-                                @if (!string.IsNullOrEmpty(item.ImageUrl))
-                                {
-                                    <img src="@item.ImageUrl"
-                                         style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; object-position: center center;"
-                                         alt="@item.DishName"
-                                         onerror="this.src='/images/no-image.png'; this.onerror=null;" />
-                                }
-                                else
-                                {
-                                    <div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;" class="bg-light text-muted">
-                                        <i class="fas fa-image fa-3x opacity-25"></i>
-                                    </div>
-                                }
-
-                                <!-- 右上角：供應狀態標籤 -->
-                                @if (item.IsLimited)
-                                {
-                                    var today = DateOnly.FromDateTime(DateTime.Today);
-                                    bool isExpired = item.EndDate.HasValue && item.EndDate.Value < today;
-                                    bool notStarted = item.StartDate.HasValue && item.StartDate.Value > today;
-
-                                    <div class="position-absolute top-0 end-0 p-2" style="z-index:10;">
-                                        @if (isExpired)
-                                        {
-                                            <span class="badge rounded-pill bg-danger text-white shadow-sm border border-danger-subtle px-2 py-1" style="font-size:0.65rem; backdrop-filter: blur(4px);">
-                                                <i class="fas fa-calendar-times me-1"></i>供應結束
-                                            </span>
-                                        }
-                                        else if (notStarted)
-                                        {
-                                            <span class="badge rounded-pill bg-info text-white shadow-sm border border-info-subtle px-2 py-1" style="font-size:0.65rem; backdrop-filter: blur(4px);">
-                                                <i class="fas fa-calendar-plus me-1"></i>尚未開始
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge rounded-pill bg-warning text-dark shadow-sm border border-warning-subtle px-2 py-1" style="font-size:0.65rem; backdrop-filter: blur(4px);">
-                                                <i class="fas fa-clock me-1"></i>限定供應
-                                            </span>
-                                        }
-                                    </div>
-                                }
-                            </div>
-                            <div class="card-body p-3 text-center position-relative">
-                                <!-- 左上角：特色標籤顯示區 (純顯示) -->
-                                <div class="position-absolute top-0 start-0 p-2 d-flex gap-1" style="z-index: 10; margin-top: -45px;">
-                                    @if (item.IsRecommended)
-                                    {
-                                        <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center"
-                                             style="width:34px; height:34px; border: 2px solid #0d6efd;">
-                                            <i class="fas fa-thumbs-up text-primary"></i>
-                                        </div>
-                                    }
-                                    @if (item.IsPopular)
-                                    {
-                                        <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center"
-                                             style="width:34px; height:34px; border: 2px solid #ffc107;">
-                                            <i class="fas fa-crown text-warning"></i>
-                                        </div>
-                                    }
-                                </div>
-
-                                <h6 class="card-title mb-1 fw-bold text-truncate" title="@item.DishName">@item.DishName</h6>
-                                <div class="text-muted small mb-2 d-flex justify-content-center align-items-center gap-2">
-                                    <span><i class="fas fa-tag me-1 small"></i>@item.CategoryName</span>
-                                    @if (item.IsVegetarian)
-                                    {
-                                        <span class="text-success"><i class="fas fa-leaf me-1"></i>素食</span>
-                                    }
-                                    @if (item.SpicyLevel > 0)
-                                    {
-                                        <span class="text-danger">
-                                            @for (int i = 0; i < item.SpicyLevel; i++)
-                                            {
-                                                <i class="fas fa-pepper-hot"></i>
-                                            }
-                                        </span>
-                                    }
-                                </div>
-                                <div class="mb-3">
-                                    <span class="fw-bold text-danger fs-5">$@(item.Price?.ToString("N0") ?? "0")</span>
-                                </div>
-                                <div class="d-flex justify-content-center flex-wrap gap-1 mb-2" style="min-height: 45px; align-content: flex-start;">
-                                    <span class="badge rounded-pill @(item.IsActive ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary") px-2 border @(item.IsActive ? "border-success" : "border-secondary")"
-                                          style="cursor:pointer; height:fit-content;" onclick="toggleFeature(@item.Id, 'Active')" id="active-badge-@item.Id">
-                                        @(item.IsActive ? "上架中" : "已下架")
-                                    </span>
-                                    <select onchange="updateStock(@item.Id, this.value)" class="form-select form-select-sm w-auto" style="height:fit-content; font-size:0.7rem;">
-                                        <option value="0" selected="@(item.StockStatus == 0)">供應中</option>
-                                        <option value="1" selected="@(item.StockStatus == 1)">剩餘不多</option>
-                                        <option value="2" selected="@(item.StockStatus == 2)">售完</option>
-                                    </select>
-                                    @if (item.IsTakeOut)
-                                    {
-                                        <span class="badge rounded-pill bg-info-subtle text-info px-2 border border-info" style="height:fit-content;">外帶</span>
-                                    }
-                                    @if (item.IsLimited)
-                                    {
-                                        var today = DateOnly.FromDateTime(DateTime.Today);
-                                        bool isExpired = item.EndDate.HasValue && item.EndDate.Value < today;
-                                        <div class="w-100 mt-1" style="font-size: 0.7rem; line-height: 1.2;">
-                                            <span class="@(isExpired ? "text-danger" : "text-muted") opacity-75">
-                                                <i class="far fa-calendar-alt me-1"></i>
-                                                @(item.StartDate?.ToString("MM/dd") ?? "??") ~ @(item.EndDate?.ToString("MM/dd") ?? "??")
-                                            </span>
-                                        </div>
-                                    }
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm flex-fill fw-bold shadow-sm">
-                                        <i class="fas fa-edit me-1"></i>編輯
-                                    </a>
-                                    <button class="btn btn-outline-danger btn-sm px-2" onclick="disableDish(@item.Id)">
-                                        <i class="fas fa-trash-alt me-1"></i>下架
+                    <!-- 分類 Tab（橫向捲動 ） -->
+                    <div style="display:flex; align-items:center; gap:4px; padding:8px 30px; border-bottom:1px solid #f3f4f6; background:#f9fafb;">
+                        <div id="catTabsWrapper" style="display:flex; gap:8px; overflow-x:auto; flex:1; scrollbar-width:none; -ms-overflow-style:none;">
+                            <ul class="nav nav-pills flex-nowrap gap-2 px-1 py-1" id="categoryTabs" style="min-width:max-content;">
+                                <li class="nav-item">
+                                    <button class="nav-link active rounded-pill" onclick="filterByCategory('', this)">
+                                        <i class="fas fa-th me-1"></i>全部
                                     </button>
-                                </div>
-                            </div>
+                                </li>
+                                @foreach (var cat in Model.Select(d => d.CategoryName).Where(c => !string.IsNullOrEmpty(c)).Distinct().OrderBy(c => c))
+                                {
+                                    <li class="nav-item">
+                                        <button class="nav-link rounded-pill" onclick="filterByCategory('@cat', this)">@cat</button>
+                                    </li>
+                                }
+                            </ul>
                         </div>
                     </div>
-                }
-            </div>
 
-            @if (!Model.Any())
-            {
-                <div class="text-center text-muted py-5">
-                    <i class="fas fa-utensils fa-3x mb-3 opacity-25"></i>
-                    <p>目前尚無餐點資料</p>
+                    <!-- 餐點列表表格 -->
+                    <div style="overflow-x:auto; flex:1;">
+                        <table style="width:100%; table-layout:fixed; border-collapse:collapse;" class="text-sm text-left">
+                            <colgroup>
+                                <col style="width:28px;" />
+                                <col style="width:28px;" />
+                                <col style="width:68px;" />
+                                <col />
+                                <col style="width:95px;" />
+                            </colgroup>
+                            <thead>
+                                <tr style="background:#f9fafb; border-bottom:1px solid #e5e7eb;">
+                                    <th style="padding:8px 6px; width:28px;"></th>
+                                    <th style="padding:8px 6px; width:28px;"></th>
+                                    <th style="padding:8px 10px; font-size:11px; color:#6b7280; font-weight:500;">縮圖</th>
+                                    <th style="padding:8px 10px; font-size:11px; color:#6b7280; font-weight:500;">餐點名稱</th>
+                                    <th style="padding:8px 10px; font-size:11px; color:#6b7280; font-weight:500; text-align:center;">狀態</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dishCardContainer">
+                                @foreach (var item in Model)
+                                {
+                                    <tr class="dish-card dish-row"
+                                        data-id="@item.Id"
+                                        data-category="@item.CategoryName"
+                                        data-name="@item.DishName.ToLower()"
+                                        data-full-name="@item.DishName"
+                                        data-order="@item.DisplayOrder"
+                                        data-price="@(item.Price?.ToString("N0") ?? "0")"
+                                        data-is-active="@item.IsActive.ToString().ToLower()"
+                                        data-stock="@item.StockStatus"
+                                        data-image="@(item.ImageUrl ?? "")"
+                                        data-is-recommended="@item.IsRecommended.ToString().ToLower()"
+                                        data-is-popular="@item.IsPopular.ToString().ToLower()"
+                                        data-is-vegetarian="@item.IsVegetarian.ToString().ToLower()"
+                                        data-is-takeout="@item.IsTakeOut.ToString().ToLower()"
+                                        data-spicy="@item.SpicyLevel"
+                                        data-is-limited="@item.IsLimited.ToString().ToLower()"
+                                        data-start-date="@(item.StartDate?.ToString("MM/dd") ?? "")"
+                                        data-end-date="@(item.EndDate?.ToString("MM/dd") ?? "")"
+                                        onclick="selectDish(this)">
+
+                                        <!-- 拖曳把手 -->
+                                        <td style="padding:8px 6px; text-align:center;">
+                                            <div class="drag-handle text-gray-400" style="cursor:move;">
+                                                <i class="fas fa-grip-vertical text-xs"></i>
+                                            </div>
+                                        </td>
+
+                                        <!-- 批次勾選框 -->
+                                        <td style="padding:8px 6px; text-align:center;">
+                                            <div class="batch-check">
+                                                <input class="card-checkbox form-check-input" type="checkbox"
+                                                       data-id="@item.Id" onchange="updateSelectedCount()">
+                                            </div>
+                                        </td>
+
+                                        <!-- 縮圖 -->
+                                        <td style="padding:8px 10px;">
+                                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                            {
+                                                <img src="@item.ImageUrl"
+                                                     style="width:44px; height:44px; object-fit:cover; border-radius:6px; flex-shrink:0;"
+                                                     alt="@item.DishName"
+                                                     onerror="this.src='/images/no-image.png'; this.onerror=null;" />
+                                            }
+                                            else
+                                            {
+                                                <div style="width:44px; height:44px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; color:#d1d5db;">
+                                                    <i class="fas fa-image text-xs"></i>
+                                                </div>
+                                            }
+                                        </td>
+
+                                        <!-- 名稱 + 分類 -->
+                                        <td style="padding:8px 10px; max-width:160px;">
+                                            <div style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">@item.DishName</div>
+                                            <div style="font-size:11px; color:#9ca3af; margin-top:2px;">
+                                                <i class="fas fa-tag" style="font-size:10px; margin-right:3px;"></i>@item.CategoryName
+                                            </div>
+                                        </td>
+
+                                        <!-- 狀態 badge（同時作為 filterCards 的查詢對象） -->
+                                        <td style="padding:8px 10px; text-align:center;">
+                                            <span class="badge rounded-pill @(item.IsActive ? "bg-success-subtle text-success border-success" : "bg-secondary-subtle text-secondary border-secondary") border px-2"
+                                                  id="active-badge-@item.Id" style="font-size:0.65rem; cursor:pointer;" onclick="event.stopPropagation(); toggleFeature(@item.Id, 'Active')">
+                                                @(item.IsActive ? "上架" : "下架")
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (!Model.Any())
+                    {
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-utensils fa-2x mb-2 opacity-25"></i>
+                            <p class="text-sm">目前尚無餐點資料</p>
+                        </div>
+                    }
+
+                    <!-- 分頁控制 -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-top:1px solid #f3f4f6; background:#f9fafb;">
+                        <div class="text-xs text-gray-500" id="pageInfo"></div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                        </nav>
+                    </div>
                 </div>
-            }
 
-            <!-- 底部控制項 -->
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-5 pt-3 border-top gap-3">
-                <div class="text-muted small fw-bold" id="pageInfo"></div>
-                <nav>
-                    <ul class="pagination pagination-sm mb-0 shadow-sm" id="pagination"></ul>
-                </nav>
-            </div>
+                <!-- ===== 右側：詳情面板 ===== -->
+                <div style="width:58%; overflow-y:auto;">
+                    <div style="position:sticky; top:0; max-height:calc(100vh - 220px); overflow-y:auto;">
+
+                        <!-- 空白提示（預設顯示） -->
+                        <div id="detailEmpty"
+                             style="display:flex; flex-direction:column; align-items:center;
+                                    justify-content:center; height:100%; min-height:500px;
+                                    color:#9ca3af;">
+                            <i class="fas fa-utensils" style="font-size:2rem; margin-bottom:12px; opacity:0.3;"></i>
+                            <p style="font-size:14px; margin:0;">請從左側選取一個餐點</p>
+                            <p style="font-size:12px; margin:4px 0 0; color:#d1d5db;">點擊任一列即可查看詳情</p>
+                        </div>
+
+                        <!-- 詳情內容（預設隱藏） -->
+                        <div id="detailContent" style="display:none; padding:1.25rem;">
+
+                            <!-- 縮圖 + 名稱 + badges -->
+                            <div style="display:flex; gap:16px; align-items:flex-start; margin-bottom:16px;">
+                                <img id="detailImg" src="" alt=""
+                                     style="width:120px; height:120px; object-fit:cover; border-radius:10px; flex-shrink:0; display:none;"
+                                     onerror="this.style.display='none'; document.getElementById('detailNoImg').style.display='flex';" />
+                                <div id="detailNoImg"
+                                     style="width:120px; height:120px; border-radius:10px; background:#f3f4f6;
+                                            display:flex; align-items:center; justify-content:center; color:#d1d5db; flex-shrink:0;">
+                                    <i class="fas fa-image fa-2x"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <h2 id="detailName" style="font-size:1.25rem; font-weight:700; margin-bottom:8px;"></h2>
+                                    <div id="detailBadges" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+                                </div>
+                            </div>
+
+                            <!-- 資訊卡格 2x2 -->
+                            <div class="mb-3" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="text-xs text-gray-400 mb-1">定價</div>
+                                    <div class="font-medium text-red-600" id="detail-price">—</div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3" style="display:none;">
+                                    <div class="text-xs text-gray-400 mb-1">排序</div>
+                                    <div class="font-medium text-gray-700" id="detail-order">—</div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="text-xs text-gray-400 mb-1">分類</div>
+                                    <div class="font-medium text-gray-700" id="detail-category">—</div>
+                                </div>
+                                <div id="stock-card" class="rounded-lg p-3">
+                                    <div class="text-xs mb-1" style="color:#9ca3af;">
+                                        庫存狀態
+                                        <i class="fas fa-pen" style="font-size:10px; color:#9ca3af; margin-left:4px;"></i>
+                                    </div>
+                                    <select id="detail-stock"
+                                            onchange="updateStock(selectedDishId, this.value); updateStockCardColor(this.value)"
+                                            style="border:1px solid #d1d5db; border-radius:6px; padding:4px 8px;
+                                                   background:#fff; cursor:pointer; font-size:0.875rem; width:100%;
+                                                   font-weight:500;">
+                                        <option value="0">供應中</option>
+                                        <option value="1">剩餘不多</option>
+                                        <option value="2">售完</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- 上架 Toggle -->
+                            <div class="bg-gray-50 rounded-lg mb-3" style="display:flex; align-items:center; justify-content:space-between; padding:1rem;">
+                                <div>
+                                    <div class="font-semibold text-gray-700 text-sm">上架狀態</div>
+                                    <div id="detailActiveLabel" class="text-xs text-gray-500 mt-0.5"></div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="detailActiveToggle" onchange="detailToggleActive()">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <!-- 限定供應日期 -->
+                            <div id="detailLimitedInfo" class="rounded-lg mb-3" style="display:none; padding:0.75rem; font-size:0.875rem; background:#fffbeb; border:1px solid #fde68a; color:#92400e;">
+                                <i class="far fa-calendar-alt me-1"></i>
+                                限定供應：<span id="detailDateRange"></span>
+                            </div>
+
+                            <!-- 操作按鈕 -->
+                            <div style="display:flex; gap:12px;">
+                                <a id="detailEditBtn" href="#" class="btn btn-warning fw-bold shadow-sm" style="flex:1;">
+                                    <i class="fas fa-edit me-1"></i>編輯餐點
+                                </a>
+                                <button onclick="disableDish(selectedDishId)" class="btn btn-outline-danger px-4">
+                                    <i class="fas fa-power-off me-1"></i>下架
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- end master-detail -->
+
         </div>
     </div>
 </div>
@@ -320,103 +373,102 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
         }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+        }
 
-            .stat-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
-            }
-
-        /* 分類 Tab 樣式 */
+        /* 分類 Tab */
         #categoryTabs .nav-link {
             border-radius: 20px;
-            padding: 6px 20px;
-            font-size: 0.875rem;
+            padding: 4px 14px;
+            font-size: 0.8rem;
             font-weight: 500;
             color: #6c757d;
             background: #f0f0f0;
             border: none;
+            white-space: nowrap;
             transition: all 0.2s ease;
         }
-
-        #categoryTabs .nav-link:hover {
-            background: #343a40;
-            color: #fff;
-        }
-
+        #categoryTabs .nav-link:hover { background: #343a40; color: #fff; }
         #categoryTabs .nav-link.active {
             background: #212529;
             color: #fff !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 3px 8px rgba(0,0,0,.2);
             font-weight: 600;
         }
+        /* 隱藏捲軸但可滑動 */
+        #catTabsWrapper::-webkit-scrollbar { display: none; }
 
-        .dish-card-inner {
-            transition: all 0.2s ease-in-out;
-            border: 1px solid transparent !important;
-        }
-
-            .dish-card-inner:hover {
-                transform: translateY(-8px);
-                box-shadow: 0 1rem 2rem rgba(0,0,0,0.12) !important;
-                border-color: #0d6efd !important;
-            }
-
-        .page-link {
+        /* 列表 row */
+        .dish-row {
+            border-left: 2px solid transparent;
             cursor: pointer;
-            color: #495057;
-            border-radius: 4px !important;
-            margin: 0 2px;
+            transition: background 0.1s, border-color 0.1s;
+        }
+        .dish-row:hover { background-color: #f9fafb; }
+        .dish-row.active-row {
+            border-left: 2px solid #3b82f6 !important;
+            background-color: #eff6ff !important;
         }
 
-        .pagination .page-item.active .page-link {
-            background-color: #0d6efd;
-            border-color: #0d6efd;
-            color: #fff;
-        }
-
-        .badge {
-            font-weight: 600;
-            font-size: 0.7rem;
-        }
+        /* 拖曳把手 & 批次勾選：預設隱藏 */
+        .drag-handle { display: none; }
+        .batch-check { display: none; }
 
         /* 批次模式 */
-        #dishCardContainer.batch-mode .batch-check {
-            display: block !important;
+        #dishCardContainer.batch-mode .batch-check { display: block !important; }
+        #dishCardContainer.batch-mode .dish-card { cursor: pointer; }
+        #dishCardContainer.batch-mode .dish-card.selected {
+            background-color: rgba(13,110,253,.06) !important;
+            outline: 2px solid #0d6efd;
+            outline-offset: -2px;
         }
-
-        #dishCardContainer.batch-mode .dish-card-inner {
-            cursor: pointer;
-        }
-
-        #dishCardContainer.batch-mode .dish-card.selected .dish-card-inner {
-            border: 2px solid #0d6efd !important;
-            box-shadow: 0 0 0 3px rgba(13,110,253,.18) !important;
-        }
-
-        .card-checkbox {
-            width: 1.2em;
-            height: 1.2em;
-            cursor: pointer;
-        }
+        .card-checkbox { width: 1.1em; height: 1.1em; cursor: pointer; }
 
         /* 排序模式 */
-        #dishCardContainer.sort-mode .drag-handle {
-            display: block !important;
-        }
+        #dishCardContainer.sort-mode .drag-handle { display: block !important; }
+        #dishCardContainer.sort-mode .dish-card { border-left: 2px dashed #ffc107 !important; }
+        .sortable-ghost { opacity: 0.4; background: #fff3cd !important; }
+        .sortable-chosen { box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.15) !important; }
 
-        #dishCardContainer.sort-mode .dish-card-inner {
-            border: 1px dashed #ffc107 !important;
-        }
+        /* 分頁 */
+        .page-link { cursor: pointer; color: #495057; border-radius: 4px !important; margin: 0 2px; }
+        .pagination .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: #fff; }
 
-        .sortable-ghost {
-            opacity: 0.4;
-            background: #fff3cd !important;
-            border: 2px dashed #ffc107 !important;
-        }
+        .badge { font-weight: 600; font-size: 0.68rem; }
 
-        .sortable-chosen {
-            box-shadow: 0 1rem 3rem rgba(0,0,0,0.175) !important;
+        /* 純 CSS Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
         }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #d1d5db;
+            border-radius: 26px;
+            transition: background-color 0.25s;
+        }
+        .toggle-slider::before {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #fff;
+            border-radius: 50%;
+            transition: transform 0.25s;
+            box-shadow: 0 1px 3px rgba(0,0,0,.2);
+        }
+        .toggle-switch input:checked + .toggle-slider { background-color: #22c55e; }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
     </style>
 }
 
@@ -430,7 +482,8 @@
         let isSortMode = false;
         let isSortableInitialized = false;
         let sortableInstance = null;
-        let selectedCategory = ''; // 新增：追蹤目前選中的分類
+        let selectedCategory = '';
+        let selectedDishId = null;
 
         document.addEventListener("DOMContentLoaded", () => {
             const savedPage = sessionStorage.getItem("dish_currentPage");
@@ -441,7 +494,6 @@
 
             if (savedCategory) {
                 selectedCategory = savedCategory;
-                // 更新 Tab 視覺狀態
                 document.querySelectorAll("#categoryTabs .nav-link").forEach(btn => {
                     btn.classList.toggle("active", (btn.textContent.trim() === savedCategory) || (savedCategory === '' && btn.textContent.trim() === '全部'));
                 });
@@ -457,13 +509,13 @@
                         }
 
             filterCards(false);
+            checkStockWarning();
 
             if (savedScrollPosition) {
                 window.scrollTo(0, parseInt(savedScrollPosition));
-                sessionStorage.removeItem("dish_scrollPosition"); // Clean up
+                sessionStorage.removeItem("dish_scrollPosition");
             }
 
-            // Bug 2 Fix: Moved and updated this listener
             document.querySelectorAll('a[href*="/Dishes/Edit"], a[href*="/Dishes/Create"]').forEach(link => {
                 link.addEventListener('click', () => {
                     sessionStorage.setItem('dish_scrollPosition', window.scrollY);
@@ -471,13 +523,105 @@
             });
         });
 
+        /* ===== Master-Detail: 選取餐點 ===== */
+        function selectDish(row) {
+            if (isBatchMode) return;
+
+            // 更新 active row 樣式
+            document.querySelectorAll('.dish-row').forEach(r => r.classList.remove('active-row'));
+            row.classList.add('active-row');
+
+            selectedDishId = parseInt(row.dataset.id);
+            const d = row.dataset;
+            const isActive = d.isActive === 'true';
+
+            // 圖片
+            const img = document.getElementById('detailImg');
+            const noImg = document.getElementById('detailNoImg');
+            if (d.image) {
+                img.src = d.image;
+                img.style.display = 'block';
+                noImg.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                noImg.style.display = 'flex';
+            }
+
+            // 基本資訊
+            document.getElementById('detailName').textContent = d.fullName;
+            document.getElementById('detail-category').textContent = d.category;
+            document.getElementById('detail-price').textContent = '$' + d.price;
+            document.getElementById('detail-order').textContent = '# ' + d.order;
+
+            // 庫存下拉
+            document.getElementById('detail-stock').value = d.stock;
+            updateStockCardColor(d.stock);
+
+            // 上架 Toggle
+            const toggle = document.getElementById('detailActiveToggle');
+            toggle.checked = isActive;
+            document.getElementById('detailActiveLabel').textContent = isActive ? '目前上架中' : '目前已下架';
+
+            // 編輯連結
+            document.getElementById('detailEditBtn').href = '/Dishes/Edit/' + selectedDishId;
+
+            // 限定日期
+            const limitedInfo = document.getElementById('detailLimitedInfo');
+            if (d.isLimited === 'true') {
+                limitedInfo.style.display = 'block';
+                document.getElementById('detailDateRange').textContent =
+                    (d.startDate || '??') + ' ~ ' + (d.endDate || '??');
+            } else {
+                limitedInfo.style.display = 'none';
+            }
+
+            // 特色 badges
+            const badgesEl = document.getElementById('detailBadges');
+            badgesEl.innerHTML = '';
+            if (d.isRecommended === 'true')
+                badgesEl.innerHTML += '<span class="badge rounded-pill bg-primary-subtle text-primary border border-primary px-2"><i class="fas fa-thumbs-up me-1"></i>推薦</span>';
+            if (d.isPopular === 'true')
+                badgesEl.innerHTML += '<span class="badge rounded-pill bg-warning-subtle text-warning border border-warning px-2"><i class="fas fa-crown me-1"></i>熱門</span>';
+            if (d.isVegetarian === 'true')
+                badgesEl.innerHTML += '<span class="badge rounded-pill bg-success-subtle text-success border border-success px-2"><i class="fas fa-leaf me-1"></i>素食</span>';
+            if (d.isTakeout === 'true')
+                badgesEl.innerHTML += '<span class="badge rounded-pill bg-info-subtle text-info border border-info px-2">外帶</span>';
+            if (parseInt(d.spicy) > 0) {
+                let spicy = '';
+                for (let i = 0; i < parseInt(d.spicy); i++) spicy += '<i class="fas fa-pepper-hot"></i>';
+                badgesEl.innerHTML += '<span class="text-danger">' + spicy + '</span>';
+            }
+
+            // 顯示詳情面板
+            document.getElementById('detailEmpty').style.display = 'none';
+            document.getElementById('detailContent').style.display = 'block';
+        }
+
+        /* 右側 Toggle 呼叫現有 toggleFeature，之後同步更新右側狀態 */
+        function detailToggleActive() {
+            if (!selectedDishId) return;
+            toggleFeature(selectedDishId, 'Active');
+            setTimeout(() => {
+                const badge = document.getElementById('active-badge-' + selectedDishId);
+                if (badge) {
+                    const nowActive = badge.textContent.trim() === '上架';
+                    document.getElementById('detailActiveToggle').checked = nowActive;
+                    document.getElementById('detailActiveLabel').textContent = nowActive ? '目前上架中' : '目前已下架';
+                }
+            }, 600);
+        }
+
+        /* 分類 Tab 橫向捲動 */
+        function scrollTabs(dir) {
+            document.getElementById('catTabsWrapper').scrollBy({ left: dir * 80, behavior: 'smooth' });
+        }
+
+        /* ===== 以下為既有函式，邏輯完全不變 ===== */
+
         function filterByCategory(cat, btn) {
             selectedCategory = cat;
-            
-            // 更新 UI 狀態
             document.querySelectorAll("#categoryTabs .nav-link").forEach(el => el.classList.remove("active"));
             btn.classList.add("active");
-
             filterCards(true);
         }
 
@@ -496,13 +640,12 @@
                 let matchStatus = true;
                 if (status) {
                     const statusText = card.querySelector("#active-badge-" + card.dataset.id).textContent.trim();
-                    matchStatus = (statusText === status);
+                    matchStatus = (statusText === status || (status === '上架中' && statusText === '上架') || (status === '已下架' && statusText === '下架'));
                 }
 
                 return matchCategory && matchSearch && matchStatus;
             });
-            
-            // 確保最新新增的餐點（ID 較大）顯示在最前面
+
             filteredCards.sort((a, b) => parseInt(b.dataset.id) - parseInt(a.dataset.id));
 
             if (resetPage) currentPage = 1;
@@ -523,11 +666,10 @@
             const end = start + PAGE_SIZE;
             filteredCards.slice(start, end).forEach(c => c.style.display = "");
 document.getElementById("pageInfo").textContent =
-    `目前顯示：${total} 筆餐點中的第 ${Math.min(start + 1, total)} ~ ${Math.min(end, total)} 筆`;
+    `${total} 筆，顯示 ${Math.min(start + 1, total)}–${Math.min(end, total)}`;
 
 renderPaginationButtons("pagination", totalPages);
 
-// 如果只有一頁，隱藏下方分頁控制項 (可選)
 const paginationContainer = document.getElementById("pagination")?.parentElement?.parentElement;
 if (paginationContainer) {
     paginationContainer.classList.toggle("d-none", totalPages <= 1);
@@ -650,7 +792,6 @@ if (paginationContainer) {
                 btn.classList.replace("btn-outline-secondary", "btn-warning");
                 btn.innerHTML = '<i class="fas fa-times me-1"></i>取消排序';
 
-                // 初始化 SortableJS
                 sortableInstance = Sortable.create(container, {
                     animation: 180,
                     ghostClass: "sortable-ghost",
@@ -670,7 +811,6 @@ if (paginationContainer) {
         }
 
         function updateOrderBadges() {
-            // 拖曳後更新各卡片的 data-order（視覺用）
             document.querySelectorAll(".dish-card").forEach((card, idx) => {
                 card.dataset.order = idx + 1;
             });
@@ -733,6 +873,95 @@ if (paginationContainer) {
             if (res.ok) { showAlert("success", "操作成功"); setTimeout(() => location.reload(), 1000); }
         }
 
+        function updateStatCards() {
+            const allCards = document.querySelectorAll('.dish-card');
+            const total    = allCards.length;
+            const active   = document.querySelectorAll(".dish-card[data-is-active='true']").length;
+            const inactive = total - active;
+            const elTotal    = document.getElementById('stat-total');
+            const elActive   = document.getElementById('stat-active');
+            const elInactive = document.getElementById('stat-inactive');
+            if (elTotal)    elTotal.textContent    = total;
+            if (elActive)   elActive.textContent   = active;
+            if (elInactive) elInactive.textContent = inactive;
+        }
+
+        function checkStockWarning() {
+            const bar = document.getElementById('stockWarningBar');
+            if (!bar) return;
+
+            const soldOut  = [];
+            const lowStock = [];
+
+            document.querySelectorAll('.dish-card').forEach(card => {
+                const stock = parseInt(card.dataset.stock);
+                const name  = card.dataset.fullName || card.dataset.name || '';
+                if (stock === 2) soldOut.push(name);
+                else if (stock === 1) lowStock.push(name);
+            });
+
+            let html = '';
+
+            if (soldOut.length > 0) {
+                html += `
+                <div onclick="filterByStockWarning(2)"
+                     style="display:flex; align-items:center; gap:10px; margin-bottom:8px;
+                            padding:10px 16px; border-radius:8px; cursor:pointer;
+                            background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c;
+                            font-size:0.875rem; transition:opacity .15s;"
+                     onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
+                    <i class="fas fa-exclamation-triangle" style="flex-shrink:0;"></i>
+                    <span><strong>售完：</strong>${soldOut.join('、')}</span>
+                    <span style="margin-left:auto; font-size:0.75rem; opacity:.7;">點擊篩選 →</span>
+                </div>`;
+            }
+
+            if (lowStock.length > 0) {
+                html += `
+                <div onclick="filterByStockWarning(1)"
+                     style="display:flex; align-items:center; gap:10px; margin-bottom:8px;
+                            padding:10px 16px; border-radius:8px; cursor:pointer;
+                            background:#fffbeb; border:1px solid #fcd34d; color:#92400e;
+                            font-size:0.875rem; transition:opacity .15s;"
+                     onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
+                    <i class="fas fa-bolt" style="flex-shrink:0;"></i>
+                    <span><strong>剩餘不多：</strong>${lowStock.join('、')}</span>
+                    <span style="margin-left:auto; font-size:0.75rem; opacity:.7;">點擊篩選 →</span>
+                </div>`;
+            }
+
+            bar.innerHTML = html ? `<div style="margin-bottom:1rem;">${html}</div>` : '';
+        }
+
+        function filterByStockWarning(stockVal) {
+            // 先清除其他篩選條件，只以 stock 值過濾
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            selectedCategory = '';
+            document.querySelectorAll('#categoryTabs .nav-link').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.trim() === '全部');
+            });
+
+            // 直接對 filteredCards 做二次過濾顯示
+            const allCards = Array.from(document.querySelectorAll('.dish-card'));
+            filteredCards = allCards.filter(c => parseInt(c.dataset.stock) === stockVal);
+            filteredCards.sort((a, b) => parseInt(b.dataset.id) - parseInt(a.dataset.id));
+            currentPage = 1;
+            renderPage();
+
+            const label = stockVal === 2 ? '售完' : '剩餘不多';
+            showAlert('info', `已篩選庫存狀態：${label}`);
+        }
+
+        function updateStockCardColor(val) {
+            const card = document.getElementById('stock-card');
+            if (!card) return;
+            const v = parseInt(val);
+            if (v === 0)      { card.style.background = '#f0fdf4'; card.style.color = '#16a34a'; }
+            else if (v === 1) { card.style.background = '#fffbeb'; card.style.color = '#d97706'; }
+            else              { card.style.background = '#fef2f2'; card.style.color = '#dc2626'; }
+        }
+
         async function updateStock(id, stockStatus) {
             const res = await fetch(`/api/Dishes/${id}/Stock`, {
                 method: "PATCH",
@@ -740,7 +969,11 @@ if (paginationContainer) {
                 body: JSON.stringify({ stockStatus: parseInt(stockStatus) })
             });
             if (res.ok) {
+                // 同步更新 dish-card 上的 data-stock 屬性
+                const card = document.querySelector(`.dish-card[data-id="${id}"]`);
+                if (card) card.dataset.stock = stockStatus;
                 showAlert("success", "庫存狀態已更新");
+                checkStockWarning();
             } else {
                 showAlert("danger", "更新失敗，請稍後再試");
             }
@@ -753,18 +986,33 @@ if (paginationContainer) {
         }
 
         async function toggleFeature(id, type) {
+            if (type === 'Active') {
+                const card = document.querySelector(`.dish-card[data-id="${id}"]`);
+                const isCurrentlyActive = card?.dataset.isActive === 'true';
+                const action = isCurrentlyActive ? '下架' : '上架';
+                if (!confirm(`確定要${action}嗎？`)) return;
+            }
             const res = await fetch(`/Dishes/Toggle${type}/${id}`, { method: "POST" });
             if (res.ok) {
                 const data = await res.json();
                 if (type === 'Active') {
                     const badge = document.getElementById(`active-badge-${id}`);
                     if (data.isActive) {
-                        badge.className = "badge rounded-pill bg-success-subtle text-success px-2 border border-success";
-                        badge.textContent = "上架中";
+                        badge.className = "badge rounded-pill bg-success-subtle text-success border-success border px-2";
+                        badge.textContent = "上架";
                     } else {
-                        badge.className = "badge rounded-pill bg-secondary-subtle text-secondary px-2 border border-secondary";
-                        badge.textContent = "已下架";
+                        badge.className = "badge rounded-pill bg-secondary-subtle text-secondary border-secondary border px-2";
+                        badge.textContent = "下架";
                     }
+                    // 同步更新 dish-card 的 data-is-active 屬性
+                    const dishCard = document.querySelector(`.dish-card[data-id="${id}"]`);
+                    if (dishCard) dishCard.dataset.isActive = data.isActive ? 'true' : 'false';
+                    // 同步更新右側詳情面板（如果正在顯示該餐點）
+                    if (selectedDishId === id) {
+                        document.getElementById('detailActiveToggle').checked = data.isActive;
+                        document.getElementById('detailActiveLabel').textContent = data.isActive ? '目前上架中' : '目前已下架';
+                    }
+                    updateStatCards();
                 }
                 showAlert("success", "狀態已更新");
             }

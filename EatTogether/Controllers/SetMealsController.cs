@@ -1,7 +1,9 @@
 ﻿using EatTogether.Models.DTOs;
 using EatTogether.Models.Infra;
-using EatTogether.Models.Services;       
-using EatTogether.Models.ViewModels;     
+using EatTogether.Models.Repositories;
+using EatTogether.Models.Services;
+using EatTogether.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
@@ -11,20 +13,23 @@ using System.Threading.Tasks;
 
 namespace EatTogether.Controllers        
 {
-	[RequirePermission("Menu_Manage")]
+	[Route("[controller]")]
 	public class SetMealsController : Controller
     {
         private readonly SetMealService _setMealService;
         private readonly DishService _dishService;
         private readonly CategoryService _categoryService;
+        private readonly ISetMealRepository _setMealRepo;
 
-        public SetMealsController(SetMealService setMealService, DishService dishService, CategoryService categoryService)
+        public SetMealsController(SetMealService setMealService, DishService dishService, CategoryService categoryService, ISetMealRepository setMealRepo)
         {
             _setMealService = setMealService;
             _dishService    = dishService;
             _categoryService = categoryService;
+            _setMealRepo    = setMealRepo;
         }
 
+        [HttpGet("Index")]
         public async Task<IActionResult> Index()
         {
             var dtos = await _setMealService.GetAllAsync();
@@ -93,6 +98,7 @@ namespace EatTogether.Controllers
             return View(vms);
         }
 
+        [HttpGet("Create")]
         public async Task<IActionResult> Create()
         {
             var allSetMeals = await _setMealService.GetAllAsync();
@@ -105,7 +111,7 @@ namespace EatTogether.Controllers
             return View(vm);
         }
 
-        [HttpPost]
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([FromForm] SetMealViewModel vm)
         {
@@ -126,6 +132,7 @@ namespace EatTogether.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
             var dto = await _setMealService.GetByIdAsync(id);
@@ -172,7 +179,7 @@ namespace EatTogether.Controllers
 			return View(vm);
         }
 
-        [HttpPost]
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [FromForm] SetMealViewModel vm, [FromForm] string itemsJson)
         {
@@ -259,14 +266,14 @@ namespace EatTogether.Controllers
             vm.CategoriesWithDishes = categoriesWithDishes;
         }
 
-        [HttpPost]
+        [HttpPost("Disable/{id}")]
         public async Task<IActionResult> Disable(int id)
         {
             await _setMealService.DisableAsync(id);
             return Ok();
         }
 
-        [HttpPost]
+        [HttpPost("BatchDisable")]
         public async Task<IActionResult> BatchDisable([FromBody] BatchRequestDto request)
         {
             if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
@@ -274,14 +281,14 @@ namespace EatTogether.Controllers
             return Ok();
         }
 
-        [HttpPost]
+        [HttpPost("Enable/{id}")]
         public async Task<IActionResult> Enable(int id)
         {
             await _setMealService.EnableAsync(id);
             return Ok();
         }
 
-        [HttpPost]
+        [HttpPost("BatchEnable")]
         public async Task<IActionResult> BatchEnable([FromBody] BatchRequestDto request)
         {
             if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
@@ -289,7 +296,7 @@ namespace EatTogether.Controllers
             return Ok();
         }
 
-        [HttpPost]
+        [HttpPost("BatchDelete")]
         public async Task<IActionResult> BatchDelete([FromBody] BatchRequestDto request)
         {
             if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
@@ -297,20 +304,12 @@ namespace EatTogether.Controllers
             return Ok();
         }
 
-        [HttpPost]
+        [HttpPost("Clone/{id}")]
         public async Task<IActionResult> Clone(int id)
         {
-            var dto = await _setMealService.GetByIdAsync(id);
-            if (dto == null) return NotFound();
-
-            dto.Id = 0;
-            dto.SetMealName = dto.SetMealName + " - 複製";
-            dto.IsActive = false;
-            var allSetMeals = await _setMealService.GetAllAsync();
-            dto.DisplayOrder = allSetMeals.Any() ? allSetMeals.Min(s => s.DisplayOrder) - 1 : 1;
-
-            await _setMealService.CreateAsync(dto);
-            return Ok();
+            var newId = await _setMealRepo.CloneSetMealAsync(id);
+            if (newId == 0) return NotFound();
+            return Ok(new { newId });
         }
 
         private async Task<string> SaveBase64ImageAsync(string base64Data, string fileNamePrefix)
@@ -353,7 +352,7 @@ namespace EatTogether.Controllers
             return "/images/" + newJpgFileName;
         }
 
-        [HttpPost("SetMeals/UpdateItems/{setMealId}")]
+        [HttpPost("UpdateItems/{setMealId}")]
         public async Task<IActionResult> UpdateItems(int setMealId, [FromBody] List<SetMealItemViewModel> items)
         {
             if (items == null) return BadRequest("無項目可更新。");
@@ -371,7 +370,52 @@ namespace EatTogether.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpGet("GetActiveJson")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetActiveJson()
+        {
+            var dtos = await _setMealService.GetAllActiveAsync();
+            var baseFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+
+            return Json(dtos.Select(d => {
+                string imageUrl = d.ImageUrl;
+                if (string.IsNullOrEmpty(imageUrl))
+                {
+                    string safeName = d.SetMealName;
+                    foreach (char c in Path.GetInvalidFileNameChars())
+                        safeName = safeName.Replace(c, '_');
+                    if (System.IO.File.Exists(Path.Combine(baseFolder, safeName + ".jpg")))
+                        imageUrl = "/images/" + safeName + ".jpg";
+                    else if (System.IO.File.Exists(Path.Combine(baseFolder, safeName + ".png")))
+                        imageUrl = "/images/" + safeName + ".png";
+                }
+                return new {
+                    id = d.Id,
+                    setMealName = d.SetMealName,
+                    description = d.Description,
+                    setPrice = d.SetPrice,
+                    imageUrl = imageUrl,
+                    isRecommended = d.IsRecommended,
+                    isPopular = d.IsPopular,
+                    startDate = d.StartDate,
+                    endDate = d.EndDate,
+                    startTime = d.StartTime,
+                    endTime = d.EndTime,
+                    items = d.Items.Select(i => new {
+                        dishId = i.DishId,
+                        dishName = i.DishName,
+                        dishPrice = i.DishPrice,
+                        categoryName = i.CategoryName,
+                        quantity = i.Quantity,
+                        isOptional = i.IsOptional,
+                        optionGroupNo = i.OptionGroupNo,
+                        pickLimit = i.PickLimit
+                    })
+                };
+            }));
+        }
+
+        [HttpPost("UpdateOrder")]
         public async Task<IActionResult> UpdateOrder([FromBody] OrderedIdsDto dto)
         {
             if (dto?.OrderedIds == null || !dto.OrderedIds.Any())

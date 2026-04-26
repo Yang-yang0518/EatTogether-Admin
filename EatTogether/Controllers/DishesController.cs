@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace EatTogether.Controllers
 {
-	[RequirePermission("Menu_Manage")]
+	[Route("[controller]")]
 	public class DishesController : Controller
     {
         private readonly DishService _dishService;
@@ -25,6 +25,7 @@ namespace EatTogether.Controllers
             _categoryService = categoryService;
         }
 
+		[HttpGet("Index")]
 		public async Task<IActionResult> Index(bool newDish = false)
 		{
             var dtos = await _dishService.GetAllAsync();
@@ -65,6 +66,7 @@ namespace EatTogether.Controllers
             return View(vms);
         }
 
+        [HttpGet("Create")]
         public async Task<IActionResult> Create()
         {
             var allDishes = await _dishService.GetAllAsync();
@@ -74,7 +76,7 @@ namespace EatTogether.Controllers
             return View(vm);
         }
 
-        [HttpPost]
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([FromForm] DishViewModel vm)
         {
@@ -94,6 +96,7 @@ namespace EatTogether.Controllers
 			return RedirectToAction(nameof(Index), new { newDish = true });
 		}
 
+        [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
             var dto = await _dishService.GetByIdAsync(id);
@@ -116,7 +119,7 @@ namespace EatTogether.Controllers
 			return View(vm);
         }
 
-        [HttpPost]
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [FromForm] DishViewModel vm)
         {
@@ -138,14 +141,14 @@ namespace EatTogether.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
+        [HttpPost("Disable/{id}")]
         public async Task<IActionResult> Disable(int id)
         {
             await _dishService.DisableAsync(id);
             return Ok();
         }
 
-        [HttpPost]
+        [HttpPost("BatchDisable")]
         public async Task<IActionResult> BatchDisable([FromBody] BatchRequestDto request)
         {
             if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
@@ -153,14 +156,14 @@ namespace EatTogether.Controllers
             return Ok();
         }
 
-        [HttpPost]
+        [HttpPost("Enable/{id}")]
         public async Task<IActionResult> Enable(int id)
         {
             await _dishService.EnableAsync(id);
             return Ok();
         }
 
-        [HttpPost]
+        [HttpPost("BatchEnable")]
         public async Task<IActionResult> BatchEnable([FromBody] BatchRequestDto request)
         {
             if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
@@ -168,7 +171,7 @@ namespace EatTogether.Controllers
             return Ok();
         }
 
-        [HttpPost]
+        [HttpPost("BatchDelete")]
         public async Task<IActionResult> BatchDelete([FromBody] BatchRequestDto request)
         {
             if (request?.Ids == null || !request.Ids.Any()) return BadRequest("無項目可操作。");
@@ -176,7 +179,7 @@ namespace EatTogether.Controllers
             return Ok();
         }
 
-        [HttpPost]
+        [HttpPost("UpdateOrder")]
         public async Task<IActionResult> UpdateOrder([FromBody] OrderedIdsDto request)
         {
             if (request?.OrderedIds == null || !request.OrderedIds.Any()) return BadRequest("無順序可更新。");
@@ -184,7 +187,7 @@ namespace EatTogether.Controllers
             return Ok();
         }
 
-        [HttpPost]
+        [HttpPost("ToggleActive/{id}")]
         public async Task<IActionResult> ToggleActive(int id)
         {
             var dish = await _dishService.GetByIdAsync(id);
@@ -194,7 +197,7 @@ namespace EatTogether.Controllers
             return Ok(new { isActive = dish.IsActive });
         }
 
-		[HttpGet]
+		[HttpGet("GetAllJson")]
 		[AllowAnonymous]
 		public async Task<IActionResult> GetAllJson()
         {
@@ -208,7 +211,7 @@ namespace EatTogether.Controllers
                 imageUrl = d.ImageUrl       //補上圖片路徑，前台才好顯示}));     
             }));
         }
-		[HttpGet]
+		[HttpGet("GetActiveJson")]
 		[AllowAnonymous]
 		public async Task<IActionResult> GetActiveJson()
 		{
@@ -255,7 +258,7 @@ namespace EatTogether.Controllers
 			}));
 		}
 
-		[HttpGet]
+		[HttpGet("GetByIdJson")]
 		[AllowAnonymous]
 		public async Task<IActionResult> GetByIdJson(int id)
 		{

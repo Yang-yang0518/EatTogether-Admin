@@ -28,4 +28,10 @@ public partial class Reservation
     public string Remark { get; set; }
 
     public DateTime ReservedAt { get; set; }
+
+    public int? MemberId { get; set; }
+
+    public DateTime? CancelledAt { get; set; }
+
+    public virtual Member Member { get; set; }
 }

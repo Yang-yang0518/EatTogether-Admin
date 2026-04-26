@@ -4,10 +4,19 @@
     ViewData["Title"] = "待處理訂單";
     var expanded = Model.Take(3).ToList();
     var listed = Model.Skip(3).ToList();
-    // TODO: 登入系統完成後，改成從 Session 或 ClaimsPrincipal 讀取
-    // 有「訂單管理（含結帳）FunctionId=4」權限：店長、副店長、收銀員
-    // 內場廚師、工讀生、外場服務生不可整單取消
-    bool canCancelOrder = true; // 暫時以店長身份模擬
+
+    // 從組合備註中只取「整單備註：」後的內容
+    string GetOrderNote(string note)
+    {
+        if (string.IsNullOrEmpty(note)) return "";
+        foreach (var line in note.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith("整單備註："))
+                return trimmed.Substring("整單備註：".Length).Trim();
+        }
+        return "";
+    }
 }
 
 <style>
@@ -18,7 +27,7 @@
     .board {
         display: flex;
         flex-direction: column;
-        height: 88vh;
+        height: 88.5vh;
         overflow: hidden;
     }
 
@@ -69,7 +78,7 @@
     }
 
     .exp-card {
-        width: 400px;
+        width: 300px;
         display: flex;
         flex-direction: column;
         background: #fff;
@@ -155,7 +164,12 @@
         }
 
     /* ── 卡片內容（可捲動）── */
-    .card-
+    .card-body{
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px;
+        min-height: 0;
+    }
     .card-body::-webkit-scrollbar {
         width: 4px;
     }
@@ -174,6 +188,17 @@
         font-size: 0.82rem;
         color: #7d6608;
         font-weight: 500;
+    }
+
+    .item-note {
+        font-size: 0.9rem;
+        color: #e67e22;
+        font-weight: 600;
+        flex-shrink: 0;
+        margin-left: 8px;
+        text-align: right;
+        max-width: 80px;
+        word-break: break-all;
     }
 
     .detail-item {
@@ -632,9 +657,12 @@
                         </span>
                     </div>
                     <div class="card-body">
-                        @if (!string.IsNullOrEmpty(order.Note))
+                        @{
+                            var displayNote = GetOrderNote(order.Note);
+                        }
+                        @if (!string.IsNullOrEmpty(displayNote))
                         {
-                            <div class="note-box">⚠️ @order.Note</div>
+                            <div class="note-box">⚠️ @displayNote</div>
                         }
                         @{
                             var parentItems2 = order.Items.Where(i => !i.ParentDetailId.HasValue).ToList();
@@ -655,12 +683,16 @@
                                          data-preorder-id="@order.PreOrderId"
                                          onclick="selectSetMeal(this)">
                                         <span class="detail-icon" id="icon-@item.DetailId">@icon</span>
-                                        <div>
+                                        <div style="flex:1;min-width:0;">
                                             <div class="detail-name">
                                                 @item.ProductName
                                                 <span class="setmeal-badge">套餐</span>
                                             </div>
                                         </div>
+                                        @if (!string.IsNullOrEmpty(item.ItemNote))
+                                        {
+                                            <div class="item-note">📝 @item.ItemNote</div>
+                                        }
                                     </div>
                                     <div class="action-btns" id="actions-@item.DetailId">
                                         <button class="btn-cancel" onclick="cancelSetMeal(event, @item.DetailId, @order.PreOrderId)">✕ 取消套餐</button>
@@ -692,10 +724,14 @@
                                      data-preorder-id="@order.PreOrderId"
                                      onclick="selectItem(this)">
                                     <span class="detail-icon" id="icon-@item.DetailId">@icon</span>
-                                    <div>
+                                    <div style="flex:1;min-width:0;">
                                         <div class="detail-name">@item.ProductName</div>
                                         <div class="detail-qty">× @item.Qty 份</div>
                                     </div>
+                                    @if (!string.IsNullOrEmpty(item.ItemNote))
+                                    {
+                                        <div class="item-note">📝 @item.ItemNote</div>
+                                    }
                                 </div>
                                 <div class="action-btns" id="actions-@item.DetailId">
                                     <button class="btn-cancel" onclick="updateStatus(event, @item.DetailId, 2, @order.PreOrderId)">✕ 取消</button>
@@ -704,12 +740,12 @@
                             }
                         }
                     </div>
-                    <div class="card-cancel-bar">
-                        @if (canCancelOrder)
-                        {
+                    @if (!order.Items.Any(x => x.Status == 1))
+                    {
+                        <div class="card-cancel-bar">
                             <button class="btn-cancel-order" onclick="cancelOrder(event, @order.PreOrderId)">✕ 整單取消</button>
-                        }
-                    </div>
+                        </div>
+                    }
                 </div>
             }
         </div>
@@ -754,9 +790,12 @@
                             </div>
                         </div>
                         <div class="list-detail-area" id="list-details-@order.PreOrderId">
-                            @if (!string.IsNullOrEmpty(order.Note))
+                            @{
+                                var displayNote2 = GetOrderNote(order.Note);
+                            }
+                            @if (!string.IsNullOrEmpty(displayNote2))
                             {
-                                <div class="note-box" style="margin-top:10px;">⚠️ @order.Note</div>
+                                <div class="note-box" style="margin-top:10px;">⚠️ @displayNote2</div>
                             }
                             @{
                                 var listParents = order.Items.Where(i => !i.ParentDetailId.HasValue).ToList();
@@ -777,12 +816,16 @@
                                              data-preorder-id="@order.PreOrderId"
                                              onclick="selectSetMeal(this)">
                                             <span class="detail-icon" id="icon-@item.DetailId">@icon</span>
-                                            <div>
+                                            <div style="flex:1;min-width:0;">
                                                 <div class="detail-name">
                                                     @item.ProductName
                                                     <span class="setmeal-badge">套餐</span>
                                                 </div>
-                                                </div>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(item.ItemNote))
+                                            {
+                                                <div class="item-note">📝 @item.ItemNote</div>
+                                            }
                                         </div>
                                         <div class="action-btns" id="actions-@item.DetailId">
                                             <button class="btn-cancel" onclick="cancelSetMeal(event, @item.DetailId, @order.PreOrderId)">✕ 取消套餐</button>
@@ -814,9 +857,14 @@
                                          data-preorder-id="@order.PreOrderId"
                                          onclick="selectItem(this)">
                                         <span class="detail-icon" id="icon-@item.DetailId">@icon</span>
-                                        <div>
+                                        <div style="flex:1;min-width:0;">
                                             <div class="detail-name">@item.ProductName</div>
+                                            <div class="detail-qty">× @item.Qty 份</div>
                                         </div>
+                                        @if (!string.IsNullOrEmpty(item.ItemNote))
+                                        {
+                                            <div class="item-note">📝 @item.ItemNote</div>
+                                        }
                                     </div>
                                     <div class="action-btns" id="actions-@item.DetailId">
                                         <button class="btn-cancel" onclick="updateStatus(event, @item.DetailId, 2, @order.PreOrderId)">✕ 取消</button>

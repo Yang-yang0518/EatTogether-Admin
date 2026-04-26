@@ -1,6 +1,7 @@
 ﻿using EatTogether.Models.DTOs;
 using EatTogether.Models.EfModels;
 using EatTogether.Models.Extensions;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatTogether.Models.Repositories
@@ -26,52 +27,26 @@ namespace EatTogether.Models.Repositories
 
 		public async Task<List<ArticleDto>> GetAllAsync()
 		{
-			var data = await _context.Articles
-				.AsNoTracking()
-				.Select(e => new ArticleDto
-				{
-					Id = e.Id,
-					CategoryId = e.CategoryId,
-					EventId = e.EventId,
-					Title = e.Title,
-					Description = e.Description,
-					CoverImageUrl = e.CoverImageUrl,
-					PublishDate = e.PublishDate,
-					ExpiryDate = e.ExpiryDate,
-					IsPinned = e.IsPinned,
-					Status = e.Status,
-					CategoryName = e.Category.Name,  // 直接存取導覽屬性
-					EventName = e.Event != null ? e.Event.Title : null
-				})
-				.ToListAsync();
 
-			return data;
+			var entity = await _context.Articles
+						   .AsNoTracking()
+						   .Include(e => e.Category)
+						   .Include(e => e.Event)
+						   .ToListAsync();
+
+			return entity.Select(e => e.ToArticleDto()).ToList();
 		}
 
 		public async Task<ArticleEditDto> GetEditByIdAsync(int id)
 		{
+
 			var entity = await _context.Articles
-				.Include(a => a.Category)
-				.Include(a => a.Event)       // EventId 可為 null，所以用 left join 沒問題
-				.FirstOrDefaultAsync(a => a.Id == id);
+						   .Include(a => a.Category)
+						   .Include(a => a.Event)
+						   .FirstOrDefaultAsync(a => a.Id == id);
 
 			if (entity == null) return null;
-
-			return new ArticleEditDto
-			{
-				Id = entity.Id,
-				CategoryId = entity.CategoryId,
-				EventId = entity.EventId,
-				Title = entity.Title,
-				Description = entity.Description,
-				CoverImageUrl = entity.CoverImageUrl,
-				PublishDate = entity.PublishDate,
-				ExpiryDate = entity.ExpiryDate,
-				IsPinned = entity.IsPinned,
-				Status = entity.Status,
-				CategoryName = entity.Category?.Name,   // 加 ?. 保險
-				EventName = entity.Event?.Title         // Event 可能為 null
-			};
+			return entity.ToEditDto();
 
 		}
 
@@ -101,5 +76,36 @@ namespace EatTogether.Models.Repositories
 			await _context.SaveChangesAsync();
 		}
 
+		public async Task<IEnumerable<Article>> GetAllForStatsAsync()
+		{
+			return await _context.Articles
+						.Include(e => e.Category)
+						.Where(e => e.Status != 0)
+						.OrderByDescending(e => e.ViewCount)
+						.ToListAsync();
+		}
+
+		public async Task<IEnumerable<SelectListItem>> GetCategorySelectListAsync()
+		{
+			return await _context.ArticleCategories
+				.Where(x => x.IsEnabled) // 撈啟用的
+				.OrderBy(x => x.SortOrder)
+				.Select(x => new SelectListItem
+				{
+					Value = x.Id.ToString(),
+					Text = x.Name
+				}).ToListAsync();
+		}
+
+		public async Task<IEnumerable<SelectListItem>> GetEventSelectListAsync()
+		{
+			return await _context.Events
+				.Where(x => x.Status == 1 || x.Status == 0) // 取進行中及未開始活動
+				.Select(x => new SelectListItem
+				{
+					Value = x.Id.ToString(),
+					Text = x.Title
+				}).ToListAsync();
+		}
 	}
 }

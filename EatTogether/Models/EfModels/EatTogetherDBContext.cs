@@ -61,6 +61,8 @@ public partial class EatTogetherDBContext : DbContext
 
     public virtual DbSet<RoleFunction> RoleFunctions { get; set; }
 
+    public virtual DbSet<SchedulerLog> SchedulerLogs { get; set; }
+
     public virtual DbSet<SetMeal> SetMeals { get; set; }
 
     public virtual DbSet<SetMealItem> SetMealItems { get; set; }
@@ -571,6 +573,7 @@ public partial class EatTogetherDBContext : DbContext
                 .IsRequired()
                 .HasMaxLength(10)
                 .IsUnicode(false);
+            entity.Property(e => e.CancelledAt).HasPrecision(0);
             entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(100)
@@ -587,6 +590,10 @@ public partial class EatTogetherDBContext : DbContext
             entity.Property(e => e.ReservedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.Member).WithMany(p => p.Reservations)
+                .HasForeignKey(d => d.MemberId)
+                .HasConstraintName("FK_Reservations_Members");
         });
 
         modelBuilder.Entity<Role>(entity =>
@@ -615,6 +622,19 @@ public partial class EatTogetherDBContext : DbContext
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_RoleFunctions_Roles");
+        });
+
+        modelBuilder.Entity<SchedulerLog>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0780D69FCC");
+
+            entity.Property(e => e.ExecutedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.TriggerType)
+                .IsRequired()
+                .HasMaxLength(10)
+                .HasDefaultValue("自動");
         });
 
         modelBuilder.Entity<SetMeal>(entity =>

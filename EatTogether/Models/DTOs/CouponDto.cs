@@ -17,6 +17,15 @@
         /// <summary>此優惠券是否已套用在目前訂單中</summary>
         public bool IsInUse { get; set; }
 
+        /// <summary>目前訂單金額是否達到最低消費門檻</summary>
+        public bool IsEligible { get; set; }
+
+        /// <summary>會員是否已領取此優惠券（null 表示無會員情境，預設視為已領取）</summary>
+        public bool IsClaimed { get; set; } = true;
+
+        /// <summary>會員是否已使用過此優惠券</summary>
+        public bool IsUsedByMember { get; set; } = false;
+
         // 計算屬性
         public string DiscountTypeText => DiscountType == 0 ? "折金額" : "打折";
 

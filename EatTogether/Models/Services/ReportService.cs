@@ -193,9 +193,17 @@ namespace EatTogether.Models.Services
             }
 
             // ── 付款方式（從 Orders 撈，排除空白）────────────────────────────
+            static string ToPayLabel(string? m) => m?.Trim() switch
+            {
+                "Card" or "Credit Card" => "信用卡",
+                "Cash"                  => "現金",
+                "LinePay" or "Line Pay" => "行動支付",
+                _                       => m ?? ""
+            };
+
             var payGroups = orders
                 .Where(o => !string.IsNullOrWhiteSpace(o.PayMethod))
-                .GroupBy(o => o.PayMethod)
+                .GroupBy(o => ToPayLabel(o.PayMethod))
                 .OrderByDescending(g => g.Count())
                 .ToList();
 

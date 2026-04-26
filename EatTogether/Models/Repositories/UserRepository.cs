@@ -24,6 +24,7 @@ namespace EatTogether.Models.Repositories
 		Task UpdateAsync(UserUpdateDto dto);
 		Task UpdatePasswordAsync(int userId, string hashedPassword);
 		Task UpdateUserRolesAsync(int userId, List<int> roleIds);
+		Task<(int Id, string Name)?> GetByEmployeeNumberAsync(string employeeNumber);
 	}
 
 	public class UserRepository : IUserRepository
@@ -338,6 +339,16 @@ AND LEN(EmployeeNumber) = 10
 			await _context.SaveChangesAsync();
 		}
 
+		public async Task<(int Id, string Name)?> GetByEmployeeNumberAsync(string employeeNumber)
+		{
+			var result = await _context.Users
+				.AsNoTracking()
+				.Where(u => u.EmployeeNumber == employeeNumber && !u.IsDeleted)
+				.Select(u => new { u.Id, u.Name })
+				.FirstOrDefaultAsync();
 
+			if (result == null) return null;
+			return (result.Id, result.Name);
+		}
 	}
 }

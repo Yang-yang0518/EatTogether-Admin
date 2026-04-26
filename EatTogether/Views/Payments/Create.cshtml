@@ -3,16 +3,14 @@
 @{
     ViewData["Title"] = "結帳";
     var takeOrders = Model.TakeoutOrders;
-    // TODO: 登入系統完成後，改成從 Session 或 ClaimsPrincipal 讀取
-    // 有「訂單管理（含結帳）FunctionId=4」權限：店長、副店長、收銀員
     bool canCancelOrder = true; // 暫時以店長身份模擬
 }
 
 <style>
     .layout {
         display: grid;
-        grid-template-columns: 800px 1fr;
-        height: 100vh;
+        grid-template-columns: 600px 1fr;
+        height: 88.2vh;
         overflow: hidden;
     }
 
@@ -67,7 +65,7 @@
     /* 桌號格子 */
     .table-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 8px;
         padding: 16px;
         overflow: hidden; /* ← 改成 hidden */
@@ -283,8 +281,6 @@
         box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
 
-    .detail-table .split-check-col { display: none; }
-    .detail-table.split-active .split-check-col { display: table-cell; }
 
         .detail-table th {
             padding: 12px 16px;
@@ -344,15 +340,16 @@
     }
 
     .amount-section {
-        padding: 16px 24px;
+        padding: 10px 24px;
         background: #fff;
         border-top: 1px solid #e8e8e8;
+        flex-shrink: 0;
     }
 
     .amount-row {
         display: flex;
         justify-content: space-between;
-        padding: 6px 0;
+        padding-bottom: 6px;
         font-size: 0.92rem;
         color: #555;
     }
@@ -366,77 +363,121 @@
             font-weight: 700;
             color: #1a1a1a;
             border-top: 2px solid #eee;
-            margin-top: 8px;
-            padding-top: 12px;
         }
 
             .amount-row.total span:last-child {
                 color: #c0392b;
             }
 
-    .cash-section {
-        display: none;
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid #f0f0f0;
-    }
-
-    .cash-label {
-        font-size: 0.85rem;
-        color: #888;
-        margin-bottom: 6px;
-    }
-
-    .cash-input-wrap {
+    .pay-row {
         display: flex;
-        align-items: center;
-        gap: 10px;
+        gap: 8px;
+        align-items: flex-end;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #f0f0f0;
     }
+
+    .pay-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .pay-label {
+        font-size: 0.78rem;
+        color: #888;
+    }
+
+    .pay-method-select {
+        width: 100%;
+        padding: 9px 32px 9px 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+        font-family: inherit;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        cursor: pointer;
+        outline: none;
+        appearance: none;
+        transition: border-color 0.15s;
+        box-sizing: border-box;
+    }
+
+    .pay-method-select:focus { border-color: #c0392b; }
 
     .cash-input {
-        width: 140px;
-        padding: 10px 14px;
+        width: 100%;
+        padding: 9px 12px;
         border: 2px solid #ddd;
-        border-radius: 10px;
-        font-size: 1rem;
+        border-radius: 8px;
+        font-size: 0.88rem;
         font-family: inherit;
         font-weight: 700;
         outline: none;
         transition: border-color 0.2s;
         text-align: right;
+        box-sizing: border-box;
     }
 
-        .cash-input:focus {
-            border-color: #c0392b;
-        }
+    .cash-input:focus { border-color: #c0392b; }
 
-    .change-display {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #27ae60;
+    /* 拆單 Modal */
+    .split-item-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 4px;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.1s;
     }
+    .split-item-row:last-child { border-bottom: none; }
+    .split-item-row.checked { background: #f0f7ff; }
+    .split-item-row.disabled { opacity: 0.4; pointer-events: none; }
 
-    .pay-method-btn {
-        flex: 1;
-        padding: 8px 4px;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        background: #fff;
-        font-family: inherit;
-        font-size: 0.82rem;
-        font-weight: 500;
-        color: #888;
+    /* 拆單內嵌模式 - 已勾選列高亮 */
+    .detail-table tr.checked td { background: #f0f7ff; }
+
+    .split-check-input {
+        width: 18px; height: 18px;
+        accent-color: #1a77c9;
         cursor: pointer;
-        transition: all 0.15s;
-        text-align: center;
+        flex-shrink: 0;
+    }
+    .split-item-name {
+        flex: 1;
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+    .split-item-qty  { font-size: 0.85rem; color: #888; white-space: nowrap; }
+    .split-item-price { font-size: 0.9rem; font-weight: 700; color: #1a1a1a; white-space: nowrap; min-width: 70px; text-align: right; }
+
+    .split-summary-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        background: #eaf3fb;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        font-size: 0.88rem;
+        color: #555;
+    }
+    .split-summary-bar .split-bar-total {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #1a77c9;
     }
 
-        .pay-method-btn.active {
-            border-color: #c0392b;
-            background: #fff5f5;
-            color: #c0392b;
-            font-weight: 700;
-        }
+    .split-pay-section {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        margin-bottom: 12px;
+    }
 
     .checkout-btn-wrap {
         margin-top: 14px;
@@ -444,7 +485,7 @@
 
     .btn-checkout {
         width: 100%;
-        padding: 16px;
+        padding: 10px;
         background: #c0392b;
         color: #fff;
         border: none;
@@ -594,11 +635,13 @@
         line-height: 1.5;
     }
 
-    .modal-
     .modal-actions {
         display: flex;
         gap: 10px;
-        justify-content: center;
+    }
+    .modal-actions > button {
+        flex: 1;
+        min-width: 0;
     }
 
     .modal-btn-cancel {
@@ -693,9 +736,9 @@
 
 <!-- Event Selection Modal -->
 <div class="modal-overlay" id="eventSelectModal">
-    <div class="modal-box" style="width:420px;max-height:80vh;overflow-y:auto;">
+    <div class="modal-box" style="width:440px; max-height:82vh; display:flex; flex-direction:column;">
         <div class="modal-title">🎉 選擇活動</div>
-        <div id="eventListArea" style="margin:16px 0;text-align:left;"></div>
+        <div id="eventListArea" style="flex:1; overflow-y:auto; margin:14px 0; text-align:left;"></div>
         <div class="modal-actions">
             <button class="modal-btn-cancel" onclick="document.getElementById('eventSelectModal').classList.remove('show')">關閉</button>
             <button class="modal-btn-confirm" id="clearEventBtn" style="background:#888;" onclick="doApplyEvent(null)">清除活動</button>
@@ -703,14 +746,102 @@
     </div>
 </div>
 
+<!-- Member Search Modal -->
+<div class="modal-overlay" id="memberModal">
+    <div class="modal-box" style="width:420px; display:flex; flex-direction:column;">
+        <div class="modal-title">👤 輸入會員</div>
+
+        <!-- 目前綁定的會員資訊 -->
+        <div id="memberCurrentInfo" style="display:none; margin-bottom:12px; padding:10px 14px;
+             background:#f5eeff; border:1.5px solid #c39be0; border-radius:10px; font-size:0.88rem;">
+            <div style="font-weight:700; color:#6c2ba0; margin-bottom:2px;">目前綁定的會員</div>
+            <div id="memberCurrentName" style="color:#3d1a5f;"></div>
+        </div>
+
+        <!-- 搜尋框 -->
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <input type="tel" id="memberPhoneInput" placeholder="請輸入手機號碼"
+                   style="flex:1; padding:9px 13px; border:1.5px solid #ddd; border-radius:8px;
+                          font-family:inherit; font-size:0.9rem; outline:none;"
+                   onfocus="this.style.borderColor='#8e44ad'"
+                   onblur="this.style.borderColor='#ddd'"
+                   onkeydown="if(event.key==='Enter') searchMember()" />
+            <button type="button" onclick="searchMember()"
+                    style="padding:9px 18px; background:#8e44ad; color:#fff; border:none;
+                           border-radius:8px; font-family:inherit; font-weight:700;
+                           font-size:0.88rem; cursor:pointer; white-space:nowrap;">
+                🔍 查詢
+            </button>
+        </div>
+
+        <!-- 查詢結果 -->
+        <div id="memberSearchResult" style="min-height:48px; margin-bottom:14px;"></div>
+
+        <div class="modal-actions">
+            <button class="modal-btn-cancel" onclick="closeMemberModal()">關閉</button>
+            <button class="modal-btn-confirm" id="clearMemberBtn" style="background:#888; display:none;"
+                    onclick="_splitMemberModal ? (closeMemberModal(), setSplitMember(null,null,null)) : doApplyMember(null)">清除會員</button>
+            <button class="modal-btn-confirm" id="confirmMemberBtn" style="display:none;"
+                    onclick="confirmMember()">確認綁定</button>
+        </div>
+    </div>
+</div>
+
 <!-- Coupon Selection Modal -->
 <div class="modal-overlay" id="couponSelectModal">
-    <div class="modal-box" style="width:420px;max-height:80vh;overflow-y:auto;">
+    <div class="modal-box" style="width:440px; max-height:82vh; display:flex; flex-direction:column;">
         <div class="modal-title">🎫 選擇優惠券</div>
-        <div id="couponListArea" style="margin:16px 0;text-align:left;"></div>
+        <div id="couponListArea" style="flex:1; overflow-y:auto; margin:14px 0; text-align:left;"></div>
         <div class="modal-actions">
             <button class="modal-btn-cancel" onclick="document.getElementById('couponSelectModal').classList.remove('show')">關閉</button>
             <button class="modal-btn-confirm" id="clearCouponBtn" style="background:#888;" onclick="doApplyCouponById(null)">清除優惠券</button>
+        </div>
+    </div>
+</div>
+
+<!-- Split Checkout Modal -->
+<div class="modal-overlay" id="splitModal">
+    <div class="modal-box" style="width:480px; max-height:85vh; display:flex; flex-direction:column; padding:28px 28px 20px;">
+        <div class="modal-title">🧾 拆單結帳</div>
+        <!-- 餐點清單 -->
+        <div id="splitItemList"
+             style="flex:1; overflow-y:auto; margin:14px 0 8px; min-height:60px;"></div>
+        <!-- 小計列 -->
+        <div class="split-summary-bar">
+            <span>已勾選 <span id="splitCount" style="font-weight:700;color:#1a77c9;">0</span> 項</span>
+            <span class="split-bar-total">NT$ <span id="splitSubtotal">0</span></span>
+        </div>
+        <!-- 付款方式 -->
+        <div class="split-pay-section">
+            <div class="pay-field" id="splitPayMethodWrap" style="flex:1; min-width:0;">
+                <span class="pay-label">付款方式</span>
+                <select class="pay-method-select" id="splitPaySelect"
+                        onchange="onSplitPayChange(this.value)">
+                    <option value="Cash">💵 現金</option>
+                    <option value="Card">💳 刷卡</option>
+                    <option value="LinePay">📱 行動支付</option>
+                </select>
+            </div>
+            <div class="pay-field" id="splitCashWrap" style="flex:1; min-width:0;">
+                <span class="pay-label">實收金額</span>
+                <input type="number" class="cash-input" id="splitCashInput"
+                       placeholder="0" oninput="onSplitCashInput()" />
+            </div>
+            <div class="pay-field" id="splitChangeWrap" style="flex:1; min-width:0;">
+                <span class="pay-label">找零</span>
+                <div style="padding:9px 4px; font-size:0.95rem; font-weight:700; color:#27ae60; white-space:nowrap;">
+                    NT$: <span id="splitChangeAmt">-</span>
+                </div>
+            </div>
+        </div>
+        <!-- 按鈕 -->
+        <div class="modal-actions">
+            <button class="modal-btn-cancel"
+                    onclick="document.getElementById('splitModal').classList.remove('show'); (function(){ var r=document.getElementById('discountBtnRow'); if(r&&currentData&&currentData.memberId) r.style.display='flex'; })()">取消</button>
+            <button class="modal-btn-confirm" id="splitConfirmBtn"
+                    style="background:#1a77c9;" onclick="doSplitCheckout()" disabled>
+                確認結帳
+            </button>
         </div>
     </div>
 </div>
@@ -799,6 +930,7 @@
             {
                 <div class="takeout-item @(order.HasUnserved ? "unserved" : "")"
                      id="tbtn-@order.PreOrderId"
+                     data-pre-order-id="@order.PreOrderId"
                      onclick="loadDetail(@order.PreOrderId, this)">
                     <div class="takeout-number">@order.OrderNumber</div>
                     <div class="takeout-meta">@order.OrderAt.ToString("HH:mm")</div>
@@ -829,6 +961,10 @@
                     <div class="right-title" id="rightTitle">-</div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <div class="right-subtitle" id="rightSubtitle">-</div>
+                        <select id="orderSelect" style="display:none; padding:2px 8px; border:1.5px solid #ddd;
+                                border-radius:6px; font-family:inherit; font-size:0.82rem; color:#444;
+                                background:#fff; cursor:pointer; outline:none; max-width:220px;"
+                                onchange="onOrderSelectChange(this.value)"></select>
                         <button type="button" id="editTableBtn" onclick="openEditOrderModal()"
                                 style="padding:3px 10px;border:1px solid #1a77c9;border-radius:6px;
                                        background:#fff;color:#1a77c9;font-family:inherit;
@@ -837,6 +973,15 @@
                                 onmouseover="this.style.background='#eaf0fb'"
                                 onmouseout="this.style.background='#fff'">
                             ✏️ 更換桌位
+                        </button>
+                        <button type="button" id="memberBtn" onclick="openMemberModal()"
+                                style="padding:3px 10px;border:1px solid #8e44ad;border-radius:6px;
+                                       background:#fff;color:#8e44ad;font-family:inherit;
+                                       font-weight:600;font-size:0.75rem;cursor:pointer;
+                                       transition:all 0.15s; display:none;"
+                                onmouseover="this.style.background='#f5eeff'"
+                                onmouseout="this.style.background='#fff'">
+                            👤 <span id="memberBtnLabel">輸入會員</span>
                         </button>
                     </div>
                 </div>
@@ -853,10 +998,17 @@
                     }
                     <button type="button" id="splitModeBtn"
                             style="padding:7px 16px;border:2px solid #1a77c9;border-radius:8px;
-                       background:#fff;color:#1a77c9;font-family:inherit;
-                       font-weight:700;font-size:0.85rem;cursor:pointer;"
-                            onclick="toggleSplitMode()">
+                                   background:#fff;color:#1a77c9;font-family:inherit;
+                                   font-weight:700;font-size:0.85rem;cursor:pointer;display:none;"
+                            onclick="enterSplitMode()">
                         拆單結帳
+                    </button>
+                    <button type="button" id="exitSplitBtn"
+                            style="padding:7px 16px;border:2px solid #888;border-radius:8px;
+                                   background:#fff;color:#888;font-family:inherit;
+                                   font-weight:700;font-size:0.85rem;cursor:pointer;display:none;"
+                            onclick="exitSplitMode()">
+                        取消拆單
                     </button>
                 </div>
             </div>
@@ -873,10 +1025,7 @@
                 <table class="detail-table">
                     <thead>
                         <tr>
-                            <th id="splitCheckCol" style="display:none;width:36px;">
-                                <input type="checkbox" id="checkAll" onchange="toggleAll(this)">
-                            </th>
-                            <th>餐點名稱</th>
+<th>餐點名稱</th>
                             <th>結帳份數</th>
                             <th>單價</th>
                             <th>金額</th>
@@ -887,63 +1036,121 @@
             </div>
 
             <div class="amount-section">
-                <!-- 合併優惠折疊區 -->
-                <div id="discountSummary" style="display:none; margin-bottom:10px;">
-                    <button type="button" id="discountToggleBtn" onclick="toggleDiscountDetail()"
-                            style="width:100%;display:flex;align-items:center;justify-content:space-between;
-                                   padding:9px 14px;border:1.5px solid #b5cfa3;border-radius:10px;
-                                   background:#f4fdf7;cursor:pointer;font-family:inherit;font-size:0.88rem;
-                                   font-weight:600;color:#27ae60;transition:all 0.15s;">
-                        <span>🎁 優惠使用中
-                            <span id="discountCount"
-                                  style="background:#27ae60;color:#fff;border-radius:50%;
-                                         padding:1px 7px;font-size:0.75rem;margin-left:4px;"></span>
+                <!-- ── 拆單模式控制區 ─────────────────────────────── -->
+                <div id="splitSection" style="display:none;">
+                    <!-- 小計列 -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;
+                                padding:8px 0 4px;border-bottom:1px solid #e8eaf0;margin-bottom:10px;">
+                        <span style="font-size:0.85rem;color:#555;">
+                            已勾選 <strong id="splitCountInline" style="color:#1a77c9;">0</strong> 項
                         </span>
-                        <span id="discountArrow">▼</span>
-                    </button>
-                    <div id="discountDetail" style="display:none; border:1.5px solid #b5cfa3; border-top:none;
-                         border-radius:0 0 10px 10px; padding:6px 10px; background:#f9fdf9;">
-                        <div id="summaryEventRow" style="display:none; padding:6px 4px;
-                             align-items:center; justify-content:space-between;">
-                            <span style="font-size:0.88rem;color:#27ae60;font-weight:600;">🎉 <span id="summaryEventName"></span></span>
-                            <button type="button" onclick="doApplyEvent(null)"
-                                    style="border:none;background:none;color:#aaa;cursor:pointer;font-size:0.9rem;padding:0 4px;"
-                                    title="移除活動">✕</button>
+                        <span style="font-size:0.85rem;font-weight:700;">
+                            小計 NT$ <span id="splitSubtotalInline">0</span>
+                        </span>
+                    </div>
+                    <!-- 拆單會員 -->
+                    <div style="margin-bottom:8px;">
+                        <button type="button" id="splitMemberBtn" onclick="openSplitMemberModal()"
+                                style="padding:3px 10px;border:1px solid #8e44ad;border-radius:6px;
+                                       background:#fff;color:#8e44ad;font-family:inherit;
+                                       font-weight:600;font-size:0.82rem;cursor:pointer;transition:all 0.15s;">
+                            👤 <span id="splitMemberBtnLabel">輸入會員</span>
+                        </button>
+                    </div>
+                    <!-- 拆單折扣（有會員才顯示）-->
+                    <div id="splitDiscountRow" style="display:none;flex-direction:row;gap:8px;margin-bottom:8px;">
+                        <button type="button" id="splitEventBtnInline" onclick="openSplitEventModal()"
+                                style="flex:1;padding:7px 8px;border:1.5px solid #27ae60;border-radius:9px;
+                                       background:#fff;color:#27ae60;font-family:inherit;font-weight:700;
+                                       font-size:0.8rem;cursor:pointer;transition:all 0.15s;
+                                       display:flex;align-items:center;justify-content:center;gap:5px;position:relative;">
+                            <span id="splitEventLabel">🎉 選擇活動</span>
+                            <span id="splitEventClear" style="display:none;margin-left:2px;font-size:1rem;"
+                                  onclick="event.stopPropagation();clearSplitEvent()">✕</span>
+                        </button>
+                        <button type="button" id="splitCouponBtnInline" onclick="openSplitCouponModal()"
+                                style="flex:1;padding:7px 8px;border:1.5px solid #b7770d;border-radius:9px;
+                                       background:#fff;color:#b7770d;font-family:inherit;font-weight:700;
+                                       font-size:0.8rem;cursor:pointer;transition:all 0.15s;
+                                       display:flex;align-items:center;justify-content:center;gap:5px;position:relative;">
+                            <span id="splitCouponLabel">🎫 選擇優惠券</span>
+                            <span id="splitCouponClear" style="display:none;margin-left:2px;font-size:1rem;"
+                                  onclick="event.stopPropagation();clearSplitCoupon()">✕</span>
+                        </button>
+                    </div>
+                    <!-- 拆單金額 -->
+                    <div class="amount-row">
+                        <span>小計</span><span>NT$ <span id="splitAmtOriginal">0</span></span>
+                    </div>
+                    <div class="amount-row discount">
+                        <span>折扣</span><span>− NT$ <span id="splitAmtDiscount">0</span></span>
+                    </div>
+                    <div class="amount-row total">
+                        <span>應付</span><span>NT$ <span id="splitAmtTotal">0</span></span>
+                    </div>
+                    <!-- 付款方式 -->
+                    <div class="pay-row" style="margin-top:8px;">
+                        <div class="pay-field" style="flex:1;min-width:0;">
+                            <span class="pay-label">付款方式</span>
+                            <select class="pay-method-select" id="splitPayMethodInline"
+                                    onchange="onSplitPayMethodChange(this.value)">
+                                <option value="Cash">💵 現金</option>
+                                <option value="Card">💳 刷卡</option>
+                                <option value="LinePay">📱 行動支付</option>
+                            </select>
                         </div>
-                        <div id="summaryCouponRow" style="display:none; padding:6px 4px;
-                             align-items:center; justify-content:space-between;">
-                            <span style="font-size:0.88rem;color:#b7770d;font-weight:600;">🎫 <span id="summaryCouponName"></span></span>
-                            <button type="button" onclick="doApplyCouponById(null)"
-                                    style="border:none;background:none;color:#aaa;cursor:pointer;font-size:0.9rem;padding:0 4px;"
-                                    title="移除優惠券">✕</button>
+                        <div class="pay-field" id="splitCashWrapInline" style="flex:1;min-width:0;display:none;">
+                            <span class="pay-label">實收金額</span>
+                            <input type="number" class="cash-input" id="splitCashInline"
+                                   placeholder="0" oninput="calcSplitChange()" />
+                        </div>
+                        <div class="pay-field" id="splitChangeWrapInline" style="flex:1;min-width:0;display:none;">
+                            <span class="pay-label">找零</span>
+                            <div style="padding:9px 4px;font-size:0.95rem;font-weight:700;color:#27ae60;white-space:nowrap;">
+                                NT$: <span id="splitChangeInline">-</span>
+                            </div>
                         </div>
                     </div>
+                    <!-- 確認按鈕 -->
+                    <div class="checkout-btn-wrap">
+                        <button type="button" class="btn-checkout show" id="splitConfirmBtnInline"
+                                style="background:#1a77c9;" onclick="doSplitCheckout()" disabled>
+                            確認拆單結帳 ✓
+                        </button>
+                    </div>
                 </div>
-                <!-- Toast 通知（折扣套用時顯示） -->
-                <div id="discountToast"
-                     style="display:none; margin-bottom:8px; padding:9px 16px;
-                            background:#1a1a1a; color:#fff; border-radius:10px;
-                            font-size:0.85rem; font-weight:600; text-align:center;
-                            opacity:0; transition:opacity 0.4s;">
+                <!-- ── 正常模式 ────────────────────────────────────── -->
+                <div id="normalSection">
+                <!-- Toast 通知 -->
+                <div id="discountToast" style="display:none; margin-bottom:8px; padding:9px 16px;
+                     background:#1a1a1a; color:#fff; border-radius:10px;
+                     font-size:0.85rem; font-weight:600; text-align:center;
+                     opacity:0; transition:opacity 0.4s;">
                     <span id="discountToastText"></span>
                 </div>
-                <!-- 結帳頁手動選擇活動/優惠券 -->
-                <div id="discountBtnRow" style="display:none;gap:8px;margin-bottom:12px;">
+                <!-- 優惠選擇按鈕列 -->
+                <div id="discountBtnRow" style="display:none; gap:8px; margin-bottom:12px;">
                     <button type="button" id="selectEventBtn" onclick="openEventModal()"
-                            style="flex:1;padding:7px 0;border:1.5px solid #27ae60;border-radius:8px;
-                                   background:#fff;color:#27ae60;font-family:inherit;font-weight:600;
-                                   font-size:0.82rem;cursor:pointer;transition:all 0.15s;"
-                            onmouseover="this.style.background='#f0fff4'"
-                            onmouseout="this.style.background='#fff'">
-                        🎉 選擇活動
+                            style="flex:1; padding:8px 10px; border:1.5px solid #27ae60; border-radius:9px;
+                                   background:#fff; color:#27ae60; font-family:inherit; font-weight:700;
+                                   font-size:0.82rem; cursor:pointer; transition:all 0.15s;
+                                   display:flex; align-items:center; justify-content:center; gap:6px; overflow:hidden; position:relative;">
+                        <span id="eventBtnLabel" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">🎉 選擇活動</span>
+                        <span id="eventAvailBadge" style="display:none; flex-shrink:0; background:#27ae60; color:#fff;
+                              font-size:0.68rem; font-weight:700; border-radius:20px; padding:1px 6px; line-height:1.5;">可用</span>
+                        <span id="eventClearBtn" style="display:none; flex-shrink:0; margin-left:2px; color:#27ae60;
+                              font-size:1rem; line-height:1;" onclick="event.stopPropagation(); doApplyEvent(null)" title="清除">✕</span>
                     </button>
-                    <button type="button" onclick="openCouponModal()"
-                            style="flex:1;padding:7px 0;border:1.5px solid #b7770d;border-radius:8px;
-                                   background:#fff;color:#b7770d;font-family:inherit;font-weight:600;
-                                   font-size:0.82rem;cursor:pointer;transition:all 0.15s;"
-                            onmouseover="this.style.background='#fff8e1'"
-                            onmouseout="this.style.background='#fff'">
-                        🎫 選擇優惠券
+                    <button type="button" id="selectCouponBtn" onclick="openCouponModal()"
+                            style="flex:1; padding:8px 10px; border:1.5px solid #b7770d; border-radius:9px;
+                                   background:#fff; color:#b7770d; font-family:inherit; font-weight:700;
+                                   font-size:0.82rem; cursor:pointer; transition:all 0.15s;
+                                   display:flex; align-items:center; justify-content:center; gap:6px; overflow:hidden; position:relative;">
+                        <span id="couponBtnLabel" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">🎫 選擇優惠券</span>
+                        <span id="couponAvailBadge" style="display:none; flex-shrink:0; background:#b7770d; color:#fff;
+                              font-size:0.68rem; font-weight:700; border-radius:20px; padding:1px 6px; line-height:1.5;">可用</span>
+                        <span id="couponClearBtn" style="display:none; flex-shrink:0; margin-left:2px; color:#b7770d;
+                              font-size:1rem; line-height:1;" onclick="event.stopPropagation(); doApplyCouponById(null)" title="清除">✕</span>
                     </button>
                 </div>
                 <div class="amount-row">
@@ -958,22 +1165,29 @@
                     <span>應付</span>
                     <span>NT$ <span id="amtTotal">-</span></span>
                 </div>
-                <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;">
-                    <div style="font-size:0.82rem;color:#888;margin-bottom:8px;">付款方式</div>
-                    <div style="display:flex;gap:8px;">
-                        <button type="button" class="pay-method-btn" id="pmBtn-Cash" onclick="selectPayMethod('Cash')">💵 現金</button>
-                        <button type="button" class="pay-method-btn" id="pmBtn-Card" onclick="selectPayMethod('Card')">💳 刷卡</button>
-                        <button type="button" class="pay-method-btn" id="pmBtn-Other" onclick="selectPayMethod('Other')">📱 行動支付</button>
+                <div class="pay-row" id="payRow">
+                    <!-- 付款方式（非現金時占滿整排） -->
+                    <div class="pay-field" id="payMethodField" style="flex:1; min-width:0;">
+                        <span class="pay-label">付款方式</span>
+                        <select class="pay-method-select" id="payMethodSelect"
+                                onchange="selectPayMethod(this.value)">
+                            <option value="Cash">💵 現金</option>
+                            <option value="Card">💳 刷卡</option>
+                            <option value="LinePay">📱 行動支付</option>
+                        </select>
                     </div>
-                </div>
-
-                <div class="cash-section" id="cashSection">
-                    <div class="cash-label">實收金額</div>
-                    <div class="cash-input-wrap">
+                    <!-- 實收（現金時才顯示） -->
+                    <div class="pay-field" id="cashInputGroup" style="flex:1; min-width:0; display:none;">
+                        <span class="pay-label">實收金額</span>
                         <input type="number" class="cash-input" id="cashInput"
                                placeholder="0" oninput="calcChange()" />
-                        <span style="color:#888;font-size:0.9rem">找零：</span>
-                        <span class="change-display" id="changeDisplay">-</span>
+                    </div>
+                    <!-- 找零（現金時才顯示） -->
+                    <div class="pay-field" id="changeGroup" style="flex:1; min-width:0; display:none;">
+                        <span class="pay-label">找零</span>
+                        <div style="padding:9px 4px; font-size:0.95rem; font-weight:700; color:#27ae60; white-space:nowrap;">
+                            NT$: <span id="changeDisplay">-</span>
+                        </div>
                     </div>
                 </div>
 
@@ -981,7 +1195,8 @@
                     <form id="checkoutForm" method="post" action="/Payments/CheckoutByTable">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="tableId" id="checkoutTableId" value="" />
-                        <button type="submit" class="btn-checkout" id="checkoutBtn">
+                        <button type="button" class="btn-checkout" id="checkoutBtn"
+                                onclick="handleCheckout()">
                             結帳 ✓
                         </button>
                     </form>
@@ -1029,6 +1244,24 @@
             b.classList.toggle('active', isDine ? i === 0 : i === 1));
         document.getElementById('dineGrid').style.display = isDine ? 'grid' : 'none';
         document.getElementById('takeList').style.display = isDine ? 'none' : 'block';
+
+        if (isDine) {
+            // 切回內用 → 右側顯示「請選擇桌號」
+            closeDetail();
+            document.getElementById('emptyRightIcon').textContent = '🪑';
+            document.getElementById('emptyRightText').textContent = '請選擇桌號';
+        } else {
+            // 切到外帶 → 自動載入第一筆外帶訂單
+            const firstItem = document.querySelector('#takeList .takeout-item');
+            if (firstItem) {
+                const pid = parseInt(firstItem.dataset.preOrderId);
+                if (pid) loadDetail(pid, firstItem);
+            } else {
+                closeDetail();
+                document.getElementById('emptyRightIcon').textContent = '🥡';
+                document.getElementById('emptyRightText').textContent = '目前沒有外帶訂單';
+            }
+        }
     }
 
     async function loadDetail(preOrderId, el) {
@@ -1061,7 +1294,7 @@
         }
 
         // 切換訂單時若拆單模式仍開啟，先關閉
-        if (splitMode) toggleSplitMode();
+        if (splitMode) exitSplitMode();
 
         // 2. 切換右側顯示狀態（隱藏空狀態，顯示結帳內容）
         document.getElementById('emptyRight').style.display = 'none';
@@ -1070,7 +1303,25 @@
         // 3. 設定標題與副標題 (桌號/外帶、訂單編號)
         document.getElementById('rightTitle').textContent =
             data.inOrOut ? `🪑 ${data.tableName || ''}` : `🥡 外帶`;
-        document.getElementById('rightSubtitle').textContent = data.orderNumber || '-';
+
+        // 副標題：多筆訂單 → 下拉選單；單筆 → 純文字
+        const subtitleDiv  = document.getElementById('rightSubtitle');
+        const orderSelect  = document.getElementById('orderSelect');
+        const subOrders    = data.subOrders || [];
+        if (subOrders.length > 1) {
+            subtitleDiv.style.display  = 'none';
+            orderSelect.style.display  = '';
+            orderSelect.innerHTML =
+                `<option value="">全部訂單（${subOrders.length} 筆）</option>` +
+                subOrders.map(o =>
+                    `<option value="${o.preOrderId}">${o.orderNumber}</option>`
+                ).join('');
+            orderSelect.value = '';   // 預設全部
+        } else {
+            subtitleDiv.style.display  = '';
+            orderSelect.style.display  = 'none';
+            subtitleDiv.textContent    = data.orderNumber || '-';
+        }
 
         // 4. 判斷是否有「已出餐」的餐點（含套餐子項目）
         const hasServedItems = data.items &&
@@ -1112,14 +1363,21 @@
             topLevelItems.every(item => item.status === 2 || item.isBilled === true);
 
         const editTableBtn = document.getElementById('editTableBtn');
+        const memberBtn    = document.getElementById('memberBtn');
         if (allCompleted) {
             // 全部已取消或已結帳 → 隱藏整單取消和更換桌位
             if (cancelOrderBtn) cancelOrderBtn.style.display = 'none';
-            if (editTableBtn) editTableBtn.style.display = 'none';
+            if (editTableBtn)   editTableBtn.style.display   = 'none';
+            if (memberBtn)      memberBtn.style.display       = 'none';
         } else {
-            // 尚有可操作餐點 → 顯示更換桌位；整單取消由上方 section 5 的狀態決定，不在此覆蓋
+            // 尚有可操作餐點 → 顯示按鈕；整單取消由上方 section 5 的狀態決定，不在此覆蓋
             if (editTableBtn) editTableBtn.style.display = '';
+            if (memberBtn)    memberBtn.style.display    = '';
         }
+
+        // 更新會員按鈕標籤
+        updateMemberBtnDisplay(data);
+
 
         const splitModeBtn = document.getElementById('splitModeBtn');
         if (splitModeBtn) {
@@ -1129,171 +1387,13 @@
 
         // 6. 渲染餐點明細表格
         currentData = data;
-        const tbody = document.getElementById('detailBody');
-        tbody.innerHTML = '';
+        renderItemsTable(data.items);
 
-        // 排序邏輯：未出餐(0) -> 已出餐(1) -> 已結帳(2) -> 已取消(3)
-        const sortOrder = item => {
-            if (item.status === 2) return 3;
-            if (item.isBilled === true) return 2;
-            if (item.status === 0) return 0;
-            return 1;
-        };
+        // 8. 更新金額資訊（全部訂單模式）
+        renderAmounts(data.items, data);
 
-        const parentItems = data.items.filter(i => !i.parentDetailId);
-        const sortedParents = [...parentItems].sort((a, b) => sortOrder(a) - sortOrder(b));
-
-        // 非拆單模式：相同餐點合併顯示
-        let displayParents;
-        if (splitMode) {
-            displayParents = sortedParents;
-        } else {
-            const groupMap = new Map();
-            sortedParents.forEach(item => {
-                if (item.isSetMeal) {
-                    // 套餐不合併（每份套餐內容可能不同）
-                    groupMap.set('sm_' + item.detailId, { ...item });
-                    return;
-                }
-                const key = `${item.productName}|${item.unitPrice}|${item.status}|${item.isBilled}`;
-                if (groupMap.has(key)) {
-                    const g = groupMap.get(key);
-                    g.qty    += 1;
-                    g.subTotal += item.subTotal;
-                } else {
-                    groupMap.set(key, { ...item });
-                }
-            });
-            displayParents = [...groupMap.values()].sort((a, b) => sortOrder(a) - sortOrder(b));
-        }
-
-        displayParents.forEach(item => {
-            const isCancelled = item.status === 2;
-            const isUnserved  = item.status === 0;
-            const isBilled    = item.isBilled === true;
-            const isSetMeal   = item.isSetMeal === true;
-
-            const tr = document.createElement('tr');
-            if (isCancelled) tr.classList.add('status-cancel');
-            if (isBilled)    tr.classList.add('status-billed');
-            if (isSetMeal)   tr.classList.add('is-setmeal-row');
-
-            let badge = '';
-            if (isSetMeal) {
-                badge += `<span class="status-badge badge-setmeal">套餐</span>`;
-                if (isUnserved) {
-                    // 套餐父列未完成時，看子列是否有部分已出餐
-                    const childrenOfThis = data.items.filter(c => c.parentDetailId === item.detailId);
-                    const anyChildServed = childrenOfThis.some(c => c.status === 1);
-                    badge += anyChildServed
-                        ? `<span class="status-badge badge-partial">部分出餐</span>`
-                        : `<span class="status-badge badge-unserved">未出餐</span>`;
-                }
-            } else if (isUnserved) {
-                badge += `<span class="status-badge badge-unserved">未出餐</span>`;
-            }
-            if (isCancelled)        badge += `<span class="status-badge badge-cancel">已取消</span>`;
-            if (item.isInvalidGift) badge += `<span class="status-badge" style="background:#e74c3c;color:#fff;">⚠️ 需補差價</span>`;
-
-            // 拆單 checkbox：套餐標題可勾選（代表整份套餐），子項目不顯示
-            const showCheck = !isCancelled && !isUnserved && !isBilled;
-            tr.innerHTML = `
-                <td class="split-check-col">
-                    ${showCheck ? `<input type="checkbox" class="detail-check"
-                        data-detail-id="${item.detailId}"
-                        data-subtotal="${item.subTotal}"
-                        data-is-setmeal="${isSetMeal}"
-                        onchange="updateSplitTotal()">` : ''}
-                </td>
-                <td>${item.productName}${badge}</td>
-                <td>${item.qty}</td>
-                <td>NT$ ${item.unitPrice.toLocaleString()}</td>
-                <td>NT$ ${item.subTotal.toLocaleString()}</td>
-            `;
-            tbody.appendChild(tr);
-
-            // 若為套餐，在其下方顯示子項目（縮排）
-            if (isSetMeal) {
-                const children = data.items.filter(c => c.parentDetailId === item.detailId);
-                children.forEach(child => {
-                    const childCancelled = child.status === 2;
-                    const childServed    = child.status === 1;
-                    const childTr = document.createElement('tr');
-                    childTr.classList.add('child-item-row');
-                    if (childCancelled) childTr.classList.add('status-cancel');
-                    if (childServed)    childTr.classList.add('child-served');
-                    // 儲存 parentDetailId 供拆單使用
-                    childTr.dataset.parentId = item.detailId;
-                    childTr.dataset.detailId = child.detailId;
-
-                    const childBadge = childCancelled
-                        ? `<span class="status-badge badge-cancel">已取消</span>`
-                        : childServed
-                            ? `<span class="status-badge badge-billed">已出餐</span>`
-                            : `<span class="status-badge badge-unserved">待出餐</span>`;
-
-                    childTr.innerHTML = `
-                        <td class="split-check-col"></td>
-                        <td style="padding-left:28px;">
-                            <span style="color:#e67e22;margin-right:4px;">└</span>${child.productName}${childBadge}
-                        </td>
-                        <td>${child.qty}</td>
-                        <td style="color:#ccc;">—</td>
-                        <td style="color:#ccc;">—</td>
-                    `;
-                    tbody.appendChild(childTr);
-                });
-            }
-        });
-
-        // 7. 套用拆單模式 class（renderDetail 重新渲染後確保 class 正確）
-        document.querySelector('.detail-table')?.classList.toggle('split-active', splitMode);
-        document.getElementById('splitCheckCol').style.display = splitMode ? '' : 'none';
-
-        // 8. 更新金額資訊
-        document.getElementById('amtOriginal').textContent = data.originalAmount.toLocaleString();
-        document.getElementById('amtDiscount').textContent = data.discountAmount.toLocaleString();
-        document.getElementById('amtTotal').textContent    = data.totalAmount.toLocaleString();
-
-        // 8. 合併優惠折疊區
-        const hasEvent  = !!data.eventTitle;
-        const hasCoupon = !!data.couponName;
-        const discountSummary = document.getElementById('discountSummary');
-        const discountDetail  = document.getElementById('discountDetail');
-        const summaryEventRow  = document.getElementById('summaryEventRow');
-        const summaryCouponRow = document.getElementById('summaryCouponRow');
-        if (hasEvent || hasCoupon) {
-            discountSummary.style.display = 'block';
-            document.getElementById('discountCount').textContent = (hasEvent ? 1 : 0) + (hasCoupon ? 1 : 0);
-            if (hasEvent) {
-                document.getElementById('summaryEventName').textContent = data.eventTitle;
-                summaryEventRow.style.display = 'flex';
-            } else {
-                summaryEventRow.style.display = 'none';
-            }
-            if (hasCoupon) {
-                document.getElementById('summaryCouponName').textContent = data.couponName;
-                summaryCouponRow.style.display = 'flex';
-            } else {
-                summaryCouponRow.style.display = 'none';
-            }
-        } else {
-            discountSummary.style.display = 'none';
-            discountDetail.style.display  = 'none';
-            discountDetailOpen = false;
-            document.getElementById('discountArrow').textContent = '▼';
-        }
-
-        // 9. 折扣按鈕列：非拆單模式才顯示；選擇活動只在有未出餐時才啟用
-        const discountBtnRow = document.getElementById('discountBtnRow');
-        if (discountBtnRow) {
-            discountBtnRow.style.display = splitMode ? 'none' : 'flex';
-        }
-        const selectEventBtn = document.getElementById('selectEventBtn');
-        if (selectEventBtn) {
-            // 只有仍有未出餐餐點才可選活動（避免送出免費餐點但廚房沒收到）
-            selectEventBtn.style.display = data.hasUnserved ? '' : 'none';
-        }
+        // 8b. 優惠按鈕列
+        renderDiscountBtns(data);
 
         // 9. 更新全域變數與付款狀態
         currentTotal     = data.totalAmount;
@@ -1535,7 +1635,6 @@
                 document.getElementById('amtTotal').textContent = '-';
                 document.getElementById('unservedWarning').style.display = 'none';
                 document.getElementById('checkoutBtn').classList.remove('show');
-                document.getElementById('discountSummary').style.display = 'none';
                 setTimeout(() => window.location.href = "/Payments/Create", 1500);
             } else {
                 // 取消未出餐並結帳，正常重新渲染明細
@@ -1658,8 +1757,7 @@
                     document.getElementById('amtTotal').textContent    = '-';
                     document.getElementById('unservedWarning').style.display = 'none';
                     document.getElementById('checkoutBtn').classList.remove('show');
-                    document.getElementById('discountSummary').style.display = 'none';
-                    const cancelOrderBtn = document.getElementById('cancelOrderBtn');
+                        const cancelOrderBtn = document.getElementById('cancelOrderBtn');
                     if (cancelOrderBtn) cancelOrderBtn.style.display = 'none';
                     setTimeout(() => window.location.href = "/Payments/Create", 1500);
                 } catch {
@@ -1679,6 +1777,8 @@
         document.getElementById('emptyRightText').textContent    = '請選擇訂單';
         const cancelOrderBtn = document.getElementById('cancelOrderBtn');
         if (cancelOrderBtn) cancelOrderBtn.style.display = 'none';
+        const memberBtn = document.getElementById('memberBtn');
+        if (memberBtn) { memberBtn.style.display = 'none'; }
         document.querySelectorAll('.table-btn, .takeout-item').forEach(b =>
             b.classList.remove('active-selected'));
         currentPreOrderId = null;
@@ -1687,11 +1787,24 @@
 
     function selectPayMethod(method) {
         currentPayMethod = method;
-        ['Cash', 'Card', 'Other'].forEach(m => {
-            const btn = document.getElementById('pmBtn-' + m);
-            if (btn) btn.classList.toggle('active', m === method);
-        });
-        document.getElementById('cashSection').style.display = method === 'Cash' ? 'block' : 'none';
+        const sel = document.getElementById('payMethodSelect');
+        if (sel) sel.value = method;
+
+        const isCash       = method === 'Cash';
+        const methodField  = document.getElementById('payMethodField');
+        const cashGroup    = document.getElementById('cashInputGroup');
+        const changeGroup  = document.getElementById('changeGroup');
+
+        if (methodField) methodField.style.flex = '1';
+        if (cashGroup)   cashGroup.style.display  = isCash ? '' : 'none';
+        if (changeGroup) changeGroup.style.display = isCash ? '' : 'none';
+
+        if (!isCash) {
+            const ci = document.getElementById('cashInput');
+            if (ci) ci.value = '';
+            document.getElementById('changeDisplay').textContent = '-';
+        }
+
         // 把選擇的付款方式帶入 form
         let input = document.getElementById('checkoutPayMethod');
         if (!input) {
@@ -1704,6 +1817,116 @@
         input.value = method;
     }
 
+    // ── 結帳按鈕統一入口 ──────────────────────────────────────────────────
+    async function handleCheckout() {
+        if (currentPayMethod === 'Card' || currentPayMethod === 'LinePay') {
+            await initiateEcPayCheckout();
+        } else {
+            document.getElementById('checkoutForm').submit();
+        }
+    }
+
+    async function initiateEcPayCheckout() {
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        // 若下拉有選特定子訂單，用 preOrderId；否則整桌用 tableId
+        const orderSelect = document.getElementById('orderSelect');
+        const selectedVal = orderSelect ? orderSelect.value : '0';
+        const selectedPid = currentTableId && selectedVal && selectedVal !== '0' ? parseInt(selectedVal) : 0;
+        const base = selectedPid
+            ? `preOrderId=${selectedPid}`
+            : (currentTableId ? `tableId=${currentTableId}` : `preOrderId=${currentPreOrderId}`);
+        const body  = `${base}&payMethod=${encodeURIComponent(currentPayMethod)}`;
+
+        const btn = document.getElementById('checkoutBtn');
+        btn.disabled = true;
+        btn.textContent = '處理中…';
+
+        try {
+            const res    = await fetch('/Payments/InitiateCardPayment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded',
+                           'RequestVerificationToken': token },
+                body
+            });
+            const result = await res.json();
+
+            if (!result.success) {
+                showAlert(result.error || '付款初始化失敗', '❌ 錯誤');
+                return;
+            }
+
+            // 建立隱藏表單並自動送出到綠界
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = result.paymentUrl;
+            form.style.display = 'none';
+
+            for (const [key, val] of Object.entries(result.formParams)) {
+                const input = document.createElement('input');
+                input.type  = 'hidden';
+                input.name  = key;
+                input.value = val;
+                form.appendChild(input);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        } catch {
+            showAlert('刷卡連線失敗，請重試', '❌ 錯誤');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '結帳 ✓';
+        }
+    }
+
+    async function initiateSplitEcPayCheckout(detailIds) {
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const btn   = document.getElementById('splitConfirmBtnInline');
+        btn.disabled    = true;
+        btn.textContent = '處理中…';
+
+        try {
+            const res    = await fetch('/Payments/InitiateSplitCardPayment', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json',
+                           'RequestVerificationToken': token },
+                body: JSON.stringify({
+                    tableId:  currentTableId,
+                    detailIds,
+                    payMethod: splitPayMethod,   // Card 或 LinePay
+                    memberId:  splitMemberId  ?? null,
+                    couponId:  splitCouponId  ?? null,
+                    eventId:   splitEventId   ?? null
+                })
+            });
+            const result = await res.json();
+
+            if (!result.success) {
+                showAlert(result.error || '付款初始化失敗', '❌ 錯誤');
+                return;
+            }
+
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = result.paymentUrl;
+            form.style.display = 'none';
+            for (const [key, val] of Object.entries(result.formParams)) {
+                const input = document.createElement('input');
+                input.type  = 'hidden';
+                input.name  = key;
+                input.value = val;
+                form.appendChild(input);
+            }
+            document.body.appendChild(form);
+            form.submit();
+        } catch {
+            showAlert('刷卡連線失敗，請重試', '❌ 錯誤');
+        } finally {
+            btn.disabled    = false;
+            btn.textContent = '確認拆單結帳 ✓';
+        }
+    }
+
     function calcChange() {
         const paid   = parseInt(document.getElementById('cashInput').value || 0);
         const change = paid - currentTotal;
@@ -1712,13 +1935,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // 拆單模式下攔截結帳表單，改呼叫 doSplitCheckout
-        document.getElementById('checkoutForm').addEventListener('submit', function (e) {
-            if (splitMode) {
-                e.preventDefault();
-                doSplitCheckout();
-            }
-        });
 
         const defaultTableId = @(ViewBag.DefaultTableId ?? 0);
 
@@ -1754,121 +1970,1025 @@
         }
     }
     });
-        let splitMode = false;
     let currentData = null;
 
-    function toggleSplitMode() {
-        splitMode = !splitMode;
-        const btn = document.getElementById('splitModeBtn');
+    // ── 拆單結帳 ────────────────────────────────────────────────────────────
+    let splitPayMethod = 'Cash';
 
-        btn.textContent       = splitMode ? '取消拆單' : '拆單結帳';
-        btn.style.background  = splitMode ? '#fff5f5' : '#fff';
-        btn.style.color       = splitMode ? '#c0392b' : '#1a77c9';
-        btn.style.borderColor = splitMode ? '#c0392b' : '#1a77c9';
+    // ── 拆單內嵌模式狀態 ─────────────────────────────────────────────────────
+    let splitMode            = false;
+    let splitMemberId        = null;
+    let splitMemberName      = null;
+    let splitMemberPhone     = null;
+    let splitEventId         = null;
+    let splitEventTitle      = null;
+    let splitCouponId        = null;
+    let splitCouponName      = null;
+    let splitOriginalAmt     = 0;
+    let _splitMemberModal    = false;   // true → 會員 modal 確認後存入拆單狀態
+    let _splitDiscountModal  = false;   // true → 活動/優惠券 modal 選取後存入拆單狀態（不送後端）
 
-        if (!splitMode && currentData) {
-            // 退出拆單：還原完整金額
-            document.getElementById('amtOriginal').textContent = currentData.originalAmount.toLocaleString();
-            document.getElementById('amtDiscount').textContent = currentData.discountAmount.toLocaleString();
-            document.getElementById('amtTotal').textContent    = currentData.totalAmount.toLocaleString();
-            currentTotal = currentData.totalAmount;
-        } else if (splitMode) {
-            // 進入拆單：重設為 0（尚未勾選）
-            document.getElementById('amtOriginal').textContent = '0';
-            document.getElementById('amtDiscount').textContent = '0';
-            document.getElementById('amtTotal').textContent    = '0';
-            currentTotal = 0;
+    // ── 進入 / 離開拆單模式 ───────────────────────────────────────────────
+    function enterSplitMode() {
+        if (!currentData || !currentTableId) return;
+        const splittable = (currentData.items || []).filter(
+            i => !i.parentDetailId && !i.isBilled && i.status !== 2
+        );
+        if (!splittable.length) { showAlert('目前沒有可拆單的餐點', '⚠️ 提示'); return; }
+
+        splitMode         = true;
+        splitMemberId     = null; splitMemberName = null; splitMemberPhone = null;
+        splitEventId      = null; splitEventTitle = null;
+        splitCouponId     = null; splitCouponName = null;
+        splitOriginalAmt  = 0;
+        splitPayMethod    = 'Cash';
+
+        document.getElementById('splitSection').style.display    = '';
+        document.getElementById('normalSection').style.display   = 'none';
+        document.getElementById('splitModeBtn').style.display    = 'none';
+        document.getElementById('exitSplitBtn').style.display    = '';
+
+        // 壓縮餐點列，讓結帳區完整顯示
+        const detailScroll = document.querySelector('.detail-scroll');
+        if (detailScroll) detailScroll.style.maxHeight = '38vh';
+
+        // 隱藏更換桌位按鈕、會員按鈕
+        const editTableBtn = document.getElementById('editTableBtn');
+        if (editTableBtn) editTableBtn.style.display = 'none';
+        const memberBtn = document.getElementById('memberBtn');
+        if (memberBtn) memberBtn.style.display = 'none';
+
+        // 鎖定訂單下拉：強制顯示「全部訂單」
+        const orderSelect  = document.getElementById('orderSelect');
+        const subtitleDiv  = document.getElementById('rightSubtitle');
+        if (orderSelect && orderSelect.style.display !== 'none') {
+            orderSelect.value    = '';
+            orderSelect.disabled = true;
+            orderSelect.style.opacity = '0.5';
+            // 確保畫面顯示全部餐點
+            onOrderSelectChange('');
         }
 
-        // 重新渲染明細（切換合併/拆開顯示）
-        if (currentData) renderDetail(currentData);
+        // 重設拆單 UI
+        document.getElementById('splitCountInline').textContent      = '0';
+        document.getElementById('splitSubtotalInline').textContent   = '0';
+        const splitMemberBtn = document.getElementById('splitMemberBtn');
+        if (splitMemberBtn) { splitMemberBtn.style.background = '#fff'; }
+        document.getElementById('splitMemberBtnLabel').textContent  = '輸入會員';
+        document.getElementById('splitDiscountRow').style.display   = 'none';
+        document.getElementById('splitEventLabel').textContent       = '🎉 選擇活動';
+        document.getElementById('splitEventClear').style.display     = 'none';
+        document.getElementById('splitCouponLabel').textContent      = '🎫 選擇優惠券';
+        document.getElementById('splitCouponClear').style.display    = 'none';
+        document.getElementById('splitAmtOriginal').textContent      = '0';
+        document.getElementById('splitAmtDiscount').textContent      = '0';
+        document.getElementById('splitAmtTotal').textContent         = '0';
+        document.getElementById('splitConfirmBtnInline').disabled    = true;
+        document.getElementById('splitPayMethodInline').value        = 'Cash';
+        document.getElementById('splitCashInline').value             = '';
+        document.getElementById('splitChangeInline').textContent     = '-';
+        onSplitPayMethodChange('Cash');
+
+        renderItemsTable(currentData.items);
     }
 
-    function toggleAll(master) {
-        document.querySelectorAll('.detail-check')
-                .forEach(c => c.checked = master.checked);
-        updateSplitTotal();
+    function exitSplitMode() {
+        splitMode = false;
+        document.getElementById('splitSection').style.display  = 'none';
+        document.getElementById('normalSection').style.display = '';
+
+        // 還原餐點列高度
+        const detailScroll = document.querySelector('.detail-scroll');
+        if (detailScroll) detailScroll.style.maxHeight = '';
+        document.getElementById('exitSplitBtn').style.display  = 'none';
+
+        // 還原更換桌位按鈕、會員按鈕
+        const editTableBtn = document.getElementById('editTableBtn');
+        if (editTableBtn) editTableBtn.style.display = '';
+        const memberBtn = document.getElementById('memberBtn');
+        if (memberBtn) memberBtn.style.display = '';
+
+        // 解鎖訂單下拉
+        const orderSelect = document.getElementById('orderSelect');
+        if (orderSelect) {
+            orderSelect.disabled      = false;
+            orderSelect.style.opacity = '';
+        }
+
+        // 只有內用且無待處理才顯示拆單按鈕
+        const splitModeBtn = document.getElementById('splitModeBtn');
+        if (splitModeBtn && currentData && currentData.inOrOut && !currentData.hasUnserved)
+            splitModeBtn.style.display = '';
+
+        renderItemsTable(currentData ? currentData.items : []);
     }
 
-    function updateSplitTotal() {
-        let total = 0;
-        document.querySelectorAll('.detail-check:checked').forEach(c => {
+    // ── 拆單項目勾選 ─────────────────────────────────────────────────────
+    function onSplitItemCheckInline(cb) {
+        const row = cb.closest('tr');
+        if (row) row.classList.toggle('checked', cb.checked);
+        let total = 0, count = 0;
+        document.querySelectorAll('.split-check-inline:checked').forEach(c => {
             total += parseInt(c.dataset.subtotal || 0);
+            count++;
+        });
+        document.getElementById('splitCountInline').textContent    = count;
+        document.getElementById('splitSubtotalInline').textContent = total.toLocaleString();
+        document.getElementById('splitCashInline').value           = '';
+        document.getElementById('splitChangeInline').textContent   = '-';
+        splitOriginalAmt = total;
+        updateSplitAmounts();
+        document.getElementById('splitConfirmBtnInline').disabled  = count === 0;
+    }
+
+    function updateSplitAmounts() {
+        // 計算折扣（前端簡易估算，後端結帳時會再算一次）
+        const orig = splitOriginalAmt;
+        let disc = 0;
+        // coupon
+        if (splitCouponId && window._splitCouponObj) {
+            const c = window._splitCouponObj;
+            if (c.discountType === 0) disc += c.discountValue;
+            else disc += Math.floor(orig * c.discountValue / 100);
+        }
+        // event
+        if (splitEventId && window._splitEventObj) {
+            const e = window._splitEventObj;
+            if (e.discountType === 'FixedAmount') disc += Math.floor(e.discountValue);
+            else if (e.discountType === 'Percentage') disc += Math.floor(orig * e.discountValue / 100);
+        }
+        disc = Math.min(disc, orig);
+        const total = Math.max(1, orig - disc);
+        document.getElementById('splitAmtOriginal').textContent = orig.toLocaleString();
+        document.getElementById('splitAmtDiscount').textContent = disc.toLocaleString();
+        document.getElementById('splitAmtTotal').textContent    = total.toLocaleString();
+        document.getElementById('splitCashInline').value        = '';
+        document.getElementById('splitChangeInline').textContent = '-';
+    }
+
+    // ── 拆單付款方式 ──────────────────────────────────────────────────────
+    function onSplitPayMethodChange(method) {
+        splitPayMethod = method;
+        const isCash = method === 'Cash';
+        document.getElementById('splitCashWrapInline').style.display   = isCash ? '' : 'none';
+        document.getElementById('splitChangeWrapInline').style.display = isCash ? '' : 'none';
+        if (!isCash) {
+            document.getElementById('splitCashInline').value          = '';
+            document.getElementById('splitChangeInline').textContent  = '-';
+        }
+    }
+
+    function calcSplitChange() {
+        const totalEl = document.getElementById('splitAmtTotal');
+        const total   = parseInt((totalEl ? totalEl.textContent : '0').replace(/,/g, '') || 0);
+        const paid    = parseInt(document.getElementById('splitCashInline').value || 0);
+        document.getElementById('splitChangeInline').textContent =
+            paid >= total ? (paid - total).toLocaleString() : '金額不足';
+    }
+
+    // ── 拆單會員 Modal ────────────────────────────────────────────────────
+    function openSplitMemberModal() {
+        _splitMemberModal   = true;
+        _splitDiscountModal = false;
+        document.getElementById('memberPhoneInput').value       = '';
+        document.getElementById('memberSearchResult').innerHTML = '';
+        document.getElementById('confirmMemberBtn').style.display = 'none';
+        _pendingMemberId   = null;
+        _pendingMemberName = null;
+        const curInfo  = document.getElementById('memberCurrentInfo');
+        const clearBtn = document.getElementById('clearMemberBtn');
+        if (splitMemberName) {
+            document.getElementById('memberCurrentName').textContent =
+                `${splitMemberName}　${splitMemberPhone ?? ''}`;
+            curInfo.style.display  = '';
+            clearBtn.style.display = '';
+        } else {
+            curInfo.style.display  = 'none';
+            clearBtn.style.display = 'none';
+        }
+        document.getElementById('memberModal').classList.add('show');
+        setTimeout(() => document.getElementById('memberPhoneInput').focus(), 100);
+    }
+
+    function setSplitMember(id, name, phone) {
+        splitMemberId    = id;
+        splitMemberName  = name;
+        splitMemberPhone = phone;
+        const btn = document.getElementById('splitMemberBtn');
+        const lbl = document.getElementById('splitMemberBtnLabel');
+        if (id) {
+            lbl.textContent      = '會員：' + maskName(name || '');
+            btn.style.background = '#f5eeff';
+            btn.style.borderColor = '#8e44ad';
+            document.getElementById('splitDiscountRow').style.display       = 'flex';
+            document.getElementById('splitDiscountRow').style.flexDirection = 'row';
+        } else {
+            lbl.textContent       = '輸入會員';
+            btn.style.background  = '#fff';
+            btn.style.borderColor = '#8e44ad';
+            splitEventId = null; splitEventTitle = null; window._splitEventObj = null;
+            splitCouponId = null; splitCouponName = null; window._splitCouponObj = null;
+            document.getElementById('splitDiscountRow').style.display    = 'none';
+            document.getElementById('splitEventLabel').textContent       = '🎉 選擇活動';
+            document.getElementById('splitEventClear').style.display     = 'none';
+            document.getElementById('splitCouponLabel').textContent      = '🎫 選擇優惠券';
+            document.getElementById('splitCouponClear').style.display    = 'none';
+            updateSplitAmounts();
+        }
+    }
+
+    // ── 拆單活動 Modal ────────────────────────────────────────────────────
+    async function openSplitEventModal() {
+        _splitDiscountModal = true;
+        _splitMemberModal   = false;
+        const listArea = document.getElementById('eventListArea');
+        listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">載入中...</div>';
+        document.getElementById('eventSelectModal').classList.add('show');
+        try {
+            const res    = await fetch(`/Payments/GetSplitEvents?amount=${splitOriginalAmt}`);
+            const events = await res.json();
+            if (!events || events.length === 0) {
+                listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">目前沒有進行中的活動</div>';
+                return;
+            }
+            listArea.innerHTML = events.map(ev => {
+                const eligible = ev.isEligible;
+                const inUse    = splitEventId === ev.id;
+                const borderColor = inUse ? '#27ae60' : '#e8e8e8';
+                const bgColor     = inUse ? '#f0fff4'  : '#fff';
+                const opacity     = eligible ? '1' : '0.45';
+                const cursor      = eligible ? 'pointer' : 'not-allowed';
+                const clickAttr   = eligible
+                    ? `onclick="doApplyEvent(${ev.id})"
+                       onmouseover="this.style.borderColor='#27ae60';this.style.background='#f0fff4'"
+                       onmouseout="this.style.borderColor='${inUse ? '#27ae60' : '#e8e8e8'}';this.style.background='${inUse ? '#f0fff4' : '#fff'}'"`
+                    : '';
+                return `<div ${clickAttr} style="padding:12px 14px;border:2px solid ${borderColor};border-radius:10px;
+                        margin-bottom:8px;cursor:${cursor};transition:all 0.15s;background:${bgColor};opacity:${opacity};user-select:none;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                        <span style="font-weight:700;font-size:0.92rem;color:#1a1a1a;">${ev.title}</span>
+                        ${inUse ? '<span style="font-size:0.7rem;background:#27ae60;color:#fff;padding:1px 8px;border-radius:20px;font-weight:700;">使用中</span>' : ''}
+                        ${!eligible ? '<span style="font-size:0.7rem;background:#e0e0e0;color:#999;padding:1px 8px;border-radius:20px;font-weight:600;">不符合</span>' : ''}
+                    </div>
+                    <div style="font-size:0.83rem;color:#27ae60;font-weight:600;">${ev.discountDescription}</div>
+                    ${ev.summary ? `<div style="font-size:0.78rem;color:#888;margin-top:3px;">${ev.summary}</div>` : ''}
+                    <div style="font-size:0.74rem;color:#bbb;margin-top:3px;">最低消費 NT$ ${ev.minSpend.toLocaleString()}</div>
+                </div>`;
+            }).join('');
+        } catch {
+            listArea.innerHTML = '<div style="text-align:center;color:#c0392b;padding:24px;">載入失敗，請重試</div>';
+        }
+    }
+
+    // ── 拆單優惠券 Modal ──────────────────────────────────────────────────
+    async function openSplitCouponModal() {
+        _splitDiscountModal = true;
+        _splitMemberModal   = false;
+        const listArea = document.getElementById('couponListArea');
+        listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">載入中...</div>';
+        document.getElementById('couponSelectModal').classList.add('show');
+        try {
+            const memberParam = splitMemberId ? `&memberId=${splitMemberId}` : '';
+            const res     = await fetch(`/Payments/GetSplitCoupons?amount=${splitOriginalAmt}${memberParam}`);
+            const coupons = await res.json();
+            if (!coupons || coupons.length === 0) {
+                listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">目前沒有可用的優惠券</div>';
+                return;
+            }
+            listArea.innerHTML = coupons.map(c => {
+                const claimed      = c.isClaimed !== false;
+                const usedByMember = c.isUsedByMember === true;
+                const eligible     = c.isEligible;
+                const inUse        = splitCouponId === c.id;
+                const canClick     = claimed && !usedByMember && eligible;
+                const borderColor  = inUse ? '#b7770d' : '#e8e8e8';
+                const bgColor      = inUse ? '#fff8e1' : '#fff';
+                const opacity      = canClick ? '1' : '0.45';
+                const cursor       = canClick ? 'pointer' : 'not-allowed';
+                const clickAttr    = canClick
+                    ? `onclick="doApplyCouponById(${c.id})"
+                       onmouseover="this.style.borderColor='#b7770d';this.style.background='#fff8e1'"
+                       onmouseout="this.style.borderColor='${inUse ? '#b7770d' : '#e8e8e8'}';this.style.background='${inUse ? '#fff8e1' : '#fff'}'"`
+                    : '';
+                return `<div ${clickAttr} style="padding:12px 14px;border:2px solid ${borderColor};border-radius:10px;
+                        margin-bottom:8px;cursor:${cursor};transition:all 0.15s;background:${bgColor};opacity:${opacity};user-select:none;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                        <span style="font-weight:700;font-size:0.92rem;color:#1a1a1a;">${c.name}</span>
+                        <span style="font-size:0.78rem;color:#888;font-weight:500;">${c.code}</span>
+                        ${inUse        ? '<span style="font-size:0.7rem;background:#b7770d;color:#fff;padding:1px 8px;border-radius:20px;font-weight:700;">使用中</span>' : ''}
+                        ${!claimed     ? '<span style="font-size:0.7rem;background:#6c757d;color:#fff;padding:1px 8px;border-radius:20px;font-weight:600;">未領取</span>' : ''}
+                        ${claimed && usedByMember ? '<span style="font-size:0.7rem;background:#495057;color:#fff;padding:1px 8px;border-radius:20px;font-weight:600;">已使用</span>' : ''}
+                        ${claimed && !usedByMember && !eligible ? '<span style="font-size:0.7rem;background:#e0e0e0;color:#999;padding:1px 8px;border-radius:20px;font-weight:600;">不符合</span>' : ''}
+                    </div>
+                    <div style="font-size:0.83rem;color:#b7770d;font-weight:600;">${c.discountDescription}</div>
+                    ${c.minSpend > 0 ? `<div style="font-size:0.74rem;color:#bbb;margin-top:3px;">最低消費 NT$ ${c.minSpend.toLocaleString()}</div>` : ''}
+                </div>`;
+            }).join('');
+        } catch {
+            listArea.innerHTML = '<div style="text-align:center;color:#c0392b;padding:24px;">載入失敗，請重試</div>';
+        }
+    }
+
+    function clearSplitEvent() {
+        splitEventId = null; splitEventTitle = null; window._splitEventObj = null;
+        document.getElementById('splitEventLabel').textContent   = '🎉 選擇活動';
+        document.getElementById('splitEventClear').style.display = 'none';
+        updateSplitAmounts();
+    }
+
+    function clearSplitCoupon() {
+        splitCouponId = null; splitCouponName = null; window._splitCouponObj = null;
+        document.getElementById('splitCouponLabel').textContent   = '🎫 選擇優惠券';
+        document.getElementById('splitCouponClear').style.display = 'none';
+        updateSplitAmounts();
+    }
+
+    function openSplitModal() {
+        if (!currentData) return;
+
+        // 只顯示未結帳、未取消的父層餐點
+        const items = (currentData.items || []).filter(
+            i => !i.parentDetailId && !i.isBilled && i.status !== 2
+        );
+
+        if (!items.length) {
+            showAlert('目前沒有可拆單的餐點', '⚠️ 提示');
+            return;
+        }
+
+        // 渲染清單
+        document.getElementById('splitItemList').innerHTML = items.map(item => `
+            <div class="split-item-row" id="srow-${item.detailId}">
+                <input type="checkbox" class="split-check-input"
+                       id="sc-${item.detailId}"
+                       data-detail-id="${item.detailId}"
+                       data-subtotal="${item.subTotal}"
+                       data-is-setmeal="${!!item.isSetMeal}"
+                       onchange="onSplitCheck(this)">
+                <label class="split-item-name" for="sc-${item.detailId}" style="cursor:pointer;">
+                    ${item.productName}
+                    ${item.isSetMeal ? '<span style="font-size:0.72rem;background:#e3f2fd;color:#1a77c9;padding:1px 6px;border-radius:8px;margin-left:4px;">套餐</span>' : ''}
+                </label>
+                <span class="split-item-qty">x${item.qty}</span>
+                <span class="split-item-price">NT$&thinsp;${item.subTotal.toLocaleString()}</span>
+            </div>
+        `).join('');
+
+        // 重設
+        document.getElementById('splitCount').textContent    = '0';
+        document.getElementById('splitSubtotal').textContent = '0';
+        document.getElementById('splitConfirmBtn').disabled  = true;
+        document.getElementById('splitCashInput').value      = '';
+        document.getElementById('splitChangeAmt').textContent = '-';
+        splitPayMethod = 'Cash';
+        document.getElementById('splitPaySelect').value = 'Cash';
+        onSplitPayChange('Cash');
+
+        // 拆單期間隱藏活動／優惠券按鈕列
+        const discountRow = document.getElementById('discountBtnRow');
+        if (discountRow) discountRow.style.display = 'none';
+
+
+        document.getElementById('splitModal').classList.add('show');
+    }
+
+    function onSplitCheck(cb) {
+        // 高亮列
+        const row = document.getElementById('srow-' + cb.dataset.detailId);
+        if (row) row.classList.toggle('checked', cb.checked);
+
+        // 更新小計
+        let total = 0, count = 0;
+        document.querySelectorAll('.split-check-input:checked').forEach(c => {
+            total += parseInt(c.dataset.subtotal || 0);
+            count++;
+        });
+        document.getElementById('splitCount').textContent    = count;
+        document.getElementById('splitSubtotal').textContent = total.toLocaleString();
+        document.getElementById('splitConfirmBtn').disabled  = count === 0;
+
+        // 清找零
+        document.getElementById('splitCashInput').value       = '';
+        document.getElementById('splitChangeAmt').textContent = '-';
+    }
+
+    function onSplitPayChange(method) {
+        splitPayMethod = method;
+        const isCash = method === 'Cash';
+        document.getElementById('splitPayMethodWrap').style.flex = isCash ? '1' : '1 1 100%';
+        document.getElementById('splitCashWrap').style.display   = isCash ? '' : 'none';
+        document.getElementById('splitChangeWrap').style.display = isCash ? '' : 'none';
+        if (!isCash) {
+            document.getElementById('splitCashInput').value       = '';
+            document.getElementById('splitChangeAmt').textContent = '-';
+        }
+    }
+
+    function onSplitCashInput() {
+        const paid  = parseInt(document.getElementById('splitCashInput').value || 0);
+        const total = parseInt(document.getElementById('splitSubtotal').textContent.replace(/,/g, '') || 0);
+        const diff  = paid - total;
+        document.getElementById('splitChangeAmt').textContent =
+            paid >= total ? diff.toLocaleString() : '金額不足';
+    }
+
+    async function doSplitCheckout() {
+        // 收集 detailIds（含套餐子項目）
+        const checked   = [...document.querySelectorAll('.split-check-inline:checked')];
+        const detailIds = checked.map(c => parseInt(c.dataset.detailId));
+        checked.filter(c => c.dataset.isSetmeal === 'true').forEach(c => {
+            const pid = parseInt(c.dataset.detailId);
+            (currentData.items || [])
+                .filter(i => i.parentDetailId === pid)
+                .forEach(i => detailIds.push(i.detailId));
         });
 
-        // 拆單模式下直接更新下方金額區塊
-        if (splitMode) {
-            document.getElementById('amtOriginal').textContent = total.toLocaleString();
-            document.getElementById('amtDiscount').textContent = '0';
-            document.getElementById('amtTotal').textContent    = total.toLocaleString();
-            currentTotal = total;
+        if (!detailIds.length) { showAlert('請先勾選要結帳的餐點'); return; }
+
+        // 刷卡 / 行動支付 → 走綠界
+        if (splitPayMethod === 'Card' || splitPayMethod === 'LinePay') {
+            await initiateSplitEcPayCheckout(detailIds);
+            return;
         }
 
-        // 全選時同步 master checkbox
-        const all     = document.querySelectorAll('.detail-check');
-        const checked = document.querySelectorAll('.detail-check:checked');
-        const master  = document.getElementById('checkAll');
-        if (master) master.indeterminate = checked.length > 0 && checked.length < all.length;
-        if (master) master.checked = checked.length === all.length;
+        const btn = document.getElementById('splitConfirmBtnInline');
+        btn.disabled    = true;
+        btn.textContent = '處理中...';
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const res   = await fetch('/Payments/SplitCheckout', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+                body: JSON.stringify({
+                    tableId:  currentTableId,
+                    detailIds,
+                    payMethod: splitPayMethod,
+                    memberId:  splitMemberId  ?? null,
+                    couponId:  splitCouponId  ?? null,
+                    eventId:   splitEventId   ?? null
+                })
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                if (!result.isFullyPaid && result.remaining) {
+                    // ── 部分結帳：留在拆單模式，重新渲染剩餘餐點 ──
+                    currentData      = result.remaining;
+                    splitOriginalAmt = 0;
+                    // 重置拆單折扣狀態（新一輪可重選）
+                    splitEventId = null; splitEventTitle = null; window._splitEventObj = null;
+                    splitCouponId = null; splitCouponName = null; window._splitCouponObj = null;
+                    document.getElementById('splitEventLabel').textContent   = '🎉 選擇活動';
+                    document.getElementById('splitEventClear').style.display = 'none';
+                    document.getElementById('splitCouponLabel').textContent  = '🎫 選擇優惠券';
+                    document.getElementById('splitCouponClear').style.display = 'none';
+
+                    // 更新左側桌位金額
+                    const card = document.querySelector(`[data-table-id="${currentTableId}"]`);
+                    if (card) {
+                        const span = card.querySelector('.table-amount');
+                        if (span) span.textContent = `$${result.remaining.totalAmount}`;
+                    }
+
+                    // 重新渲染餐點列（含勾選框）
+                    document.getElementById('splitCountInline').textContent    = '0';
+                    document.getElementById('splitSubtotalInline').textContent = '0';
+                    document.getElementById('splitCashInline').value           = '';
+                    document.getElementById('splitChangeInline').textContent   = '-';
+                    document.getElementById('splitConfirmBtnInline').disabled  = true;
+                    updateSplitAmounts();
+                    renderItemsTable(result.remaining.items);
+
+                } else {
+                    // ── 全部結完：離開拆單模式，重新整理頁面 ──
+                    exitSplitMode();
+                    document.getElementById('detailBody').innerHTML = `
+                        <tr><td colspan="4" style="text-align:center;padding:40px;
+                             color:#27ae60;font-size:1.1rem;font-weight:700;">
+                            ✅ 此桌已全部結帳完成
+                        </td></tr>`;
+                    ['amtOriginal','amtDiscount','amtTotal'].forEach(id =>
+                        document.getElementById(id).textContent = '-');
+                    document.getElementById('checkoutBtn').classList.remove('show');
+                    document.getElementById('splitModeBtn').style.display = 'none';
+                    document.getElementById('unservedWarning').style.display = 'none';
+                    setTimeout(() => window.location.href = '/Payments/Create', 1500);
+                }
+            } else {
+                showAlert('拆單失敗：' + (result.message || '未知錯誤'), '❌ 錯誤');
+            }
+        } catch {
+            showAlert('網路錯誤，請重試', '❌ 錯誤');
+        } finally {
+            btn.disabled    = false;
+            btn.textContent = '確認拆單結帳 ✓';
+        }
     }
 
         // ── 結帳頁活動／優惠券選擇 ──────────────────────────────────────────────
     function getDiscountContext() {
-        return currentTableId
-            ? `tableId=${currentTableId}`
-            : `preOrderId=${currentPreOrderId}`;
+        if (currentTableId) {
+            // 內用：若下拉選了特定單，傳 preOrderId（僅套用到那筆）
+            const orderSelect = document.getElementById('orderSelect');
+            const selectedVal = orderSelect ? orderSelect.value : '0';
+            const selectedPid = selectedVal && selectedVal !== '0' ? parseInt(selectedVal) : 0;
+            if (selectedPid) return `preOrderId=${selectedPid}`;
+            return `tableId=${currentTableId}`;
+        }
+        return `preOrderId=${currentPreOrderId}`;
     }
 
+
+    // ── 訂單下拉選單切換 ───────────────────────────────────────────────────
+    function onOrderSelectChange(preOrderIdStr) {
+        if (!currentData) return;
+        const pid = preOrderIdStr ? parseInt(preOrderIdStr) : null;
+
+        // ── 同步更新 checkoutForm，讓現金／刷卡路徑也依選單正確結帳 ──
+        const checkoutForm     = document.getElementById('checkoutForm');
+        const checkoutIdInput  = document.getElementById('checkoutTableId');
+        if (checkoutForm && checkoutIdInput) {
+            if (pid && currentTableId) {
+                // 選了特定子訂單 → POST /Payments/Checkout?preOrderId=...
+                checkoutForm.action    = '/Payments/Checkout';
+                checkoutIdInput.name   = 'preOrderId';
+                checkoutIdInput.value  = pid;
+            } else if (currentTableId) {
+                // 回到「全部訂單」 → POST /Payments/CheckoutByTable?tableId=...
+                checkoutForm.action    = '/Payments/CheckoutByTable';
+                checkoutIdInput.name   = 'tableId';
+                checkoutIdInput.value  = currentTableId;
+            }
+        }
+        const items = pid
+            ? currentData.items.filter(i => i.preOrderId === pid)
+            : currentData.items;
+        renderItemsTable(items);
+        if (pid) {
+            // 單筆篩選：用該筆的原始金額，折扣只顯示綁在該筆的部分
+            const sub = (currentData.subOrders || []).find(s => s.preOrderId === pid);
+            const orderOriginal = sub
+                ? sub.amount
+                : items.filter(i => !i.parentDetailId && i.status !== 2)
+                       .reduce((s, i) => s + (i.subTotal || 0), 0);
+            const orderDiscount = sub ? (sub.discountAmount || 0) : 0;
+            renderAmounts(items, {
+                originalAmount: orderOriginal,
+                discountAmount: orderDiscount,
+                totalAmount: Math.max(0, orderOriginal - orderDiscount)
+            });
+        } else {
+            renderAmounts(items, currentData);
+        }
+        updateMemberBtnDisplay(currentData);
+
+        // ── 結帳按鈕可見度：依所選訂單的出餐狀態決定 ──
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        const warningArea = document.getElementById('unservedWarning');
+        if (pid) {
+            // 單筆：以那筆的頂層餐點是否有未出餐為準
+            const hasUnserved = items.some(i => !i.parentDetailId && i.status === 0 && !i.isBilled);
+            if (hasUnserved) {
+                checkoutBtn.classList.remove('show');
+            } else {
+                checkoutBtn.classList.add('show');
+                warningArea.style.display = 'none';
+            }
+        } else {
+            // 全部訂單：還原整桌原始狀態
+            if (currentData.hasUnserved) {
+                checkoutBtn.classList.remove('show');
+                warningArea.style.display = 'block';
+            } else {
+                checkoutBtn.classList.add('show');
+                warningArea.style.display = 'none';
+            }
+        }
+
+        // ── 優惠按鈕：依子單自己的會員決定顯示與否，內容用子單自己的優惠券/活動 ──
+        // 規則（對應規格表）：
+        //   有會員 → 顯示（未套用時顯示X個可用；已套用時顯示套用內容）
+        //   沒會員 → 不顯示
+        if (pid) {
+            const om  = (currentData.orderMembers || []).find(m => m.preOrderId === pid);
+            const sub = (currentData.subOrders    || []).find(s => s.preOrderId === pid);
+            renderDiscountBtns(Object.assign({}, currentData, {
+                memberId:   om  ? om.memberId         : null,
+                couponId:   sub ? (sub.couponId   ?? null) : null,
+                couponName: sub ? (sub.couponName ?? null) : null,
+                eventId:    sub ? (sub.eventId    ?? null) : null,
+                eventTitle: sub ? (sub.eventTitle ?? null) : null,
+            }));
+        } else {
+            renderDiscountBtns(currentData);
+        }
+    }
+
+    // ── 會員按鈕顯示邏輯（依目前 orderSelect 決定顯示哪位會員）─────────────
+    function updateMemberBtnDisplay(data) {
+        const memberBtn = document.getElementById('memberBtn');
+        if (!memberBtn) return;
+        const lbl = document.getElementById('memberBtnLabel');
+        const orderSelect  = document.getElementById('orderSelect');
+        const selectedVal  = orderSelect ? orderSelect.value : '0';
+        const selectedPid  = selectedVal && selectedVal !== '0' ? parseInt(selectedVal) : 0;
+        const isAllOrders  = selectedPid === 0;
+        const orderMembers = data.orderMembers || [];
+
+        let memberName = null;
+
+        if (orderMembers.length > 0) {
+            if (isAllOrders) {
+                // 全部訂單：依各單會員決定
+                const withMember = orderMembers.filter(m => m.memberId);
+                const uniqueIds  = [...new Set(withMember.map(m => m.memberId))];
+                if (uniqueIds.length === 1) {
+                    memberName = withMember[0].memberName;
+                } else if (uniqueIds.length > 1) {
+                    // 多位不同會員
+                    lbl.textContent = '請選擇會員';
+                    memberBtn.style.background  = '#fff8e1';
+                    memberBtn.style.borderColor = '#f39c12';
+                    memberBtn.style.color       = '#e67e22';
+                    return;
+                }
+            } else {
+                // 單筆訂單：只看該筆
+                const om = orderMembers.find(m => m.preOrderId === selectedPid);
+                memberName = om?.memberName ?? null;
+            }
+        } else {
+            // 外帶單筆（無 orderMembers）
+            memberName = data.memberName;
+        }
+
+        if (memberName) {
+            lbl.textContent = '會員：' + maskName(memberName);
+            memberBtn.style.background  = '#f5eeff';
+            memberBtn.style.borderColor = '#8e44ad';
+            memberBtn.style.color       = '#8e44ad';
+        } else {
+            lbl.textContent = '輸入會員';
+            memberBtn.style.background  = '#fff';
+            memberBtn.style.borderColor = '#8e44ad';
+            memberBtn.style.color       = '#8e44ad';
+        }
+    }
+
+    // ── 金額區更新 ─────────────────────────────────────────────────────────
+    // fullData = 有值時使用整桌金額；null 時依 items 自行計算（無折扣）
+    function renderAmounts(items, fullData) {
+        if (fullData) {
+            // 全部訂單 → 用後端算好的數字（含折扣）
+            document.getElementById('amtOriginal').textContent = fullData.originalAmount.toLocaleString();
+            document.getElementById('amtDiscount').textContent = fullData.discountAmount.toLocaleString();
+            document.getElementById('amtTotal').textContent    = fullData.totalAmount.toLocaleString();
+        } else {
+            // 單筆篩選 → 加總該筆餐點小計，折扣顯示 0
+            const original = items
+                .filter(i => !i.parentDetailId && i.status !== 2)
+                .reduce((s, i) => s + (i.subTotal || 0), 0);
+            document.getElementById('amtOriginal').textContent = original.toLocaleString();
+            document.getElementById('amtDiscount').textContent = '0';
+            document.getElementById('amtTotal').textContent    = original.toLocaleString();
+        }
+    }
+
+    // ── 餐點明細表格渲染 ───────────────────────────────────────────────────
+    function renderItemsTable(items) {
+        const allItems = currentData ? currentData.items : items;
+        const tbody = document.getElementById('detailBody');
+        tbody.innerHTML = '';
+        const thead = document.querySelector('.detail-table thead tr');
+
+        // ── 拆單模式：逐項顯示含勾選框 ──────────────────────────────────
+        if (splitMode) {
+            if (thead) thead.innerHTML =
+                '<th style="width:54px;text-align:center;white-space:nowrap;">勾選</th><th>餐點名稱</th><th>份數</th><th>金額</th>';
+            const splittable = (allItems || []).filter(
+                i => !i.parentDetailId && !i.isBilled && i.status !== 2
+            );
+            if (!splittable.length) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:#aaa;">沒有可拆單的餐點</td></tr>';
+                return;
+            }
+            splittable.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="text-align:center;">
+                        <input type="checkbox" class="split-check-inline"
+                               id="sci-${item.detailId}"
+                               data-detail-id="${item.detailId}"
+                               data-subtotal="${item.subTotal}"
+                               data-is-setmeal="${!!item.isSetMeal}"
+                               onchange="onSplitItemCheckInline(this)"
+                               style="width:18px;height:18px;cursor:pointer;accent-color:#1a77c9;">
+                    </td>
+                    <td>${item.productName}${item.isSetMeal
+                        ? '<span style="font-size:0.72rem;background:#e3f2fd;color:#1a77c9;padding:1px 6px;border-radius:8px;margin-left:4px;">套餐</span>'
+                        : ''}</td>
+                    <td>${item.qty}</td>
+                    <td>NT$ ${item.subTotal.toLocaleString()}</td>`;
+                tbody.appendChild(tr);
+            });
+            return;
+        }
+
+        // ── 正常模式：還原欄位標頭 ────────────────────────────────────
+        if (thead) thead.innerHTML =
+            '<th>餐點名稱</th><th>結帳份數</th><th>單價</th><th>金額</th>';
+
+        const sortOrder = item => {
+            if (item.status === 2) return 3;
+            if (item.isBilled === true) return 2;
+            if (item.status === 0) return 0;
+            return 1;
+        };
+
+        const parentItems   = items.filter(i => !i.parentDetailId);
+        const sortedParents = [...parentItems].sort((a, b) => sortOrder(a) - sortOrder(b));
+
+        // 相同餐點合併顯示
+        const groupMap = new Map();
+        sortedParents.forEach(item => {
+            if (item.isSetMeal) {
+                groupMap.set('sm_' + item.detailId, { ...item });
+                return;
+            }
+            const key = `${item.productName}|${item.unitPrice}|${item.status}|${item.isBilled}`;
+            if (groupMap.has(key)) {
+                const g = groupMap.get(key);
+                g.qty      += 1;
+                g.subTotal += item.subTotal;
+            } else {
+                groupMap.set(key, { ...item });
+            }
+        });
+        const displayParents = [...groupMap.values()].sort((a, b) => sortOrder(a) - sortOrder(b));
+
+        displayParents.forEach(item => {
+            const isCancelled = item.status === 2;
+            const isUnserved  = item.status === 0;
+            const isBilled    = item.isBilled === true;
+            const isSetMeal   = item.isSetMeal === true;
+
+            const tr = document.createElement('tr');
+            if (isCancelled) tr.classList.add('status-cancel');
+            if (isBilled)    tr.classList.add('status-billed');
+            if (isSetMeal)   tr.classList.add('is-setmeal-row');
+
+            let badge = '';
+            if (isSetMeal) {
+                badge += `<span class="status-badge badge-setmeal">套餐</span>`;
+                if (isUnserved) {
+                    const childrenOfThis = allItems.filter(c => c.parentDetailId === item.detailId);
+                    const anyChildServed = childrenOfThis.some(c => c.status === 1);
+                    badge += anyChildServed
+                        ? `<span class="status-badge badge-partial">部分出餐</span>`
+                        : `<span class="status-badge badge-unserved">未出餐</span>`;
+                }
+            } else if (isUnserved) {
+                badge += `<span class="status-badge badge-unserved">未出餐</span>`;
+            }
+            if (isCancelled)        badge += `<span class="status-badge badge-cancel">已取消</span>`;
+            if (item.isInvalidGift) badge += `<span class="status-badge" style="background:#e74c3c;color:#fff;">⚠️ 需補差價</span>`;
+
+            tr.innerHTML = `
+                <td>${item.productName}${badge}</td>
+                <td>${item.qty}</td>
+                <td>NT$ ${item.unitPrice.toLocaleString()}</td>
+                <td>NT$ ${item.subTotal.toLocaleString()}</td>
+            `;
+            tbody.appendChild(tr);
+
+            // 套餐子項目
+            if (isSetMeal) {
+                const children = allItems.filter(c => c.parentDetailId === item.detailId);
+                children.forEach(child => {
+                    const childCancelled = child.status === 2;
+                    const childServed    = child.status === 1;
+                    const childTr = document.createElement('tr');
+                    childTr.classList.add('child-item-row');
+                    if (childCancelled) childTr.classList.add('status-cancel');
+                    if (childServed)    childTr.classList.add('child-served');
+                    childTr.dataset.parentId = item.detailId;
+                    childTr.dataset.detailId = child.detailId;
+
+                    const childBadge = childCancelled
+                        ? `<span class="status-badge badge-cancel">已取消</span>`
+                        : childServed
+                            ? `<span class="status-badge badge-billed">已出餐</span>`
+                            : `<span class="status-badge badge-unserved">待出餐</span>`;
+
+                    childTr.innerHTML = `
+                        <td style="padding-left:28px;">
+                            <span style="color:#e67e22;margin-right:4px;">└</span>${child.productName}${childBadge}
+                        </td>
+                        <td>${child.qty}</td>
+                        <td style="color:#ccc;">—</td>
+                        <td style="color:#ccc;">—</td>
+                    `;
+                    tbody.appendChild(childTr);
+                });
+            }
+        });
+    }
+
+    // ── 優惠按鈕列渲染 ─────────────────────────────────────────────────────
+    function renderDiscountBtns(data) {
+        const row = document.getElementById('discountBtnRow');
+        if (!row) return;
+
+        // 沒有綁定會員時隱藏活動／優惠券選擇列
+        if (!data.memberId) {
+            row.style.display = 'none';
+            return;
+        }
+
+        row.style.display = 'flex';
+
+        const hasEvent  = !!data.eventTitle;
+        const hasCoupon = !!data.couponName;
+
+        // ── 活動按鈕 ──
+        const eventBtn   = document.getElementById('selectEventBtn');
+        const eventLabel = document.getElementById('eventBtnLabel');
+        const eventBadge = document.getElementById('eventAvailBadge');
+        const eventClear = document.getElementById('eventClearBtn');
+
+        eventBtn.style.display = '';
+
+        if (hasEvent) {
+            eventLabel.textContent = '🎉 ' + data.eventTitle;
+            eventBtn.style.borderColor = '#27ae60';
+            eventBtn.style.background  = '#f0fff4';
+            eventBtn.style.color       = '#27ae60';
+            eventBadge.style.display   = 'none';
+            eventClear.style.display   = '';
+        } else {
+            eventLabel.textContent = '🎉 選擇活動';
+            eventBtn.style.borderColor = '#27ae60';
+            eventBtn.style.background  = '#fff';
+            eventBtn.style.color       = '#27ae60';
+            eventClear.style.display   = 'none';
+            // 徽章：稍後 fetch 後決定；先暫時隱藏，等 modal 快取資料
+            eventBadge.style.display   = 'none';
+        }
+
+        // ── 優惠券按鈕 ──
+        const couponBtn   = document.getElementById('selectCouponBtn');
+        const couponLabel = document.getElementById('couponBtnLabel');
+        const couponBadge = document.getElementById('couponAvailBadge');
+        const couponClear = document.getElementById('couponClearBtn');
+
+        if (hasCoupon) {
+            couponLabel.textContent = '🎫 ' + data.couponName;
+            couponBtn.style.borderColor = '#b7770d';
+            couponBtn.style.background  = '#fff8e1';
+            couponBtn.style.color       = '#b7770d';
+            couponBadge.style.display   = 'none';
+            couponClear.style.display   = '';
+        } else {
+            couponLabel.textContent = '🎫 選擇優惠券';
+            couponBtn.style.borderColor = '#b7770d';
+            couponBtn.style.background  = '#fff';
+            couponBtn.style.color       = '#b7770d';
+            couponClear.style.display   = 'none';
+            couponBadge.style.display   = 'none';
+        }
+
+        // 背景 fetch 可用數，更新徽章
+        if (!hasEvent) fetchEventAvailBadge();
+        if (!hasCoupon) fetchCouponAvailBadge();
+    }
+
+    async function fetchEventAvailBadge() {
+        try {
+            const res    = await fetch(`/Payments/GetManualEvents?${getDiscountContext()}`);
+            const events = await res.json();
+            const avail  = (events || []).filter(e => e.isEligible).length;
+            const badge  = document.getElementById('eventAvailBadge');
+            if (badge && avail > 0) {
+                badge.textContent    = `${avail} 可用`;
+                badge.style.display  = '';
+            }
+        } catch { /* 靜默失敗 */ }
+    }
+
+    async function fetchCouponAvailBadge() {
+        try {
+            const res     = await fetch(`/Payments/GetApplicableCoupons?${getDiscountContext()}`);
+            const coupons = await res.json();
+            const avail   = (coupons || []).filter(c => c.isEligible).length;
+            const badge   = document.getElementById('couponAvailBadge');
+            if (badge && avail > 0) {
+                badge.textContent    = `${avail} 可用`;
+                badge.style.display  = '';
+            }
+        } catch { /* 靜默失敗 */ }
+    }
+
+    // ── 活動 Modal ─────────────────────────────────────────────────────────
     async function openEventModal() {
         const listArea = document.getElementById('eventListArea');
-        listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;">載入中...</div>';
+        listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">載入中...</div>';
         document.getElementById('eventSelectModal').classList.add('show');
 
         try {
-            const res = await fetch(`/Payments/GetManualEvents?${getDiscountContext()}`);
+            const res    = await fetch(`/Payments/GetManualEvents?${getDiscountContext()}`);
             const events = await res.json();
 
             if (!events || events.length === 0) {
-                listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;">目前消費金額無可套用的手動活動</div>';
+                listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">目前沒有進行中的活動</div>';
                 return;
             }
 
-            listArea.innerHTML = events.map(ev => `
-                <div onclick="doApplyEvent(${ev.id})"
-                     style="padding:12px 14px;border:2px solid ${ev.isInUse ? '#27ae60' : '#e8e8e8'};
-                            border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;
-                            background:${ev.isInUse ? '#f0fff4' : '#fff'};"
-                     onmouseover="this.style.borderColor='#27ae60';this.style.background='#f0fff4'"
-                     onmouseout="this.style.borderColor='${ev.isInUse ? '#27ae60' : '#e8e8e8'}';this.style.background='${ev.isInUse ? '#f0fff4' : '#fff'}'">
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
-                        <span style="font-weight:700;color:#1a1a1a;">${ev.title}</span>
-                        ${ev.isInUse ? '<span style="font-size:0.72rem;background:#27ae60;color:#fff;padding:1px 7px;border-radius:10px;font-weight:600;">使用中</span>' : ''}
+            // 若已套用優惠券，提示活動門檻以折扣後金額判斷
+            let hintHtml = '';
+            if (currentData && currentData.couponName) {
+                const effectiveAmt = (currentData.totalAmount || 0).toLocaleString();
+                hintHtml = `<div style="margin-bottom:10px;padding:8px 12px;background:#fff8e1;border-left:3px solid #f39c12;
+                                        border-radius:0 8px 8px 0;font-size:0.8rem;color:#7d6608;">
+                                💡 已套用優惠券，活動門檻以折扣後金額 <strong>NT$ ${effectiveAmt}</strong> 判斷
+                            </div>`;
+            }
+
+            listArea.innerHTML = hintHtml + events.map(ev => {
+                const eligible = ev.isEligible;
+                const inUse    = ev.isInUse;
+
+                // 不符合資格 → 暗色、禁止點擊
+                const borderColor = inUse ? '#27ae60' : (eligible ? '#e8e8e8' : '#e8e8e8');
+                const bgColor     = inUse ? '#f0fff4'  : '#fff';
+                const opacity     = eligible ? '1' : '0.45';
+                const cursor      = eligible ? 'pointer' : 'not-allowed';
+                const clickAttr   = eligible
+                    ? `onclick="doApplyEvent(${ev.id})"
+                       onmouseover="this.style.borderColor='#27ae60';this.style.background='#f0fff4'"
+                       onmouseout="this.style.borderColor='${inUse ? '#27ae60' : '#e8e8e8'}';this.style.background='${inUse ? '#f0fff4' : '#fff'}'"`
+                    : '';
+
+                return `
+                <div ${clickAttr}
+                     style="padding:12px 14px; border:2px solid ${borderColor}; border-radius:10px;
+                            margin-bottom:8px; cursor:${cursor}; transition:all 0.15s;
+                            background:${bgColor}; opacity:${opacity}; user-select:none;">
+                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+                        <span style="font-weight:700; font-size:0.92rem; color:#1a1a1a;">${ev.title}</span>
+                        ${inUse  ? '<span style="font-size:0.7rem;background:#27ae60;color:#fff;padding:1px 8px;border-radius:20px;font-weight:700;">使用中</span>' : ''}
+                        ${!eligible ? '<span style="font-size:0.7rem;background:#e0e0e0;color:#999;padding:1px 8px;border-radius:20px;font-weight:600;">不符合</span>' : ''}
                     </div>
-                    <div style="font-size:0.82rem;color:#27ae60;font-weight:600;">${ev.discountDescription}</div>
-                    ${ev.summary ? `<div style="font-size:0.78rem;color:#888;margin-top:2px;">${ev.summary}</div>` : ''}
-                    <div style="font-size:0.75rem;color:#bbb;margin-top:2px;">最低消費 NT$ ${ev.minSpend}</div>
-                </div>`).join('');
+                    <div style="font-size:0.83rem; color:#27ae60; font-weight:600;">${ev.discountDescription}</div>
+                    ${ev.summary ? `<div style="font-size:0.78rem;color:#888;margin-top:3px;">${ev.summary}</div>` : ''}
+                    <div style="font-size:0.74rem; color:#bbb; margin-top:3px;">最低消費 NT$ ${ev.minSpend.toLocaleString()}</div>
+                </div>`;
+            }).join('');
         } catch {
-            listArea.innerHTML = '<div style="text-align:center;color:#c0392b;padding:20px;">載入失敗，請重試</div>';
+            listArea.innerHTML = '<div style="text-align:center;color:#c0392b;padding:24px;">載入失敗，請重試</div>';
         }
     }
 
     async function doApplyEvent(eventId) {
+        document.getElementById('eventSelectModal').classList.remove('show');
+
+        // 拆單模式：僅記錄到拆單狀態，不送後端
+        if (_splitDiscountModal) {
+            _splitDiscountModal = false;
+            if (eventId) {
+                // 從快取的清單物件找到折扣資訊（renderSplitEventModal 已渲染，不易取得）
+                // 改用 fetch 再次取得
+                try {
+                    const res = await fetch(`/Payments/GetSplitEvents?amount=${splitOriginalAmt}`);
+                    const evs = await res.json();
+                    const ev  = (evs || []).find(e => e.id === eventId);
+                    if (ev) {
+                        splitEventId     = ev.id;
+                        splitEventTitle  = ev.title;
+                        window._splitEventObj = ev;
+                        document.getElementById('splitEventLabel').textContent   = '🎉 ' + ev.title;
+                        document.getElementById('splitEventClear').style.display = '';
+                        updateSplitAmounts();
+                    }
+                } catch { /* 靜默 */ }
+            } else {
+                clearSplitEvent();
+            }
+            return;
+        }
+
         const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-        const body = `${getDiscountContext()}&eventId=${eventId ?? ''}`;
+        const body  = `${getDiscountContext()}&eventId=${eventId ?? ''}`;
         try {
-            const res = await fetch('/Payments/ApplyEvent', {
+            const res    = await fetch('/Payments/ApplyEvent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
                 body
             });
             const result = await res.json();
-            document.getElementById('eventSelectModal').classList.remove('show');
             if (result.success) {
                 currentData = result.data;
                 renderDetail(result.data);
-                if (eventId != null && result.data.eventTitle)
-                    showDiscountToast(`已套用「${result.data.eventTitle}」活動`);
             } else {
                 showAlert(result.error || '套用失敗', '❌ 錯誤');
             }
@@ -1877,40 +2997,99 @@
         }
     }
 
+    // ── 優惠券 Modal ───────────────────────────────────────────────────────
     async function openCouponModal() {
         const listArea = document.getElementById('couponListArea');
-        listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;">載入中...</div>';
+        listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">載入中...</div>';
         document.getElementById('couponSelectModal').classList.add('show');
 
         try {
-            const res = await fetch(`/Payments/GetApplicableCoupons?${getDiscountContext()}`);
+            const res     = await fetch(`/Payments/GetApplicableCoupons?${getDiscountContext()}`);
             const coupons = await res.json();
 
-            if (!coupons || coupons.length === 0) {
-                listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;">目前消費金額無可套用的優惠券</div>';
+            // 只顯示「會員已領取」或「目前使用中」的優惠券；未領取的不列出
+            const visibleCoupons = (coupons || []).filter(c => c.isClaimed !== false || c.isInUse === true);
+
+            if (!visibleCoupons.length) {
+                listArea.innerHTML = '<div style="text-align:center;color:#aaa;padding:24px;">目前沒有可用的優惠券</div>';
                 return;
             }
 
-            listArea.innerHTML = coupons.map(c => `
-                <div onclick="doApplyCouponById(${c.id})"
-                     style="padding:12px 14px;border:2px solid ${c.isInUse ? '#b7770d' : '#e8e8e8'};
-                            border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;
-                            background:${c.isInUse ? '#fff8e1' : '#fff'};"
-                     onmouseover="this.style.borderColor='#b7770d';this.style.background='#fff8e1'"
-                     onmouseout="this.style.borderColor='${c.isInUse ? '#b7770d' : '#e8e8e8'}';this.style.background='${c.isInUse ? '#fff8e1' : '#fff'}'">
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
-                        <span style="font-weight:700;color:#1a1a1a;">${c.name}</span>
-                        ${c.isInUse ? '<span style="font-size:0.72rem;background:#b7770d;color:#fff;padding:1px 7px;border-radius:10px;font-weight:600;">使用中</span>' : ''}
+            // 若已套用活動，提示優惠券門檻以折扣後金額判斷
+            let hintHtml = '';
+            if (currentData && currentData.eventTitle) {
+                const effectiveAmt = (currentData.totalAmount || 0).toLocaleString();
+                hintHtml = `<div style="margin-bottom:10px;padding:8px 12px;background:#f0fff4;border-left:3px solid #27ae60;
+                                        border-radius:0 8px 8px 0;font-size:0.8rem;color:#1a5c2e;">
+                                💡 已套用活動，優惠券門檻以折扣後金額 <strong>NT$ ${effectiveAmt}</strong> 判斷
+                            </div>`;
+            }
+
+            listArea.innerHTML = hintHtml + visibleCoupons.map(c => {
+                const claimed       = c.isClaimed !== false;   // 未傳時預設已領取
+                const usedByMember  = c.isUsedByMember === true;
+                const eligible      = c.isEligible;
+                const inUse         = c.isInUse;
+
+                const canClick    = claimed && !usedByMember && eligible;
+                const borderColor = inUse ? '#b7770d' : '#e8e8e8';
+                const bgColor     = inUse ? '#fff8e1' : '#fff';
+                const opacity     = canClick ? '1' : '0.45';
+                const cursor      = canClick ? 'pointer' : 'not-allowed';
+                const clickAttr   = canClick
+                    ? `onclick="doApplyCouponById(${c.id})"
+                       onmouseover="this.style.borderColor='#b7770d';this.style.background='#fff8e1'"
+                       onmouseout="this.style.borderColor='${inUse ? '#b7770d' : '#e8e8e8'}';this.style.background='${inUse ? '#fff8e1' : '#fff'}'"`
+                    : '';
+
+                return `
+                <div ${clickAttr}
+                     style="padding:12px 14px; border:2px solid ${borderColor}; border-radius:10px;
+                            margin-bottom:8px; cursor:${cursor}; transition:all 0.15s;
+                            background:${bgColor}; opacity:${opacity}; user-select:none;">
+                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+                        <span style="font-weight:700; font-size:0.92rem; color:#1a1a1a;">${c.name}</span>
+                        <span style="font-size:0.78rem; color:#888; font-weight:500;">${c.code}</span>
+                        ${inUse        ? '<span style="font-size:0.7rem;background:#b7770d;color:#fff;padding:1px 8px;border-radius:20px;font-weight:700;">使用中</span>' : ''}
+                        ${!claimed     ? '<span style="font-size:0.7rem;background:#6c757d;color:#fff;padding:1px 8px;border-radius:20px;font-weight:600;">未領取</span>' : ''}
+                        ${claimed && usedByMember ? '<span style="font-size:0.7rem;background:#495057;color:#fff;padding:1px 8px;border-radius:20px;font-weight:600;">已使用</span>' : ''}
+                        ${claimed && !usedByMember && !eligible ? '<span style="font-size:0.7rem;background:#e0e0e0;color:#999;padding:1px 8px;border-radius:20px;font-weight:600;">不符合</span>' : ''}
                     </div>
-                    <div style="font-size:0.82rem;color:#b7770d;font-weight:600;">${c.discountDescription}</div>
-                    ${c.minSpend > 0 ? `<div style="font-size:0.75rem;color:#bbb;margin-top:2px;">最低消費 NT$ ${c.minSpend}</div>` : ''}
-                </div>`).join('');
+                    <div style="font-size:0.83rem; color:#b7770d; font-weight:600;">${c.discountDescription}</div>
+                    ${c.minSpend > 0 ? `<div style="font-size:0.74rem;color:#bbb;margin-top:3px;">最低消費 NT$ ${c.minSpend.toLocaleString()}</div>` : ''}
+                </div>`;
+            }).join('');
         } catch {
-            listArea.innerHTML = '<div style="text-align:center;color:#c0392b;padding:20px;">載入失敗，請重試</div>';
+            listArea.innerHTML = '<div style="text-align:center;color:#c0392b;padding:24px;">載入失敗，請重試</div>';
         }
     }
 
     async function doApplyCouponById(couponId) {
+        document.getElementById('couponSelectModal').classList.remove('show');
+
+        // 拆單模式：僅記錄到拆單狀態，不送後端
+        if (_splitDiscountModal) {
+            _splitDiscountModal = false;
+            if (couponId) {
+                try {
+                    const res = await fetch(`/Payments/GetSplitCoupons?amount=${splitOriginalAmt}`);
+                    const cs  = await res.json();
+                    const c   = (cs || []).find(x => x.id === couponId);
+                    if (c) {
+                        splitCouponId   = c.id;
+                        splitCouponName = c.name;
+                        window._splitCouponObj = c;
+                        document.getElementById('splitCouponLabel').textContent   = '🎫 ' + c.name;
+                        document.getElementById('splitCouponClear').style.display = '';
+                        updateSplitAmounts();
+                    }
+                } catch { /* 靜默 */ }
+            } else {
+                clearSplitCoupon();
+            }
+            return;
+        }
+
         const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
         const body = `${getDiscountContext()}&couponId=${couponId ?? ''}`;
         try {
@@ -1920,12 +3099,9 @@
                 body
             });
             const result = await res.json();
-            document.getElementById('couponSelectModal').classList.remove('show');
             if (result.success) {
                 currentData = result.data;
                 renderDetail(result.data);
-                if (couponId != null && result.data.couponName)
-                    showDiscountToast(`已套用「${result.data.couponName}」優惠券`);
             } else {
                 showAlert(result.error || '套用失敗', '❌ 錯誤');
             }
@@ -1934,12 +3110,204 @@
         }
     }
 
-    // ── 折疊優惠區 ────────────────────────────────────────────────────────
-    let discountDetailOpen = false;
-    function toggleDiscountDetail() {
-        discountDetailOpen = !discountDetailOpen;
-        document.getElementById('discountDetail').style.display = discountDetailOpen ? 'block' : 'none';
-        document.getElementById('discountArrow').textContent = discountDetailOpen ? '▲' : '▼';
+
+    // ── 會員姓名遮罩：第一字 + * + 最後一字，不足兩字時全部遮 ──────────────
+    function maskName(name) {
+        if (!name) return '';
+        if (name.length === 1) return name;
+        if (name.length === 2) return name[0] + '*';
+        return name[0] + '*'.repeat(name.length - 2) + name[name.length - 1];
+    }
+
+    // ── 會員搜尋 Modal ────────────────────────────────────────────────────
+    let _pendingMemberId   = null;
+    let _pendingMemberName = null;
+
+    function openMemberModal() {
+        // 重置
+        document.getElementById('memberPhoneInput').value = '';
+        document.getElementById('memberSearchResult').innerHTML = '';
+        document.getElementById('confirmMemberBtn').style.display = 'none';
+        _pendingMemberId = null;
+
+        const clearBtn     = document.getElementById('clearMemberBtn');
+        const curInfo      = document.getElementById('memberCurrentInfo');
+        const orderSelect  = document.getElementById('orderSelect');
+        const selectedVal  = orderSelect ? orderSelect.value : '0';
+        const selectedPid  = selectedVal && selectedVal !== '0' ? parseInt(selectedVal) : 0;
+        const isAllOrders  = selectedPid === 0;
+        const orderMembers = (currentData && currentData.orderMembers) || [];
+
+        if (isAllOrders && orderMembers.length > 0) {
+            // 全部訂單模式：顯示每筆訂單的會員
+            const withMember = orderMembers.filter(m => m.memberId);
+            const uniqueIds  = [...new Set(withMember.map(m => m.memberId))];
+
+            if (uniqueIds.length > 1) {
+                // 多位不同會員 → 列出每筆訂單的會員
+                document.getElementById('memberCurrentName').innerHTML = orderMembers.map(o =>
+                    o.memberId
+                    ? `<div onclick="closeMemberModal();doApplyMember(${o.memberId})"
+                            style="font-size:0.85rem;margin-bottom:6px;padding:7px 12px;
+                                   border:1.5px solid #c39be0;border-radius:8px;background:#faf5ff;
+                                   cursor:pointer;transition:background 0.15s;"
+                            onmouseover="this.style.background='#f0e5ff'"
+                            onmouseout="this.style.background='#faf5ff'">
+                           <span style="color:#888;font-size:0.78rem;">${o.orderNumber}　</span>
+                           <strong style="color:#5b2d8e;">${o.memberName}</strong>
+                           <span style="color:#aaa;font-size:0.8rem;">　${o.memberPhone ?? ''}</span>
+                       </div>`
+                    : `<div style="font-size:0.85rem;margin-bottom:6px;padding:7px 12px;
+                                   border:1.5px solid #e0e0e0;border-radius:8px;color:#aaa;">
+                           <span style="font-size:0.78rem;">${o.orderNumber}　</span>未綁定
+                       </div>`
+                ).join('');
+                curInfo.style.display  = '';
+                clearBtn.style.display = '';
+            } else if (uniqueIds.length === 1) {
+                const m = withMember[0];
+                document.getElementById('memberCurrentName').textContent =
+                    `${m.memberName}　${m.memberPhone ?? ''}`;
+                curInfo.style.display  = '';
+                clearBtn.style.display = '';
+            } else {
+                curInfo.style.display  = 'none';
+                clearBtn.style.display = 'none';
+            }
+        } else {
+            // 單筆訂單模式：從 orderMembers 找該筆，或 fallback 到 memberName
+            let memberName  = null;
+            let memberPhone = null;
+            if (orderMembers.length > 0 && selectedPid) {
+                const om = orderMembers.find(m => m.preOrderId === selectedPid);
+                memberName  = om?.memberName ?? null;
+                memberPhone = om?.memberPhone ?? null;
+            } else if (currentData) {
+                memberName  = currentData.memberName;
+                memberPhone = currentData.memberPhone;
+            }
+            if (memberName) {
+                document.getElementById('memberCurrentName').textContent =
+                    `${memberName}　${memberPhone ?? ''}`;
+                curInfo.style.display  = '';
+                clearBtn.style.display = '';
+            } else {
+                curInfo.style.display  = 'none';
+                clearBtn.style.display = 'none';
+            }
+        }
+
+        document.getElementById('memberModal').classList.add('show');
+        setTimeout(() => document.getElementById('memberPhoneInput').focus(), 100);
+    }
+
+    function closeMemberModal() {
+        document.getElementById('memberModal').classList.remove('show');
+    }
+
+    async function searchMember() {
+        const phone  = document.getElementById('memberPhoneInput').value.trim();
+        const result = document.getElementById('memberSearchResult');
+
+        if (!phone) {
+            result.innerHTML = `<div style="color:#c0392b;font-size:0.85rem;">請先輸入電話號碼</div>`;
+            return;
+        }
+
+        result.innerHTML = `<div style="color:#aaa;font-size:0.85rem;">查詢中…</div>`;
+        document.getElementById('confirmMemberBtn').style.display = 'none';
+        _pendingMemberId = null;
+
+        try {
+            const res  = await fetch(`/Payments/SearchMember?phone=${encodeURIComponent(phone)}`);
+            const data = await res.json();
+
+            if (!data.success) {
+                result.innerHTML = `<div style="color:#c0392b;font-size:0.85rem;padding:10px 0;">❌ ${data.error}</div>`;
+                return;
+            }
+
+            const m = data.member;
+            const canBind = m.isConfirmed && !m.isBlacklisted;
+
+            // 只有可綁定時才記錄 pending
+            _pendingMemberId   = canBind ? m.id   : null;
+            _pendingMemberName = canBind ? m.name : null;
+
+            const warningHtml = m.isBlacklisted
+                ? `<div style="margin-top:6px;font-size:0.78rem;color:#c0392b;font-weight:600;">⛔ 此會員已被列為黑名單，無法綁定</div>`
+                : (!m.isConfirmed
+                    ? `<div style="margin-top:6px;font-size:0.78rem;color:#e67e22;font-weight:600;">⚠️ 此會員尚未驗證信箱，無法綁定</div>`
+                    : '');
+
+            const borderColor = canBind ? '#c39be0' : (m.isBlacklisted ? '#e0a0a0' : '#f0c88a');
+            const bgColor     = canBind ? '#faf5ff' : (m.isBlacklisted ? '#fff5f5' : '#fffbf0');
+
+            result.innerHTML = `
+                <div style="padding:12px 14px;border:1.5px solid ${borderColor};border-radius:10px;background:${bgColor};">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:1.3rem;">👤</span>
+                        <div>
+                            <div style="font-weight:700;font-size:0.95rem;color:#3d1a5f;">${m.name}</div>
+                            <div style="font-size:0.82rem;color:#888;">${m.phone ?? ''}</div>
+                        </div>
+                    </div>
+                    ${warningHtml}
+                </div>`;
+
+            document.getElementById('confirmMemberBtn').style.display = canBind ? '' : 'none';
+
+        } catch {
+            result.innerHTML = `<div style="color:#c0392b;font-size:0.85rem;">查詢失敗，請重試</div>`;
+        }
+    }
+
+    async function confirmMember() {
+        if (_pendingMemberId == null) return;
+        if (_splitMemberModal) {
+            _splitMemberModal = false;
+            closeMemberModal();
+            setSplitMember(_pendingMemberId, _pendingMemberName, null);
+        } else {
+            await doApplyMember(_pendingMemberId);
+        }
+    }
+
+    async function doApplyMember(memberId) {
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const body  = `${getDiscountContext()}&memberId=${memberId ?? ''}`;
+        try {
+            const res    = await fetch('/Payments/ApplyMember', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                body
+            });
+            const result = await res.json();
+            closeMemberModal();
+            if (result.success) {
+                if (currentTableId) {
+                    // 內用：重新拉整桌資料，確保 orderMembers 完整
+                    const orderSelect   = document.getElementById('orderSelect');
+                    const prevSelected  = orderSelect ? orderSelect.value : '0';
+                    const tableRes  = await fetch(`/Payments/GetDetailByTable?tableId=${currentTableId}`);
+                    const tableData = await tableRes.json();
+                    currentData = tableData;
+                    renderDetail(tableData);
+                    // 恢復之前選取的訂單
+                    if (orderSelect && prevSelected && prevSelected !== '0') {
+                        orderSelect.value = prevSelected;
+                        onOrderSelectChange(prevSelected);
+                    }
+                } else {
+                    currentData = result.data;
+                    renderDetail(result.data);
+                }
+            } else {
+                showAlert(result.error || '套用失敗', '❌ 錯誤');
+            }
+        } catch {
+            showAlert('操作失敗，請重試', '❌ 錯誤');
+        }
     }
 
     function showDiscountToast(text) {
@@ -1956,72 +3324,4 @@
         }, 2000);
     }
 
-    async function doSplitCheckout() {
-        if (!splitMode) return;  // 非拆單模式不應呼叫
-
-        const checked = [...document.querySelectorAll('.detail-check:checked')];
-        const detailIds = [...checked.map(c => parseInt(c.dataset.detailId))];
-
-        // 若勾選了套餐標題，自動把其子項目的 detailId 一併帶入
-        checked.filter(c => c.dataset.isSetMeal === 'true').forEach(c => {
-            const parentId = parseInt(c.dataset.detailId);
-            document.querySelectorAll(`#detailBody tr.child-item-row[data-parent-id="${parentId}"]`)
-                    .forEach(row => detailIds.push(parseInt(row.dataset.detailId)));
-        });
-
-        if (!detailIds.length) {
-            showAlert('請先勾選要結帳的餐點');
-            return;
-        }
-
-        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-        const res = await fetch('/Payments/SplitCheckout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'RequestVerificationToken': token
-            },
-            body: JSON.stringify({
-                tableId: currentTableId,
-                detailIds: detailIds,
-                payMethod: currentPayMethod || 'Cash'
-            })
-        });
-
-    const result = await res.json();
-    if (result.success) {
-        if (!result.isFullyPaid && result.remaining) {
-            // 還有剩餘：重新渲染（保持拆單模式），金額歸零等待下次勾選
-            renderDetail(result.remaining);
-            document.getElementById('amtOriginal').textContent = '0';
-            document.getElementById('amtDiscount').textContent = '0';
-            document.getElementById('amtTotal').textContent    = '0';
-            currentTotal = 0;
-            // 更新左側桌位金額
-            const targetBtn = document.querySelector(`[data-table-id="${currentTableId}"]`);
-            if (targetBtn) {
-                const amtSpan = targetBtn.querySelector('.table-amount');
-                if (amtSpan) amtSpan.textContent = `$${result.remaining.totalAmount}`;
-            }
-        } else {
-            // 全部結完，顯示完成訊息後 reload
-            const tbody = document.getElementById('detailBody');
-            tbody.innerHTML = `
-                <tr><td colspan="5" style="text-align:center;padding:40px;color:#27ae60;font-size:1.1rem;font-weight:700;">
-                    ✅ 此桌已全部結帳完成
-                </td></tr>`;
-            document.getElementById('amtOriginal').textContent = '-';
-            document.getElementById('amtDiscount').textContent = '-';
-            document.getElementById('amtTotal').textContent    = '-';
-            document.getElementById('checkoutBtn').classList.remove('show');
-            document.getElementById('unservedWarning').style.display = 'none';
-            document.getElementById('discountSummary').style.display = 'none';
-            // 1.5 秒後 reload 更新左側桌子狀態
-            setTimeout(() => window.location.href = "/Payments/Create", 1500);
-        }
-    } else {
-        showAlert('拆單失敗：' + (result.message || '未知錯誤'), '❌ 錯誤');
-    }
-
-    }
 </script>

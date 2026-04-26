@@ -73,6 +73,7 @@ namespace EatTogether.Models.Repositories
                 {
                         return await _context.SetMeals
                                 .Where(s => s.IsActive)
+                                .OrderByDescending(s => s.DisplayOrder)
                                 .Include(s => s.SetMealItems)
                                 .ThenInclude(i => i.Dish)
                                 .ThenInclude(d => d.Category)
@@ -258,6 +259,55 @@ namespace EatTogether.Models.Repositories
                         await transaction.RollbackAsync();
                         throw new Exception("更新套餐餐點失敗: " + ex.Message);
                     }
+                }
+
+                public async Task<int> CloneSetMealAsync(int id)
+                {
+                        var original = await _context.SetMeals
+                                .Include(s => s.SetMealItems)
+                                .FirstOrDefaultAsync(s => s.Id == id);
+                        if (original == null) return 0;
+
+                        var allOrders = await _context.SetMeals.Select(s => s.DisplayOrder).ToListAsync();
+
+                        var clone = new SetMeal
+                        {
+                                SetMealName   = original.SetMealName + "（副本）",
+                                DiscountType  = original.DiscountType,
+                                DiscountValue = original.DiscountValue,
+                                IsActive      = false,
+                                CreatedAt     = DateTime.Now,
+                                SetPrice      = original.SetPrice,
+                                Description   = original.Description,
+                                ImageUrl      = original.ImageUrl,
+                                StartDate     = original.StartDate,
+                                EndDate       = original.EndDate,
+                                StartTime     = original.StartTime,
+                                EndTime       = original.EndTime,
+                                DisplayOrder  = allOrders.Any() ? allOrders.Max() + 1 : 1,
+                                IsPopular     = original.IsPopular,
+                                IsRecommended = original.IsRecommended
+                        };
+                        _context.SetMeals.Add(clone);
+                        await _context.SaveChangesAsync();
+
+                        if (original.SetMealItems.Any())
+                        {
+                                var items = original.SetMealItems.Select(i => new SetMealItem
+                                {
+                                        SetMealId    = clone.Id,
+                                        DishId       = i.DishId,
+                                        Quantity     = i.Quantity,
+                                        IsOptional   = i.IsOptional,
+                                        OptionGroupNo = i.OptionGroupNo,
+                                        PickLimit    = i.PickLimit,
+                                        DisplayOrder = i.DisplayOrder
+                                }).ToList();
+                                await _context.SetMealItems.AddRangeAsync(items);
+                                await _context.SaveChangesAsync();
+                        }
+
+                        return clone.Id;
                 }
 
                 public async Task UpdateOrderAsync(IEnumerable<int> orderedIds)
