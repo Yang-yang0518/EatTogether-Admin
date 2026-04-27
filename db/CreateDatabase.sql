@@ -358,6 +358,24 @@ CREATE TABLE [dbo].[MemberPasswordResetTokens](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+/****** Object:  Table [dbo].[MemberRefreshTokens]    Script Date: 2026/4/26 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MemberRefreshTokens](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[MemberId] [int] NOT NULL,
+	[Token] [varchar](64) NOT NULL,
+	[ExpiresAt] [datetime2](0) NOT NULL,
+	[IsRevoked] [bit] NOT NULL DEFAULT 0,
+	[CreatedAt] [datetime2](0) NOT NULL DEFAULT GETDATE(),
+ CONSTRAINT [PK_MemberRefreshTokens] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
 /****** Object:  Table [dbo].[Members]    Script Date: 2026/3/11 下午 10:31:03 ******/
 SET ANSI_NULLS ON
 GO
@@ -857,6 +875,20 @@ CREATE UNIQUE NONCLUSTERED INDEX [IX_MemberPasswordResetTokens_Token] ON [dbo].[
 GO
 SET ANSI_PADDING ON
 GO
+/****** Object:  Index [IX_MemberRefreshTokens_MemberId]    Script Date: 2026/4/26 ******/
+CREATE NONCLUSTERED INDEX [IX_MemberRefreshTokens_MemberId] ON [dbo].[MemberRefreshTokens]
+(
+	[MemberId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+/****** Object:  Index [IX_MemberRefreshTokens_Token]    Script Date: 2026/4/26 ******/
+CREATE UNIQUE NONCLUSTERED INDEX [IX_MemberRefreshTokens_Token] ON [dbo].[MemberRefreshTokens]
+(
+	[Token] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
 /****** Object:  Index [IX_Members_Account]    Script Date: 2026/3/11 下午 10:31:03 ******/
 CREATE UNIQUE NONCLUSTERED INDEX [IX_Members_Account] ON [dbo].[Members]
 (
@@ -1196,6 +1228,11 @@ ALTER TABLE [dbo].[MemberPasswordResetTokens]  WITH CHECK ADD  CONSTRAINT [FK_Me
 REFERENCES [dbo].[Members] ([Id])
 GO
 ALTER TABLE [dbo].[MemberPasswordResetTokens] CHECK CONSTRAINT [FK_MemberPasswordResetTokens_Members]
+GO
+ALTER TABLE [dbo].[MemberRefreshTokens]  WITH CHECK ADD  CONSTRAINT [FK_MemberRefreshTokens_Members] FOREIGN KEY([MemberId])
+REFERENCES [dbo].[Members] ([Id])
+GO
+ALTER TABLE [dbo].[MemberRefreshTokens] CHECK CONSTRAINT [FK_MemberRefreshTokens_Members]
 GO
 ALTER TABLE [dbo].[OrderDetails]  WITH CHECK ADD  CONSTRAINT [FK_OrderDetails_Orders] FOREIGN KEY([OrderId])
 REFERENCES [dbo].[Orders] ([Id])
