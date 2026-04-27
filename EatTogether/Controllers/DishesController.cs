@@ -212,6 +212,7 @@ namespace EatTogether.Controllers
             }));
         }
 		[HttpGet("GetActiveJson")]
+		[HttpGet("active")]
 		[AllowAnonymous]
 		public async Task<IActionResult> GetActiveJson()
 		{
@@ -280,6 +281,23 @@ namespace EatTogether.Controllers
 			});
 		}
 
+
+		[HttpPost("{id}/Rate")]
+		[AllowAnonymous]
+		public async Task<IActionResult> Rate(int id, [FromBody] RateRequest request)
+		{
+			if (request.Score < 1 || request.Score > 5)
+				return BadRequest("score 必須介於 1 到 5 之間");
+
+			var result = await _dishService.RateAsync(id, request.Score);
+			if (result == null) return NotFound();
+
+			return Json(new
+			{
+				averageScore = result.Value.averageScore,
+				ratingCount  = result.Value.ratingCount
+			});
+		}
 
 		private async Task<List<SelectListItem>> GetCategoryOptionsAsync()
         {
