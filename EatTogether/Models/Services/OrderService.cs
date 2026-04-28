@@ -624,6 +624,7 @@ namespace EatTogether.Models.Services
                 DiscountAmount = discountAmount,
                 TotalAmount = originalAmount - discountAmount,
                 HasUnserved = p.PreOrderDetails.Any(d => d.DoneOrCancel == 0),
+                Note        = p.Note,
                 MemberId    = p.MemberId,
                 MemberName  = await ResolveOrderMemberNameAsync(p),
                 MemberPhone = await ResolveOrderMemberPhoneAsync(p),

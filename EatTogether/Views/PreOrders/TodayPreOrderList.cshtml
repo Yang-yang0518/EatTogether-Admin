@@ -2,21 +2,91 @@
 
 @{
     ViewData["Title"] = "待處理訂單";
-    var expanded = Model.Take(3).ToList();
-    var listed = Model.Skip(3).ToList();
+
+    // 解析 Note 欄位（支援 JSON 新格式與舊純文字格式）
+    string GetNoteOrderPart(string note)
+    {
+        if (string.IsNullOrEmpty(note)) return "";
+        var trimmed = note.Trim();
+        if (trimmed.StartsWith("{"))
+        {
+            try
+            {
+                var doc = System.Text.Json.JsonDocument.Parse(trimmed);
+                if (doc.RootElement.TryGetProperty("order", out var prop))
+                    return prop.GetString() ?? "";
+            }
+            catch { }
+        }
+        return trimmed;
+    }
 
     // 從組合備註中只取「整單備註：」後的內容
     string GetOrderNote(string note)
     {
-        if (string.IsNullOrEmpty(note)) return "";
-        foreach (var line in note.Split('\n'))
+        var orderPart = GetNoteOrderPart(note);
+        if (string.IsNullOrEmpty(orderPart)) return "";
+        foreach (var line in orderPart.Split('\n'))
         {
-            var trimmed = line.Trim();
-            if (trimmed.StartsWith("整單備註："))
-                return trimmed.Substring("整單備註：".Length).Trim();
+            var t = line.Trim();
+            if (t.StartsWith("整單備註："))
+                return t.Substring("整單備註：".Length).Trim();
         }
         return "";
     }
+
+    // 從備註中取出取餐時間字串（e.g. "18:00" / "即時取餐" / ""）
+    string GetPickupTime(string note)
+    {
+        var orderPart = GetNoteOrderPart(note);
+        if (string.IsNullOrEmpty(orderPart)) return "";
+        foreach (var line in orderPart.Split('\n'))
+        {
+            var t = line.Trim();
+            if (t.StartsWith("取餐時間："))
+                return t.Substring("取餐時間：".Length).Trim();
+        }
+        return "";
+    }
+
+    // 取餐時間 → DateTime?（即時/內用/空 → null 視為「現在」）
+    DateTime? ParsePickupDt(string note)
+    {
+        var s = GetPickupTime(note);
+        if (string.IsNullOrEmpty(s) || s == "即時取餐" || s == "即時") return null;
+        if (TimeSpan.TryParse(s, out var ts)) return DateTime.Today.Add(ts);
+        return null;
+    }
+
+    // ── 排序邏輯 ───────────────────────────────────────────────
+    // 群組 0（緊急，照下單時間）：
+    //   - 內用訂單
+    //   - 外帶 即時取餐
+    //   - 外帶 取餐時間距現在 ≤ 30 分鐘
+    // 群組 1（預約，照取餐時間）：
+    //   - 外帶 取餐時間距現在 > 30 分鐘
+    var now = DateTime.Now;
+    var threshold = now.AddMinutes(30);
+
+    int SortGroup(EatTogether.Models.ViewModels.PreOrderListItemViewModel o)
+    {
+        if (o.InOrOut) return 0;                         // 內用
+        var dt = ParsePickupDt(o.Note);
+        if (dt == null) return 0;                        // 即時取餐
+        return dt.Value <= threshold ? 0 : 1;            // 30 分內 vs 超過
+    }
+
+    var sortedModel = Model
+        .OrderBy(o => SortGroup(o))
+        .ThenBy(o =>
+        {
+            if (SortGroup(o) == 0) return o.OrderAt.Ticks;      // 緊急：先下單先服務
+            return (ParsePickupDt(o.Note) ?? o.OrderAt).Ticks;  // 預約：取餐時間近的優先
+        })
+        .ToList();
+
+    var expanded = sortedModel.Take(3).ToList();
+    var listed   = sortedModel.Skip(3).ToList();
 }
 
 <style>
@@ -658,7 +728,14 @@
                     </div>
                     <div class="card-body">
                         @{
-                            var displayNote = GetOrderNote(order.Note);
+                            var displayNote   = GetOrderNote(order.Note);
+                            var displayPickup = GetPickupTime(order.Note);
+                        }
+                        @if (!string.IsNullOrEmpty(displayPickup) && displayPickup != "即時取餐" && displayPickup != "即時")
+                        {
+                            <div class="note-box" style="background:#eaf4ff;border-left-color:#1a77c9;color:#1a5fa8;">
+                                🕐 取餐時間：@displayPickup
+                            </div>
                         }
                         @if (!string.IsNullOrEmpty(displayNote))
                         {
@@ -791,7 +868,14 @@
                         </div>
                         <div class="list-detail-area" id="list-details-@order.PreOrderId">
                             @{
-                                var displayNote2 = GetOrderNote(order.Note);
+                                var displayNote2   = GetOrderNote(order.Note);
+                                var displayPickup2 = GetPickupTime(order.Note);
+                            }
+                            @if (!string.IsNullOrEmpty(displayPickup2) && displayPickup2 != "即時取餐" && displayPickup2 != "即時")
+                            {
+                                <div class="note-box" style="margin-top:10px;background:#eaf4ff;border-left-color:#1a77c9;color:#1a5fa8;">
+                                    🕐 取餐時間：@displayPickup2
+                                </div>
                             }
                             @if (!string.IsNullOrEmpty(displayNote2))
                             {

@@ -512,7 +512,7 @@ public partial class EatTogetherDBContext : DbContext
             entity.HasIndex(e => e.OrderNumber, "IX_PreOrders_OrderNumber").IsUnique();
 
             entity.Property(e => e.CancelledAt).HasPrecision(0);
-            entity.Property(e => e.Note).HasMaxLength(200);
+            entity.Property(e => e.Note).HasMaxLength(2000);
             entity.Property(e => e.OrderAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(getdate())");

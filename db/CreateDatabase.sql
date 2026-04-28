@@ -439,7 +439,7 @@ CREATE TABLE [dbo].[Orders](
 	[OriginalAmount] [int] NOT NULL,
 	[DiscountAmount] [int] NOT NULL,
 	[TotalAmount] [int] NOT NULL,
-	[Note] [nvarchar](200) NULL,
+	[Note] [nvarchar](MAX) NULL,
 	[PaymentId] [int] NOT NULL,
 	[PayMethod] [nvarchar](50) NOT NULL,
  CONSTRAINT [PK_Orders] PRIMARY KEY CLUSTERED 
@@ -526,7 +526,7 @@ CREATE TABLE [dbo].[PreOrders](
 	[OriginalAmount] [int] NOT NULL,
 	[DiscountAmount] [int] NOT NULL,
 	[TotalAmount] [int] NOT NULL,
-	[Note] [nvarchar](200) NULL,
+	[Note] [nvarchar](MAX) NULL,
 	[PaymentId] [int] NULL,
 	[PayMethod] [nvarchar](50) NOT NULL,
 	[DoneOrCancel] [int] NOT NULL,
