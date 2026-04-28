@@ -558,12 +558,14 @@ namespace EatTogether.Models.Services
                 DoneOrCancel = p.DoneOrCancel,
                 Items = p.PreOrderDetails.Select(d => new PreOrderDetailItemViewModel
                 {
-                    DetailId = d.Id,
-                    ProductName = d.ProductName,
-                    Qty = d.Qty,
-                    UnitPrice = d.UnitPrice,
-                    Status = d.DoneOrCancel,
-                    ItemNote = noteDto.Items?.GetValueOrDefault(d.ProductName)
+                    DetailId       = d.Id,
+                    ProductName    = d.ProductName,
+                    Qty            = d.Qty,
+                    UnitPrice      = d.UnitPrice,
+                    Status         = d.DoneOrCancel,
+                    IsSetMeal      = d.IsSetMeal,
+                    ParentDetailId = d.ParentDetailId,
+                    ItemNote       = noteDto.Items?.GetValueOrDefault(d.ProductName)
                 }).ToList()
             };
         }
@@ -622,6 +624,7 @@ namespace EatTogether.Models.Services
                 DiscountAmount = discountAmount,
                 TotalAmount = originalAmount - discountAmount,
                 HasUnserved = p.PreOrderDetails.Any(d => d.DoneOrCancel == 0),
+                Note        = p.Note,
                 MemberId    = p.MemberId,
                 MemberName  = await ResolveOrderMemberNameAsync(p),
                 MemberPhone = await ResolveOrderMemberPhoneAsync(p),

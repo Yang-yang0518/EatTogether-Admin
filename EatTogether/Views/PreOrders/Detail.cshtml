@@ -4,18 +4,52 @@
     ViewData["Title"] = "訂單明細";
     Layout = "~/Views/Shared/_Layout.cshtml";
 
-    string GetOrderNote(string note)
+    // 解析 Note 欄位（支援 JSON 新格式與舊純文字格式）
+    string GetNoteOrderPart(string note)
     {
         if (string.IsNullOrEmpty(note)) return "";
-        foreach (var line in note.Split('\n'))
+        var trimmed = note.Trim();
+        if (trimmed.StartsWith("{"))
         {
-            var trimmed = line.Trim();
-            if (trimmed.StartsWith("整單備註："))
-                return trimmed.Substring("整單備註：".Length).Trim();
+            try
+            {
+                var doc = System.Text.Json.JsonDocument.Parse(trimmed);
+                if (doc.RootElement.TryGetProperty("order", out var prop))
+                    return prop.GetString() ?? "";
+            }
+            catch { }
+        }
+        return trimmed;
+    }
+
+    string GetOrderNote(string note)
+    {
+        var orderPart = GetNoteOrderPart(note);
+        if (string.IsNullOrEmpty(orderPart)) return "";
+        foreach (var line in orderPart.Split('\n'))
+        {
+            var t = line.Trim();
+            if (t.StartsWith("整單備註："))
+                return t.Substring("整單備註：".Length).Trim();
         }
         return "";
     }
-    var orderNote = GetOrderNote(Model.Note);
+
+    string GetPickupTime(string note)
+    {
+        var orderPart = GetNoteOrderPart(note);
+        if (string.IsNullOrEmpty(orderPart)) return "";
+        foreach (var line in orderPart.Split('\n'))
+        {
+            var t = line.Trim();
+            if (t.StartsWith("取餐時間："))
+                return t.Substring("取餐時間：".Length).Trim();
+        }
+        return "";
+    }
+
+    var orderNote  = GetOrderNote(Model.Note);
+    var pickupTime = GetPickupTime(Model.Note);
 }
 
 <style>
@@ -362,6 +396,33 @@
         }
 
             .amount-row.total span:last-child { color: #c0392b; }
+
+    /* ── 套餐展開按鈕 ── */
+    .setmeal-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border: none;
+        background: #e67e22;
+        border-radius: 50%;
+        cursor: pointer;
+        padding: 0;
+        margin-right: 6px;
+        flex-shrink: 0;
+        vertical-align: middle;
+        transition: background 0.15s;
+    }
+    .setmeal-toggle-btn:hover { background: #d35400; }
+    .toggle-arrow {
+        font-size: 0.6rem;
+        color: #fff;
+        transition: transform 0.2s;
+        display: inline-block;
+        line-height: 1;
+    }
+    .toggle-arrow.open { transform: rotate(90deg); }
 </style>
 
 <div class="detail-page">
@@ -414,6 +475,19 @@
                 <div class="info-lbl">下單時間</div>
                 <div class="info-val">@Model.OrderAt.ToString("yyyy/MM/dd HH:mm")</div>
             </div>
+
+            @if (!string.IsNullOrEmpty(pickupTime) && pickupTime != "即時取餐" && pickupTime != "即時")
+            {
+                <div class="info-item">
+                    <div class="info-lbl">取餐時間</div>
+                    <div class="info-val">
+                        <span style="background:#eaf4ff;color:#1a77c9;padding:2px 10px;
+                                     border-radius:9px;font-weight:700;font-size:0.95rem;">
+                            🕐 @pickupTime
+                        </span>
+                    </div>
+                </div>
+            }
 
             <div class="info-item">
                 <div class="info-lbl">付款方式</div>
@@ -513,15 +587,23 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var item in Model.Items)
+                            @{
+                                // 先建立子項目查找表，key = ParentDetailId
+                                var childMap = Model.Items
+                                    .Where(i => i.ParentDetailId != null)
+                                    .GroupBy(i => i.ParentDetailId!.Value)
+                                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                                // 只遍歷頂層項目（父列），子項目緊接在父列後輸出
+                                var topItems = Model.Items.Where(i => i.ParentDetailId == null);
+                            }
+                            @foreach (var item in topItems)
                             {
                                 bool isCancel  = item.Status == 2;
-                                bool isChild   = item.ParentDetailId != null;
-                                bool isSetMeal = item.IsSetMeal && item.ParentDetailId == null;
+                                bool isSetMeal = item.IsSetMeal;
 
-                                string rowCls  = (isCancel  ? "row-cancel "  : "")
-                                               + (isSetMeal ? "row-setmeal"  : isChild ? "row-child" : "");
-
+                                string rowCls   = (isCancel ? "row-cancel " : "")
+                                                + (isSetMeal ? "row-setmeal" : "");
                                 string badgeCls = item.Status == 0 ? "ib-pending"
                                                 : item.Status == 1 ? "ib-done"
                                                 : "ib-cancel";
@@ -529,23 +611,88 @@
                                                 : item.Status == 1 ? "完成"
                                                 : "取消";
 
-                                <tr class="@rowCls.Trim()">
-                                    <td>
-                                        @item.ProductName
-                                        @if (isSetMeal)
-                                        {
+                                var children   = childMap.TryGetValue(item.DetailId, out var ch) ? ch : null;
+                                int childCount = children?.Count ?? 0;
+
+                                @if (isSetMeal)
+                                {
+                                    // ── 套餐父列 ──
+                                    <tr class="@rowCls.Trim()" data-setmeal-id="@item.DetailId">
+                                        <td>
+                                            @if (childCount > 0)
+                                            {
+                                                <button type="button"
+                                                        class="setmeal-toggle-btn"
+                                                        data-id="@item.DetailId"
+                                                        title="展開/收合套餐內容">
+                                                    <span class="toggle-arrow">▶</span>
+                                                </button>
+                                            }
+                                            @item.ProductName
                                             <span class="item-badge ib-setmeal">套餐</span>
-                                        }
-                                        <span class="item-badge @badgeCls">@badgeTxt</span>
-                                        @if (!string.IsNullOrEmpty(item.ItemNote))
+                                            <span class="item-badge @badgeCls">@badgeTxt</span>
+                                            @if (!string.IsNullOrEmpty(item.ItemNote))
+                                            {
+                                                <span style="margin-left:6px;font-size:0.8rem;color:#e67e22;font-weight:600;">📝 @item.ItemNote</span>
+                                            }
+                                            @if (childCount > 0)
+                                            {
+                                                <span class="setmeal-child-count" data-id="@item.DetailId"
+                                                      style="margin-left:6px;font-size:0.75rem;color:#e67e22;">
+                                                    (@childCount 項)
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>× @item.Qty</td>
+                                        <td>NT$ @item.UnitPrice</td>
+                                        <td>@(isCancel ? "—" : $"NT$ {item.Subtotal}")</td>
+                                    </tr>
+
+                                    @* ── 緊接著輸出子項目（預設隱藏） ── *@
+                                    @if (children != null)
+                                    {
+                                        @foreach (var child in children)
                                         {
-                                            <span style="margin-left:6px;font-size:0.8rem;color:#e67e22;font-weight:600;">📝 @item.ItemNote</span>
+                                            bool childCancel = child.Status == 2;
+                                            string childRowCls  = (childCancel ? "row-cancel " : "") + "row-child";
+                                            string childBadgeCls = child.Status == 0 ? "ib-pending"
+                                                                 : child.Status == 1 ? "ib-done"
+                                                                 : "ib-cancel";
+                                            string childBadgeTxt = child.Status == 0 ? "待出餐"
+                                                                 : child.Status == 1 ? "已出餐"
+                                                                 : "已取消";
+                                            <tr class="@childRowCls.Trim() setmeal-child"
+                                                data-parent="@item.DetailId"
+                                                style="display:none;">
+                                                <td style="padding-left:28px;">
+                                                    <span style="color:#e67e22;margin-right:4px;">└</span>
+                                                    @child.ProductName
+                                                    <span class="item-badge @childBadgeCls">@childBadgeTxt</span>
+                                                </td>
+                                                <td>× @child.Qty</td>
+                                                <td style="color:#ccc;">—</td>
+                                                <td style="color:#ccc;">—</td>
+                                            </tr>
                                         }
-                                    </td>
-                                    <td>× @item.Qty</td>
-                                    <td>NT$ @item.UnitPrice</td>
-                                    <td>@(isCancel ? "—" : $"NT$ {item.Subtotal}")</td>
-                                </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    // ── 一般餐點 ──
+                                    <tr class="@rowCls.Trim()">
+                                        <td>
+                                            @item.ProductName
+                                            <span class="item-badge @badgeCls">@badgeTxt</span>
+                                            @if (!string.IsNullOrEmpty(item.ItemNote))
+                                            {
+                                                <span style="margin-left:6px;font-size:0.8rem;color:#e67e22;font-weight:600;">📝 @item.ItemNote</span>
+                                            }
+                                        </td>
+                                        <td>× @item.Qty</td>
+                                        <td>NT$ @item.UnitPrice</td>
+                                        <td>@(isCancel ? "—" : $"NT$ {item.Subtotal}")</td>
+                                    </tr>
+                                }
                             }
                         </tbody>
                     </table>
@@ -581,3 +728,20 @@
     </div>
 
 </div>
+
+<script>
+    // ── 套餐折疊 / 展開 ─────────────────────────────────────────────
+    document.querySelectorAll('.setmeal-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const id     = this.dataset.id;
+            const arrow  = this.querySelector('.toggle-arrow');
+            const isOpen = arrow.classList.toggle('open');
+            const rows   = document.querySelectorAll(`.setmeal-child[data-parent="${id}"]`);
+            rows.forEach(r => r.style.display = isOpen ? '' : 'none');
+
+            // 子項目數量提示：展開時隱藏，收合時顯示
+            const countEl = document.querySelector(`.setmeal-child-count[data-id="${id}"]`);
+            if (countEl) countEl.style.display = isOpen ? 'none' : '';
+        });
+    });
+</script>

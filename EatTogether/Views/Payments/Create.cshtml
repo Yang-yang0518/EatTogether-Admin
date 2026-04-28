@@ -986,6 +986,13 @@
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
+                    <!-- 取餐時間標籤（外帶 + 具體時間才顯示） -->
+                    <div id="pickupTimeBar" style="display:none;
+                         background:#eaf4ff;border:1.5px solid #1a77c9;border-radius:10px;
+                         padding:5px 14px;font-size:0.88rem;font-weight:700;color:#1a5fa8;
+                         white-space:nowrap;">
+                        🕐 取餐時間：<span id="pickupTimeText"></span>
+                    </div>
                     @if (canCancelOrder)
                     {
                         <button type="button" id="cancelOrderBtn"
@@ -1303,6 +1310,32 @@
         // 3. 設定標題與副標題 (桌號/外帶、訂單編號)
         document.getElementById('rightTitle').textContent =
             data.inOrOut ? `🪑 ${data.tableName || ''}` : `🥡 外帶`;
+
+        // 3b. 取餐時間列（外帶 + 有具體時間才顯示）
+        const pickupBar  = document.getElementById('pickupTimeBar');
+        const pickupText = document.getElementById('pickupTimeText');
+        if (pickupBar && pickupText) {
+            let pickupVal = '';
+            if (!data.inOrOut && data.note) {
+                // 解析 JSON 格式的 Note
+                let orderPart = data.note;
+                try {
+                    const parsed = JSON.parse(data.note);
+                    orderPart = parsed.order || '';
+                } catch (e) { /* 舊格式純文字直接用 */ }
+                // 找 "取餐時間：" 行
+                for (const line of orderPart.split('\n')) {
+                    const t = line.trim();
+                    if (t.startsWith('取餐時間：')) {
+                        pickupVal = t.substring('取餐時間：'.length).trim();
+                        break;
+                    }
+                }
+            }
+            const show = pickupVal && pickupVal !== '即時取餐' && pickupVal !== '即時';
+            pickupBar.style.display = show ? '' : 'none';
+            pickupText.textContent  = show ? pickupVal : '';
+        }
 
         // 副標題：多筆訂單 → 下拉選單；單筆 → 純文字
         const subtitleDiv  = document.getElementById('rightSubtitle');

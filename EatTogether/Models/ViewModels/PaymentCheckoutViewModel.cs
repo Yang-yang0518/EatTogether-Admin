@@ -17,6 +17,7 @@
         public int DiscountAmount { get; set; }
         public int TotalAmount { get; set; }
         public bool HasUnserved { get; set; }
+        public string? Note { get; set; }
         public int? MemberId { get; set; }
         public string? MemberName { get; set; }
         public string? MemberPhone { get; set; }

@@ -221,6 +221,9 @@ namespace EatTogether.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DirectSubmit(CreatePreOrderViewModel vm)
         {
+            if (vm?.Items == null)
+                return Json(new { success = false, error = "vm 或 vm.Items 為 null，model binding 失敗" });
+
             var items = vm.Items
                 .Where(i => i.Qty > 0 || i.ParentIndex.HasValue)
                 .ToList();
@@ -278,8 +281,15 @@ namespace EatTogether.Controllers
                 }).ToList()
             };
 
-            var orderNumber = await _service.CreatePreOrderAsync(dto);
-            return Json(new { success = true, orderNumber });
+            try
+            {
+                var orderNumber = await _service.CreatePreOrderAsync(dto);
+                return Json(new { success = true, orderNumber });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message + " | " + ex.InnerException?.Message });
+            }
         }
 
     }
