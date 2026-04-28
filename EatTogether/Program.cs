@@ -154,12 +154,11 @@ namespace EatTogether
                 app.UseExceptionHandler("/Home/Error");
 				// The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
 				app.UseHsts();
+				app.UseHttpsRedirection();
             }
 
 			// 全域錯誤頁路由
 			app.UseStatusCodePagesWithReExecute("/Error/{0}");
-
-			app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
@@ -172,6 +171,7 @@ namespace EatTogether
 
 			app.UseAuthorization();
 
+            app.MapControllers();
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Auth}/{action=Login}/{id?}");
