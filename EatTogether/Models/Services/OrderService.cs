@@ -558,12 +558,14 @@ namespace EatTogether.Models.Services
                 DoneOrCancel = p.DoneOrCancel,
                 Items = p.PreOrderDetails.Select(d => new PreOrderDetailItemViewModel
                 {
-                    DetailId = d.Id,
-                    ProductName = d.ProductName,
-                    Qty = d.Qty,
-                    UnitPrice = d.UnitPrice,
-                    Status = d.DoneOrCancel,
-                    ItemNote = noteDto.Items?.GetValueOrDefault(d.ProductName)
+                    DetailId       = d.Id,
+                    ProductName    = d.ProductName,
+                    Qty            = d.Qty,
+                    UnitPrice      = d.UnitPrice,
+                    Status         = d.DoneOrCancel,
+                    IsSetMeal      = d.IsSetMeal,
+                    ParentDetailId = d.ParentDetailId,
+                    ItemNote       = noteDto.Items?.GetValueOrDefault(d.ProductName)
                 }).ToList()
             };
         }
