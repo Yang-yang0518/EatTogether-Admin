@@ -1496,6 +1496,16 @@ CREATE TABLE [dbo].[SchedulerLogs] (
     [DetailJson]     NVARCHAR(MAX) NULL
 );
 GO
+CREATE TABLE [dbo].[Reviews] (
+    [Id]        INT IDENTITY(1,1) NOT NULL,
+    [DishId]    INT NOT NULL,
+    [Nickname]  NVARCHAR(20) NOT NULL,
+    [Content]   NVARCHAR(200) NOT NULL,
+    [CreatedAt] DATETIME2(0) NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT [PK_Reviews] PRIMARY KEY CLUSTERED ([Id] ASC),
+    CONSTRAINT [FK_Reviews_Dishes] FOREIGN KEY ([DishId]) REFERENCES [dbo].[Dishes] ([Id])
+);
+GO
 USE [master]
 GO
 ALTER DATABASE [EatTogetherDB] SET  READ_WRITE
