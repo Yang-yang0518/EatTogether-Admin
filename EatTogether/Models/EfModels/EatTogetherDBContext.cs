@@ -59,6 +59,8 @@ public partial class EatTogetherDBContext : DbContext
 
     public virtual DbSet<Reservation> Reservations { get; set; }
 
+    public virtual DbSet<Review> Reviews { get; set; }
+
     public virtual DbSet<Role> Roles { get; set; }
 
     public virtual DbSet<RoleFunction> RoleFunctions { get; set; }
@@ -407,7 +409,6 @@ public partial class EatTogetherDBContext : DbContext
 
             entity.HasIndex(e => e.OrderNumber, "IX_Orders_OrderNumber").IsUnique();
 
-            entity.Property(e => e.Note).HasMaxLength(200);
             entity.Property(e => e.OrderAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(getdate())");
@@ -512,7 +513,6 @@ public partial class EatTogetherDBContext : DbContext
             entity.HasIndex(e => e.OrderNumber, "IX_PreOrders_OrderNumber").IsUnique();
 
             entity.Property(e => e.CancelledAt).HasPrecision(0);
-            entity.Property(e => e.Note).HasMaxLength(2000);
             entity.Property(e => e.OrderAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(getdate())");
@@ -619,6 +619,24 @@ public partial class EatTogetherDBContext : DbContext
                 .HasConstraintName("FK_Reservations_Members");
         });
 
+        modelBuilder.Entity<Review>(entity =>
+        {
+            entity.Property(e => e.Content)
+                .IsRequired()
+                .HasMaxLength(200);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Nickname)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.HasOne(d => d.Dish).WithMany(p => p.Reviews)
+                .HasForeignKey(d => d.DishId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Reviews_Dishes");
+        });
+
         modelBuilder.Entity<Role>(entity =>
         {
             entity.HasIndex(e => e.RoleName, "IX_Roles_RoleName").IsUnique();
@@ -649,7 +667,7 @@ public partial class EatTogetherDBContext : DbContext
 
         modelBuilder.Entity<SchedulerLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0750ED4AC8");
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0756A3AD04");
 
             entity.Property(e => e.ExecutedAt)
                 .HasDefaultValueSql("(getdate())")

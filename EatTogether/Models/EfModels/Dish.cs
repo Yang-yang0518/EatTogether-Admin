@@ -55,5 +55,7 @@ public partial class Dish
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 
+    public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+
     public virtual ICollection<SetMealItem> SetMealItems { get; set; } = new List<SetMealItem>();
 }

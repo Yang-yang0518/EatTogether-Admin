@@ -33,7 +33,7 @@
         // 判斷各折疊群組是否要展開
         bool inUser = ctrl is "Users" or "Roles";
         bool inMember = ctrl == "Members";
-        bool inDish = ctrl is "Categories" or "Dishes" or "SetMeals" or "Scheduler";
+        bool inDish = ctrl is "Categories" or "Dishes" or "SetMeals" or "Scheduler" or "ReviewManage";
         bool inOrder = ctrl is "PreOrders" or "Payments";
         bool inCoupon = ctrl == "Coupons";
         bool inArticle = ctrl is "ArticlesCategories" or "Articles";
@@ -159,6 +159,7 @@
                                         <a class="nav-link @(ctrl == "Dishes" ? "active" : "")" asp-controller="Dishes" asp-action="Index">單點管理</a>
                                         <a class="nav-link @(ctrl == "SetMeals" ? "active" : "")" asp-controller="SetMeals" asp-action="Index">套餐管理</a>
                                         <a class="nav-link @(ctrl == "Scheduler" ? "active" : "")" asp-controller="Scheduler" asp-action="Index">排程紀錄</a>
+                                        <a class="nav-link @(ctrl == "ReviewManage" ? "active" : "")" asp-controller="ReviewManage" asp-action="Index">餐點留言管理</a>
                                     </nav>
                                 </div>
                             }
