@@ -21,7 +21,8 @@ namespace EatTogether.Models.Extensions
 				RewardDishName = vm.RewardDishName,
 				DiscountType = vm.DiscountType,
 				DiscountValue = vm.DiscountValue,
-				Status = CalculateStatus(vm.StartDate.Value, vm.EndDate.Value)
+				Status = CalculateStatus(vm.StartDate.Value, vm.EndDate.Value),
+				IsAutoDiscount = vm.IsAutoDiscount
 			};
 		}
 
@@ -38,7 +39,8 @@ namespace EatTogether.Models.Extensions
 				RewardDishId = dto.RewardDishId,
 				DiscountType = dto.DiscountType,
 				DiscountValue = dto.DiscountValue,
-				Status = CalculateStatus(dto.StartDate, dto.EndDate)
+				Status = CalculateStatus(dto.StartDate, dto.EndDate),
+				IsAutoDiscount = dto.IsAutoDiscount
 			};
 		}
 
@@ -122,7 +124,8 @@ namespace EatTogether.Models.Extensions
 				RewardDishName = vm.RewardDishName,
 				DiscountType = vm.DiscountType,
 				DiscountValue = vm.DiscountValue.Value,
-				Status = CalculateStatus(vm.StartDate.Value, vm.EndDate.Value)
+				Status = CalculateStatus(vm.StartDate.Value, vm.EndDate.Value),
+				IsAutoDiscount = vm.IsAutoDiscount
 			};
 		}
 
@@ -140,7 +143,8 @@ namespace EatTogether.Models.Extensions
 				RewardDishName = dto.RewardDishName,
 				DiscountType = dto.DiscountType,
 				DiscountValue = dto.DiscountValue,
-				Status = dto.Status
+				Status = dto.Status,
+				IsAutoDiscount = dto.IsAutoDiscount
 			};
 		}
 
@@ -157,7 +161,8 @@ namespace EatTogether.Models.Extensions
 				RewardDishId = dto.RewardDishId,
 				DiscountType = dto.DiscountType,
 				DiscountValue = dto.DiscountValue,
-				Status = CalculateStatus(dto.StartDate, dto.EndDate)
+				Status = CalculateStatus(dto.StartDate, dto.EndDate),
+				IsAutoDiscount = dto.IsAutoDiscount
 			};
 		}
 
@@ -174,7 +179,8 @@ namespace EatTogether.Models.Extensions
 				RewardDishId = entity.RewardDishId,
 				DiscountType = entity.DiscountType,
 				DiscountValue = entity.DiscountValue,
-				Status = entity.Status
+				Status = entity.Status,
+				IsAutoDiscount = entity.IsAutoDiscount
 			};
 		}
 
