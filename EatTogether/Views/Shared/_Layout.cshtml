@@ -158,10 +158,16 @@
                                         <a class="nav-link @(ctrl == "Categories" ? "active" : "")" asp-controller="Categories" asp-action="Index">分類管理</a>
                                         <a class="nav-link @(ctrl == "Dishes" ? "active" : "")" asp-controller="Dishes" asp-action="Index">單點管理</a>
                                         <a class="nav-link @(ctrl == "SetMeals" ? "active" : "")" asp-controller="SetMeals" asp-action="Index">套餐管理</a>
-                                        <a class="nav-link @(ctrl == "Scheduler" ? "active" : "")" asp-controller="Scheduler" asp-action="Index">排程紀錄</a>
-                                        <a class="nav-link @(ctrl == "ReviewManage" ? "active" : "")" asp-controller="ReviewManage" asp-action="Index">餐點留言管理</a>
                                     </nav>
                                 </div>
+                                <a class="nav-link @(ctrl == "Scheduler" ? "active" : "")" asp-controller="Scheduler" asp-action="Index">
+                                    <div class="sb-nav-link-icon"><i class="fas fa-calendar-alt"></i></div>
+                                    排程紀錄
+                                </a>
+                                <a class="nav-link @(ctrl == "ReviewManage" ? "active" : "")" asp-controller="ReviewManage" asp-action="Index">
+                                    <div class="sb-nav-link-icon"><i class="fas fa-comments"></i></div>
+                                    餐點留言管理
+                                </a>
                             }
 
                             @* ── 訂單管理 ── *@
