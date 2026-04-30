@@ -73,7 +73,10 @@ $files = @(
     "24_Payments.sql",
     "25_(更新 Payments).sql",
     "26_Orders.sql",
-    "27_OrderDetails.sql"
+    "27_OrderDetails.sql",
+    "28_SchedulerLogs.sql",
+    "29_Reviews.sql",
+    "30_WalkInQueues.sql"
 
     # --- Phase 5: 修復循環參照 ---
     # "99_Update_Payment_FK.sql"
