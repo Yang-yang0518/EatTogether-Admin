@@ -4,6 +4,55 @@
     ViewData["Title"] = "活動新增";
 }
 
+@section Styles {
+    <style>
+        .discount-toggle-wrapper {
+            user-select: none;
+        }
+
+
+        .toggle-track {
+            width: 64px;
+            height: 32px;
+            background-color: #3b5bdb;
+            border-radius: 16px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .toggle-thumb {
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s;
+        }
+
+        /* 系統折扣（IsAutoDiscount = 1）：thumb 在右邊 */
+        .toggle-track.is-auto .toggle-thumb {
+            transform: translateX(32px);
+        }
+
+        .toggle-label {
+            font-size: 0.95rem;
+            color: #555;
+            transition: color 0.3s, font-weight 0.3s;
+        }
+
+            /* 目前選中的那側標籤加粗 */
+            .toggle-label.active {
+                color: #3b5bdb;
+                font-weight: bold;
+            }
+
+    </style>   
+
+}
+
 
 <div class="container-fluid mt-4 " style="max-width: 90%;">
     <h1>活動新增</h1>
@@ -39,15 +88,6 @@
                             <input asp-for="MinSpend" class="form-control" />
                             <span asp-validation-for="MinSpend" class="text-danger"></span>
                         </div>
-                        @* <div class="form-group mb-3">
-                            <label asp-for="RewardDishId" class="control-label"></label>
-                            <span class="form-text">※非贈品活動無需填寫</span>
-                            <select asp-for="RewardDishId" class="form-control"
-                                    asp-items="Model.DishOptions">
-                                <option value="">-- 無贈品 --</option>
-                            </select>
-                            <span asp-validation-for="RewardDishId" class="text-danger"></span>
-                        </div> *@
                         <div class="form-group mb-3">
                             <label asp-for="RewardDishId" class="control-label"></label>
                             <span class="form-text">※非贈品活動無需填寫</span>
@@ -80,9 +120,10 @@
                             <input asp-for="DiscountValue" class="form-control" />
                             <span asp-validation-for="DiscountValue" class="text-danger"></span>
                         </div>
+                        
                     </div>
 
-                    @* --!活動日期區塊-- *@
+                    @* --!右邊區塊-- *@
                     <div class="col-md-6">
                         <div class="form-group mb-3">
                             <label asp-for="StartDate" class="control-label"></label><span class="text-danger">*</span>
@@ -93,6 +134,17 @@
                             <label asp-for="EndDate" class="control-label"></label><span class="text-danger">*</span>
                             <input type="date" asp-for="EndDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                             <span asp-validation-for="EndDate" class="text-danger"></span>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="control-label">折扣方式</label><span class="text-danger">*</span>
+                            <div class="discount-toggle-wrapper d-flex align-items-center" style="gap:12px;">
+                                <span class="toggle-label active" id="label-auto">系統折扣</span>
+                                <div class="toggle-track" id="discountToggle">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                                <span class="toggle-label" id="label-manual">人工折扣</span>
+                            </div>
+                            <input type="hidden" name="IsAutoDiscount" id="IsAutoDiscountInput" value="1" />
                         </div>
                     </div>
 
@@ -126,5 +178,38 @@
                 $('#DiscountValue').val('');     // 選「無贈品」時清空
             }
         });
+
+        $(function () {
+            var $toggle = $('#discountToggle');
+            var $input = $('#IsAutoDiscountInput');
+            var $labelManual = $('#label-manual');
+            var $labelAuto = $('#label-auto');
+
+            function updateUI(isAuto) {
+                if (isAuto) {
+                    $toggle.removeClass('is-auto');
+                    $labelManual.removeClass('active');
+                    $labelAuto.addClass('active');
+                    $input.val(1);
+                } else {
+                    $toggle.addClass('is-auto');
+                    $labelManual.addClass('active');
+                    $labelAuto.removeClass('active');
+                    $input.val(0);
+                }
+            }
+
+            updateUI(true);
+
+            $toggle.on('click', function () {
+                updateUI(parseInt($input.val()) !== 1);
+            });
+
+
+            // 點標籤也可以切換
+            $labelManual.on('click', function () { updateUI(false); });
+            $labelAuto.on('click', function () { updateUI(true); });
+        });
+
     </script>
 }

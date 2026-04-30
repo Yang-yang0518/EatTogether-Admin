@@ -23,5 +23,8 @@
 		public decimal DiscountValue { get; set; }
 
 		public int Status { get; set; }
+
+		public int IsAutoDiscount { get; set; }
+
 	}
 }

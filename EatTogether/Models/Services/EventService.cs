@@ -116,7 +116,8 @@ namespace EatTogether.Models.Services
 				DiscountType = source.DiscountType,
 				DiscountValue = source.DiscountValue,
 				StartDate = DateTime.Today,
-				EndDate = DateTime.Today
+				EndDate = DateTime.Today,
+				IsAutoDiscount = source.IsAutoDiscount
 				//,Status = 0
 			};
 		}
