@@ -17,7 +17,9 @@ namespace EatTogether.Models.Repositories
 
 		public async Task CreateAsync(EventCreateDto dto)
 		{
+
 			var events = dto.ToEntity();
+
 
 			_context.Events.Add(events);
 			await _context.SaveChangesAsync();

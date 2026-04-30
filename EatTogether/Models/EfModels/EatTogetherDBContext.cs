@@ -200,7 +200,6 @@ public partial class EatTogetherDBContext : DbContext
                 .HasMaxLength(20);
             entity.Property(e => e.DiscountValue).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.EndDate).HasPrecision(0);
-            entity.Property(e => e.IsAutoDiscount).HasDefaultValue(1);
             entity.Property(e => e.StartDate).HasPrecision(0);
             entity.Property(e => e.Summary)
                 .IsRequired()
@@ -667,7 +666,7 @@ public partial class EatTogetherDBContext : DbContext
 
         modelBuilder.Entity<SchedulerLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0756A3AD04");
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC074E5379A9");
 
             entity.Property(e => e.ExecutedAt)
                 .HasDefaultValueSql("(getdate())")
