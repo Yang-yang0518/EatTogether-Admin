@@ -17,7 +17,9 @@ namespace EatTogether.Models.Repositories
 
 		public async Task CreateAsync(EventCreateDto dto)
 		{
+
 			var events = dto.ToEntity();
+
 
 			_context.Events.Add(events);
 			await _context.SaveChangesAsync();
@@ -40,7 +42,8 @@ namespace EatTogether.Models.Repositories
 					RewardDishName = e.RewardDish != null ? e.RewardDish.DishName : null,
 					DiscountType = e.DiscountType,
 					DiscountValue = e.DiscountValue,
-					Status = e.Status
+					Status = e.Status,
+					IsAutoDiscount = e.IsAutoDiscount
 				})
 				.ToListAsync();
 
@@ -65,6 +68,7 @@ namespace EatTogether.Models.Repositories
 			entity.DiscountType = dto.DiscountType;
 			entity.DiscountValue = dto.DiscountValue;
 			entity.Status = dto.Status;
+            entity.IsAutoDiscount = dto.IsAutoDiscount;
 
 			await _context.SaveChangesAsync();		
 		}
@@ -86,7 +90,8 @@ namespace EatTogether.Models.Repositories
 				RewardDishId = entity.RewardDishId,				
 				DiscountType = entity.DiscountType,
 				DiscountValue = entity.DiscountValue,
-				Status = entity.Status
+				Status = entity.Status,
+				IsAutoDiscount = entity.IsAutoDiscount
 			};
 		}
 

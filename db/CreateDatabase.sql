@@ -244,7 +244,7 @@ CREATE TABLE [dbo].[Events](
 	[DiscountType] [nvarchar](20) NOT NULL,
 	[DiscountValue] [decimal](10, 2) NOT NULL,
 	[Status] [int] NOT NULL,
-	[IsAutoDiscount] [int] NOT NULL DEFAULT 1,
+	[IsAutoDiscount] [int] NOT NULL,
  CONSTRAINT [PK_Events] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
@@ -1071,8 +1071,6 @@ ALTER TABLE [dbo].[Events] ADD  DEFAULT ((0)) FOR [DiscountValue]
 GO
 ALTER TABLE [dbo].[Events] ADD  DEFAULT ((0)) FOR [Status]
 GO
---ALTER TABLE [dbo].[Events] ADD  DEFAULT ((1)) FOR [IsAutoDiscount]
-GO
 ALTER TABLE [dbo].[Functions] ADD  CONSTRAINT [DF_Functions_IsOwnerOnly]  DEFAULT ((0)) FOR [IsOwnerOnly]
 GO
 ALTER TABLE [dbo].[MemberCoupons] ADD  DEFAULT ((0)) FOR [IsUsed]
@@ -1505,6 +1503,32 @@ CREATE TABLE [dbo].[Reviews] (
     CONSTRAINT [PK_Reviews] PRIMARY KEY CLUSTERED ([Id] ASC),
     CONSTRAINT [FK_Reviews_Dishes] FOREIGN KEY ([DishId]) REFERENCES [dbo].[Dishes] ([Id])
 );
+GO
+CREATE TABLE [dbo].[WalkInQueues] (
+    [Id]            INT           IDENTITY(1,1) NOT NULL,
+    [QueueNumber]   VARCHAR(10)   NOT NULL,               -- 號碼牌，例如 A001（每日重置）
+    [Name]          NVARCHAR(50)  NOT NULL,               -- 顧客姓名
+    [Phone]         VARCHAR(20)   NOT NULL,               -- 電話
+    [AdultsCount]   INT           NOT NULL DEFAULT 1,
+    [ChildrenCount] INT           NOT NULL DEFAULT 0,
+    [Status]        INT           NOT NULL DEFAULT 0,
+    -- 0=等待中 1=已叫號 2=已入座 3=已離開/放棄 4=已過號
+    [Remark]        NVARCHAR(200) NULL,
+    [RegisteredAt]  DATETIME2(0)  NOT NULL DEFAULT GETDATE(),
+    [CalledAt]      DATETIME2(0)  NULL,                   -- 叫號時間
+    [SeatedAt]      DATETIME2(0)  NULL,                   -- 實際入座時間
+    [LeftAt]        DATETIME2(0)  NULL,                   -- 離開/棄號時間
+    [MemberId]      INT           NULL,                   -- FK → Members（非會員可 NULL）
+    [TableId]       INT           NULL,                   -- FK → Tables（入座後才填）
+    CONSTRAINT [PK_WalkInQueues]      PRIMARY KEY CLUSTERED ([Id] ASC),
+    CONSTRAINT [FK_WalkInQueues_Members] FOREIGN KEY ([MemberId]) REFERENCES [dbo].[Members] ([Id]),
+    CONSTRAINT [FK_WalkInQueues_Tables]  FOREIGN KEY ([TableId])  REFERENCES [dbo].[Tables]  ([Id]),
+    CONSTRAINT [CK_WalkInQueues_Adults]   CHECK ([AdultsCount] > 0),
+    CONSTRAINT [CK_WalkInQueues_Children] CHECK ([ChildrenCount] >= 0),
+    CONSTRAINT [CK_WalkInQueues_Status]   CHECK ([Status] BETWEEN 0 AND 4)
+);
+CREATE INDEX [IX_WalkInQueues_RegisteredAt] ON [dbo].[WalkInQueues] ([RegisteredAt]);
+CREATE INDEX [IX_WalkInQueues_Status]       ON [dbo].[WalkInQueues] ([Status]);
 GO
 USE [master]
 GO

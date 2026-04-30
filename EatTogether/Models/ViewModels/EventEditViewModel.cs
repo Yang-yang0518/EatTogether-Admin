@@ -61,6 +61,10 @@ namespace EatTogether.Models.ViewModels
 		[Display(Name = "狀態")]
 		public int Status { get; set; }
 
+		[Display(Name = "折扣方式")]
+		public int IsAutoDiscount { get; set; }
+
+
 
 		// 後端驗證：開始日期不能是過去
 		public IEnumerable<ValidationResult> Validate(ValidationContext context)
