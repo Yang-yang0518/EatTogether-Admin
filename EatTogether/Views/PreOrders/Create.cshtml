@@ -1634,7 +1634,7 @@
 
         smGroups.forEach((group, gi) => {
             if (!group.isOptional) {
-                group.options.forEach(o => addSubItem(container, o.dishName, o.qty, 0, parentIndex));
+                group.options.forEach(o => addSubItem(container, o.dishName, o.qty, 0, parentIndex, o.productId));
             } else {
                 const firstQty = document.getElementById(`smqty-${gi}-0`);
                 const isQtyMode = !!firstQty;
@@ -1643,12 +1643,13 @@
                     // 多選 qty 模式：收集數量 > 0 的選項
                     group.options.forEach((o, oi) => {
                         const qty = parseInt(document.getElementById(`smqty-${gi}-${oi}`).textContent || 0);
-                        if (qty > 0) addSubItem(container, o.dishName, qty, 0, parentIndex);
+                        if (qty > 0) addSubItem(container, o.dishName, qty, 0, parentIndex, o.productId);
                     });
                 } else {
-                    // 單選 radio 模式
+                    // 單選 radio 模式：找到對應 option 取 productId
                     document.querySelectorAll(`input[name="smg-${gi}"]:checked`).forEach(inp => {
-                        addSubItem(container, inp.value, 1, 0, parentIndex);
+                        const opt = group.options.find(o => o.dishName === inp.value);
+                        addSubItem(container, inp.value, 1, 0, parentIndex, opt?.productId ?? 0);
                     });
                 }
             }
@@ -1681,11 +1682,11 @@
         refreshCart();
     }
 
-    function addSubItem(container, name, qty, price, parentIndex) {
+    function addSubItem(container, name, qty, price, parentIndex, productId) {
         const idx = totalItems++;
         const wrap = document.createElement('div');
         wrap.innerHTML = `
-            <input type="hidden" name="Items[${idx}].ProductId" value="0">
+            <input type="hidden" name="Items[${idx}].ProductId" value="${productId || 0}">
             <input type="hidden" name="Items[${idx}].ProductName" value="${name}">
             <input type="hidden" name="Items[${idx}].UnitPrice" value="${price}">
             <input type="hidden" name="Items[${idx}].Qty" value="${qty}">
