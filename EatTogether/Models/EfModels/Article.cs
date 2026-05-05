@@ -32,6 +32,4 @@ public partial class Article
     public virtual ArticleCategory Category { get; set; }
 
     public virtual Event Event { get; set; }
-
-    public virtual ICollection<UserNotification> UserNotifications { get; set; } = new List<UserNotification>();
 }
