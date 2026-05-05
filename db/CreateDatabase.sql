@@ -426,6 +426,7 @@ CREATE TABLE [dbo].[OrderDetails](
 	[UnitPrice] [int] NOT NULL,
 	[Qty] [int] NOT NULL,
 	[SubTotal] [int] NOT NULL,
+	[ParentDetailId] [int] NULL,
  CONSTRAINT [PK_OrderDetails] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC

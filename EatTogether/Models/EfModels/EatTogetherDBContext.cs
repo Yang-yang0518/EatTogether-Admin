@@ -668,6 +668,7 @@ public partial class EatTogetherDBContext : DbContext
 
         modelBuilder.Entity<SchedulerLog>(entity =>
         {
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0716A37F7C");
             entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC078C3B632F");
 
             entity.Property(e => e.ExecutedAt)

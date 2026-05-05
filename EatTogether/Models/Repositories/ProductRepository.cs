@@ -101,9 +101,13 @@ namespace EatTogether.Models.Repositories
                     IsOptional = g.First().IsOptional,
                     Options = g.Select(s => new SetMealItemOptionDto
                     {
-                        DishId   = s.DishId,
-                        DishName = s.DishName ?? "",
-                        Qty      = s.Quantity
+                        DishId    = s.DishId,
+                        ProductId = _context.Products
+                                        .Where(p => p.DishId == s.DishId && p.ProductType == "Dish")
+                                        .Select(p => p.Id)
+                                        .FirstOrDefault(),
+                        DishName  = s.DishName ?? "",
+                        Qty       = s.Quantity
                     }).ToList()
                 })
                 .ToList();

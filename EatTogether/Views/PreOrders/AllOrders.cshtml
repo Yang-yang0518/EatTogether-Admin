@@ -409,7 +409,18 @@
         <div class="ao-right-col">
 
             <div class="ao-right-head">
-                <div class="ao-right-title">所有訂單</div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="ao-right-title">所有訂單</div>
+                    <button id="sortToggleBtn" onclick="toggleSortOrder()"
+                            style="padding:3px 10px;border:1.5px solid #1a77c9;border-radius:6px;
+                                   background:#fff;color:#1a77c9;font-family:inherit;
+                                   font-weight:600;font-size:0.78rem;cursor:pointer;
+                                   transition:all 0.15s;white-space:nowrap;"
+                            onmouseover="this.style.background='#eaf0fb'"
+                            onmouseout="this.style.background='#fff'">
+                        ↓ 最新優先
+                    </button>
+                </div>
                 <div class="ao-result-count">共 @Model.TotalCount 筆</div>
             </div>
 
@@ -545,3 +556,18 @@
     </div>
 
 </div>
+
+<script>
+    let sortAsc = false; // 預設：最新優先（降序）
+
+    function toggleSortOrder() {
+        sortAsc = !sortAsc;
+        const btn = document.getElementById('sortToggleBtn');
+        btn.textContent = sortAsc ? '↑ 最舊優先' : '↓ 最新優先';
+
+        const tbody = document.querySelector('.ao-table tbody');
+        if (!tbody) return;
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.reverse().forEach(r => tbody.appendChild(r));
+    }
+</script>
