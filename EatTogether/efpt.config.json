@@ -153,6 +153,10 @@
       {
          "Name": "[dbo].[Users]",
          "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[WalkInQueues]",
+         "ObjectType": 0
       }
    ],
    "UiHint": null,

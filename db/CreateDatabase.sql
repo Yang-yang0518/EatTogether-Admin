@@ -713,11 +713,14 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[UserNotifications](
 	[Id] [int] IDENTITY(1,1) NOT NULL,
-	[MemberId] [int] NOT NULL,
-	[ArticleId] [int] NOT NULL,
-	[Title] [nvarchar](200) NOT NULL,
-	[IsRead] [bit] NOT NULL,
-	[CreatedAt] [datetime2](0) NOT NULL,
+    [MemberId] [int] NOT NULL,
+    [Type] [nvarchar](50) NOT NULL,
+    [ReferenceType] [nvarchar](50) NULL,
+    [ReferenceId] [int] NULL,
+    [Title] [nvarchar](200) NOT NULL,
+    [Message] [nvarchar](500) NULL,
+    [IsRead] [bit] NOT NULL CONSTRAINT [DF_Notifications_IsRead] DEFAULT (0),
+    [CreatedAt] [datetime2](0) NOT NULL,
  CONSTRAINT [PK_UserNotifications] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
@@ -1367,11 +1370,6 @@ ALTER TABLE [dbo].[SubscriptionPreferences]  WITH CHECK ADD  CONSTRAINT [FK_Subs
 REFERENCES [dbo].[Members] ([Id])
 GO
 ALTER TABLE [dbo].[SubscriptionPreferences] CHECK CONSTRAINT [FK_SubscriptionPreferences_Members]
-GO
-ALTER TABLE [dbo].[UserNotifications]  WITH CHECK ADD  CONSTRAINT [FK_UserNotifications_Articles] FOREIGN KEY([ArticleId])
-REFERENCES [dbo].[Articles] ([Id])
-GO
-ALTER TABLE [dbo].[UserNotifications] CHECK CONSTRAINT [FK_UserNotifications_Articles]
 GO
 ALTER TABLE [dbo].[UserNotifications]  WITH CHECK ADD  CONSTRAINT [FK_UserNotifications_Members] FOREIGN KEY([MemberId])
 REFERENCES [dbo].[Members] ([Id])

@@ -460,3 +460,12 @@ IEventService.GetSelectList())
                 統計卡片區（4 張）
                 文章點閱列表（標題、分類、狀態、上架日期、點閱數）
                 列表依點閱數降序排列
+
+
+====================通知建立模組====================
+[working] add NotificationService.cs
+				SendToAllMembersAsync
+				SendToMemberAsync
+				// 建立通知邏輯，儲存到資料庫
+
+		[working]文章發佈狀態即會自動存出通知訊息到資料庫

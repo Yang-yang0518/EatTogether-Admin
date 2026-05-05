@@ -81,6 +81,8 @@ public partial class EatTogetherDBContext : DbContext
 
     public virtual DbSet<UserRole> UserRoles { get; set; }
 
+    public virtual DbSet<WalkInQueue> WalkInQueues { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Article>(entity =>
@@ -666,7 +668,7 @@ public partial class EatTogetherDBContext : DbContext
 
         modelBuilder.Entity<SchedulerLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC074E5379A9");
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC078C3B632F");
 
             entity.Property(e => e.ExecutedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -787,14 +789,15 @@ public partial class EatTogetherDBContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.IsRead).HasAnnotation("Relational:DefaultConstraintName", "DF_Notifications_IsRead");
+            entity.Property(e => e.Message).HasMaxLength(500);
+            entity.Property(e => e.ReferenceType).HasMaxLength(50);
             entity.Property(e => e.Title)
                 .IsRequired()
                 .HasMaxLength(200);
-
-            entity.HasOne(d => d.Article).WithMany(p => p.UserNotifications)
-                .HasForeignKey(d => d.ArticleId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_UserNotifications_Articles");
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasMaxLength(50);
 
             entity.HasOne(d => d.Member).WithMany(p => p.UserNotifications)
                 .HasForeignKey(d => d.MemberId)
@@ -815,6 +818,41 @@ public partial class EatTogetherDBContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_UserRoles_Users");
+        });
+
+        modelBuilder.Entity<WalkInQueue>(entity =>
+        {
+            entity.HasIndex(e => e.RegisteredAt, "IX_WalkInQueues_RegisteredAt");
+
+            entity.HasIndex(e => e.Status, "IX_WalkInQueues_Status");
+
+            entity.Property(e => e.AdultsCount).HasDefaultValue(1);
+            entity.Property(e => e.CalledAt).HasPrecision(0);
+            entity.Property(e => e.LeftAt).HasPrecision(0);
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Phone)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false);
+            entity.Property(e => e.QueueNumber)
+                .IsRequired()
+                .HasMaxLength(10)
+                .IsUnicode(false);
+            entity.Property(e => e.RegisteredAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Remark).HasMaxLength(200);
+            entity.Property(e => e.SeatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Member).WithMany(p => p.WalkInQueues)
+                .HasForeignKey(d => d.MemberId)
+                .HasConstraintName("FK_WalkInQueues_Members");
+
+            entity.HasOne(d => d.Table).WithMany(p => p.WalkInQueues)
+                .HasForeignKey(d => d.TableId)
+                .HasConstraintName("FK_WalkInQueues_Tables");
         });
 
         OnModelCreatingPartial(modelBuilder);
