@@ -1030,6 +1030,10 @@
         <input type="hidden" id="hiddenDiscountAmount" name="DiscountAmount"  value="0" />
         <input type="hidden" id="hiddenItemNotesJson"  name="ItemNotesJson"  value="" />
         <input type="hidden" id="hiddenNoteField"      name="Note"           value="" />
+        <!-- 外帶取餐人資訊（送出前由 Modal 填入，再組入 Note） -->
+        <input type="hidden" id="hiddenCustomerName"   value="" />
+        <input type="hidden" id="hiddenCustomerPhone"  value="" />
+        <input type="hidden" id="hiddenNeedsUtensils"  value="" />
 
         <!-- ── 右側購物車（先放 HTML，CSS order 讓它靠右） ── -->
         <div class="cart-panel" style="order:2;">
@@ -1175,7 +1179,8 @@
                 </label>
                 <select id="pickupTimeInput" class="form-select"
                         style="padding:8px 10px; font-size:0.9rem; width:150px;
-                               border-radius:8px; border:1.5px solid #ddd; font-family:inherit;">
+                               border-radius:8px; border:1.5px solid #ddd; font-family:inherit;"
+                        onchange="syncOrderTypeByPickup(this.value)">
                 </select>
             </div>
 
@@ -1844,6 +1849,9 @@
             opt.value = ''; opt.textContent = '今日已打烊'; opt.disabled = true;
             sel.appendChild(opt);
         }
+
+        // ── 依目前選取值同步訂餐方式 ──
+        syncOrderTypeByPickup(sel.value);
     }
 
     function setInOrOut(isIn) {
@@ -1877,6 +1885,12 @@
     let cartMemberId    = null;
     let cartMemberName  = null;
     let cartMemberPhone = null;
+
+    // ── 外帶取餐資料（記住上次輸入，取消加點後可復原）──
+    let savedTakeoutName      = '';
+    let savedTakeoutPhone     = '';
+    let savedTakeoutUtensils  = false;
+    let savedTakeoutOrderType = 'tel'; // 'tel' | 'walk'
 
     function openCartMemberModal() {
         // 重置搜尋區
@@ -2558,67 +2572,185 @@
                 }
             }
 
-            const btn = document.getElementById('submitOrderBtn');
-            btn.disabled = true;
-            btn.textContent = '處理中…';
+            // ── 外帶：開填寫資料 Modal，實際送出在 confirmTakeoutInfo() ─────
+            if (!isIn) {
+                openTakeoutInfoModal();
+                return;
+            }
 
-            // 直接從 DOM 讀取備註（最可靠，不依賴 cartItemNotes 是否同步）
-            const notesFiltered = {};
-            document.querySelectorAll('#cartItems .cart-item-note-input').forEach(inp => {
-                const key = inp.dataset.noteKey;
-                const val = inp.value.trim();
-                if (key && val) notesFiltered[key] = val;
+            // ── 內用：直接送出 ─────────────────────────────────
+            await doSubmitOrder();
+        });
+
+    });   // end DOMContentLoaded
+
+    // ── 依取餐時間自動切換訂餐方式 ──
+    function syncOrderTypeByPickup(val) {
+        if (!val || val === '') return; // 尚未選擇，不自動切換
+        selectOrderType(val === '即時取餐' ? 'walk' : 'preorder');
+    }
+
+    // ── 訂餐方式切換 ──
+    function selectOrderType(type) {
+        const preorderBtn = document.getElementById('orderTypePreorder');
+        const walkBtn     = document.getElementById('orderTypeWalk');
+        const fields      = document.getElementById('takeoutPreorderFields');
+        document.getElementById('hiddenOrderType').value = type;
+
+        const activeStyle   = { background: '#1a77c9', color: '#fff', borderColor: '#1a77c9' };
+        const inactiveStyle = { background: '#fff',    color: '#888', borderColor: '#ddd'    };
+
+        const applyStyle = (btn, s) => {
+            btn.style.background  = s.background;
+            btn.style.color       = s.color;
+            btn.style.borderColor = s.borderColor;
+        };
+
+        if (type === 'preorder') {
+            applyStyle(preorderBtn, activeStyle);
+            applyStyle(walkBtn,     inactiveStyle);
+            if (fields) fields.style.display = '';
+        } else {
+            applyStyle(walkBtn,     activeStyle);
+            applyStyle(preorderBtn, inactiveStyle);
+            if (fields) fields.style.display = 'none';
+        }
+    }
+
+    // ── 外帶填寫資料 Modal 控制（global，供 onclick 呼叫）────────
+    function openTakeoutInfoModal() {
+        // 優先用上次輸入的值；若完全沒填過，再用會員資料填入
+        const nameVal  = savedTakeoutName  || cartMemberName  || '';
+        const phoneVal = savedTakeoutPhone || cartMemberPhone || '';
+        document.getElementById('takeoutNameInput').value        = nameVal;
+        document.getElementById('takeoutPhoneInput').value       = phoneVal;
+        document.getElementById('takeoutUtensilsCheck').checked  = savedTakeoutUtensils;
+        document.getElementById('takeoutNameError').style.display  = 'none';
+        document.getElementById('takeoutPhoneError').style.display = 'none';
+        // 依目前取餐時間決定訂餐方式（取餐時間優先，不用 saved 值）
+        const currentPickup = document.getElementById('pickupTimeInput')?.value || '';
+        selectOrderType(currentPickup === '即時取餐' ? 'walk' : 'preorder');
+        document.getElementById('takeoutInfoModal').style.display  = 'flex';
+        setTimeout(() => {
+            const nameEl = document.getElementById('takeoutNameInput');
+            const tel    = document.getElementById('takeoutPhoneInput');
+            (nameVal ? tel : nameEl).focus();
+        }, 80);
+    }
+    function closeTakeoutInfoModal() {
+        // 取消時把目前輸入存起來，下次開啟可復原
+        savedTakeoutOrderType = document.getElementById('hiddenOrderType').value;
+        if (savedTakeoutOrderType === 'preorder') {
+            savedTakeoutName     = document.getElementById('takeoutNameInput').value.trim();
+            savedTakeoutPhone    = document.getElementById('takeoutPhoneInput').value.trim();
+            savedTakeoutUtensils = document.getElementById('takeoutUtensilsCheck').checked;
+        }
+        document.getElementById('takeoutInfoModal').style.display = 'none';
+    }
+    async function confirmTakeoutInfo() {
+        const orderType = document.getElementById('hiddenOrderType').value;
+
+        if (orderType === 'preorder') {
+            // 預定餐點才需驗證姓名、電話
+            const name  = document.getElementById('takeoutNameInput').value.trim();
+            const phone = document.getElementById('takeoutPhoneInput').value.trim();
+            let valid = true;
+            if (!name)  { document.getElementById('takeoutNameError').style.display  = ''; valid = false; }
+            else          document.getElementById('takeoutNameError').style.display  = 'none';
+            if (!phone) { document.getElementById('takeoutPhoneError').style.display = ''; valid = false; }
+            else          document.getElementById('takeoutPhoneError').style.display = 'none';
+            if (!valid) return;
+
+            const utensils = document.getElementById('takeoutUtensilsCheck').checked;
+            document.getElementById('hiddenCustomerName').value  = name;
+            document.getElementById('hiddenCustomerPhone').value = phone;
+            document.getElementById('hiddenNeedsUtensils').value = utensils ? '是' : '';
+        } else {
+            // 現場點餐不需填資料
+            document.getElementById('hiddenCustomerName').value  = '';
+            document.getElementById('hiddenCustomerPhone').value = '';
+            document.getElementById('hiddenNeedsUtensils').value = '';
+        }
+
+        closeTakeoutInfoModal();
+
+        const confirmBtn = document.getElementById('takeoutInfoConfirmBtn');
+        confirmBtn.disabled    = true;
+        confirmBtn.textContent = '處理中…';
+
+        await doSubmitOrder();
+
+        confirmBtn.disabled    = false;
+        confirmBtn.textContent = '確認送出';
+    }
+
+    // ── 實際送出邏輯（內用直接呼叫；外帶由 confirmTakeoutInfo 呼叫）─
+    async function doSubmitOrder() {
+        const btn = document.getElementById('submitOrderBtn');
+        btn.disabled = true;
+        btn.textContent = '處理中…';
+
+        // 直接從 DOM 讀取備註
+        const notesFiltered = {};
+        document.querySelectorAll('#cartItems .cart-item-note-input').forEach(inp => {
+            const key = inp.dataset.noteKey;
+            const val = inp.value.trim();
+            if (key && val) notesFiltered[key] = val;
+        });
+        const itemNotesJson = Object.keys(notesFiltered).length ? JSON.stringify(notesFiltered) : '';
+        document.getElementById('hiddenItemNotesJson').value = itemNotesJson;
+
+        // 組合 Note 欄位
+        const orderNote  = document.getElementById('orderNoteInput').value.trim();
+        const noteParts  = [];
+        // 個別餐點備註
+        if (Object.keys(notesFiltered).length) {
+            const itemLines = Object.entries(notesFiltered)
+                .map(([name, note]) => `【${name}】${note}`)
+                .join('；');
+            noteParts.push('餐點備註：' + itemLines);
+        }
+        // 整單備註
+        if (orderNote) noteParts.push('整單備註：' + orderNote);
+        // 外帶專用
+        const isInOrOut = document.getElementById('inOrOutInput').value === 'true';
+        if (!isInOrOut) {
+            const pickupTime = document.getElementById('pickupTimeInput').value;
+            if (pickupTime) noteParts.push('取餐時間：' + pickupTime);
+            const orderType = document.getElementById('hiddenOrderType')?.value || 'preorder';
+            noteParts.push('訂餐方式：' + (orderType === 'preorder' ? '預定餐點' : '現場點餐'));
+            const cName  = document.getElementById('hiddenCustomerName').value.trim();
+            const cPhone = document.getElementById('hiddenCustomerPhone').value.trim();
+            const utensils = document.getElementById('hiddenNeedsUtensils').value;
+            if (cName)     noteParts.push('取餐人：' + cName);
+            if (cPhone)    noteParts.push('聯絡電話：' + cPhone);
+            if (utensils)  noteParts.push('需要餐具：是');
+        }
+        document.getElementById('hiddenNoteField').value = noteParts.join('\n');
+
+        const formData = new FormData(document.getElementById('orderForm'));
+
+        try {
+            const resp = await fetch('@Url.Action("DirectSubmit", "PreOrders")', {
+                method: 'POST',
+                body: formData
             });
-            const itemNotesJson = Object.keys(notesFiltered).length ? JSON.stringify(notesFiltered) : '';
-            document.getElementById('hiddenItemNotesJson').value = itemNotesJson;
-
-            // ── 組合 Note 欄位：個別備註 + 整單備註 → 存入 PreOrders.Note ──
-            const orderNote = document.getElementById('orderNoteInput').value.trim();
-            const noteParts = [];
-            // 個別餐點備註
-            if (Object.keys(notesFiltered).length) {
-                const itemLines = Object.entries(notesFiltered)
-                    .map(([name, note]) => `【${name}】${note}`)
-                    .join('；');
-                noteParts.push('餐點備註：' + itemLines);
-            }
-            // 整單備註
-            if (orderNote) {
-                noteParts.push('整單備註：' + orderNote);
-            }
-            // 取餐時間（外帶）
-            const isInOrOut = document.getElementById('inOrOutInput').value === 'true';
-            if (!isInOrOut) {
-                const pickupTime = document.getElementById('pickupTimeInput').value;
-                if (pickupTime) noteParts.push('取餐時間：' + pickupTime);
-            }
-            document.getElementById('hiddenNoteField').value = noteParts.join('\n');
-
-            const formData = new FormData(this);
-
-            try {
-                const resp = await fetch('@Url.Action("DirectSubmit", "PreOrders")', {
-                    method: 'POST',
-                    body: formData
-                });
-                const json = await resp.json();
-                if (json.success) {
-                    document.getElementById('successOrderNumber').textContent = json.orderNumber;
-                    document.getElementById('orderSuccessModal').style.display = 'flex';
-                    // 1.5 秒後自動關閉
-                    setTimeout(closeOrderSuccessModal, 1500);
-                } else {
-                    alert(json.error || '送出失敗，請再試一次');
-                    btn.disabled = false;
-                    btn.textContent = '送出';
-                }
-            } catch {
-                alert('網路錯誤，請再試一次');
+            const json = await resp.json();
+            if (json.success) {
+                document.getElementById('successOrderNumber').textContent = json.orderNumber;
+                document.getElementById('orderSuccessModal').style.display = 'flex';
+                setTimeout(closeOrderSuccessModal, 1500);
+            } else {
+                alert(json.error || '送出失敗，請再試一次');
                 btn.disabled = false;
                 btn.textContent = '送出';
             }
-        });
-    });
+        } catch {
+            alert('網路錯誤，請再試一次');
+            btn.disabled = false;
+            btn.textContent = '送出';
+        }
+    }
 
     // ── 清空所有購物車 ──────────────────────────────────────────
     function openClearCartModal() {
@@ -2747,6 +2879,14 @@
         const noteInput = document.getElementById('orderNoteInput');
         if (noteInput) noteInput.value = '';
         document.getElementById('hiddenNoteField').value = '';
+        // 清除外帶取餐人 saved 值
+        savedTakeoutName      = '';
+        savedTakeoutPhone     = '';
+        savedTakeoutUtensils  = false;
+        savedTakeoutOrderType = 'preorder';
+        document.getElementById('hiddenCustomerName').value  = '';
+        document.getElementById('hiddenCustomerPhone').value = '';
+        document.getElementById('hiddenNeedsUtensils').value = '';
         buildPickupTimeOptions(); // 重新產生取餐時間選項
         refreshCart();
         refreshEventBtn();
@@ -2836,6 +2976,86 @@
                        padding:10px 36px;font-size:1rem;cursor:pointer;font-weight:600;">
             確認
         </button>
+    </div>
+</div>
+
+<!-- ── 外帶填寫資料 Modal ── -->
+<div id="takeoutInfoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+     z-index:10000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:18px;padding:32px 40px;
+                box-shadow:0 8px 40px rgba(0,0,0,.18);min-width:340px;max-width:420px;width:90%;">
+        <div style="font-size:1.15rem;font-weight:800;color:#1a1a1a;margin-bottom:16px;">🥡 外帶取餐資料</div>
+
+        <!-- 訂餐方式 -->
+        <div style="display:flex;gap:10px;margin-bottom:18px;">
+            <button type="button" id="orderTypePreorder" onclick="selectOrderType('preorder')"
+                    style="flex:1;padding:8px 0;border:2px solid #1a77c9;border-radius:10px;
+                           background:#1a77c9;color:#fff;font-family:inherit;font-weight:700;
+                           font-size:0.92rem;cursor:pointer;transition:all 0.15s;">
+                📋 預定餐點
+            </button>
+            <button type="button" id="orderTypeWalk" onclick="selectOrderType('walk')"
+                    style="flex:1;padding:8px 0;border:2px solid #ddd;border-radius:10px;
+                           background:#fff;color:#888;font-family:inherit;font-weight:700;
+                           font-size:0.92rem;cursor:pointer;transition:all 0.15s;">
+                🚶 現場點餐
+            </button>
+        </div>
+        <input type="hidden" id="hiddenOrderType" value="preorder" />
+
+        <!-- 預定餐點才需填寫的資料 -->
+        <div id="takeoutPreorderFields">
+            <!-- 姓名 -->
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:0.88rem;font-weight:700;color:#444;margin-bottom:5px;">
+                    取餐人姓名 <span style="color:#c0392b;">*</span>
+                </label>
+                <input type="text" id="takeoutNameInput" placeholder="請輸入姓名"
+                       style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;
+                              font-family:inherit;font-size:0.95rem;box-sizing:border-box;outline:none;"
+                       onfocus="this.style.borderColor='#1a77c9'"
+                       onblur="this.style.borderColor='#ddd'" />
+                <div id="takeoutNameError" style="display:none;color:#c0392b;font-size:0.8rem;margin-top:3px;">請填寫姓名</div>
+            </div>
+
+            <!-- 電話 -->
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:0.88rem;font-weight:700;color:#444;margin-bottom:5px;">
+                    聯絡電話 <span style="color:#c0392b;">*</span>
+                </label>
+                <input type="tel" id="takeoutPhoneInput" placeholder="請輸入電話"
+                       style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;
+                              font-family:inherit;font-size:0.95rem;box-sizing:border-box;outline:none;"
+                       onfocus="this.style.borderColor='#1a77c9'"
+                       onblur="this.style.borderColor='#ddd'" />
+                <div id="takeoutPhoneError" style="display:none;color:#c0392b;font-size:0.8rem;margin-top:3px;">請填寫電話</div>
+            </div>
+
+            <!-- 需要餐具 -->
+            <div style="margin-bottom:22px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.95rem;font-weight:600;color:#333;">
+                    <input type="checkbox" id="takeoutUtensilsCheck"
+                           style="width:17px;height:17px;cursor:pointer;accent-color:#e67e22;" />
+                    🥢 需要餐具
+                </label>
+            </div>
+        </div>
+
+        <!-- 按鈕列 -->
+        <div style="display:flex;gap:10px;">
+            <button type="button" onclick="closeTakeoutInfoModal()"
+                    style="flex:1;padding:10px;border:2px solid #ccc;border-radius:10px;
+                           background:#fff;color:#666;font-family:inherit;font-weight:700;
+                           font-size:0.95rem;cursor:pointer;">
+                取消
+            </button>
+            <button type="button" id="takeoutInfoConfirmBtn" onclick="confirmTakeoutInfo()"
+                    style="flex:2;padding:10px;border:none;border-radius:10px;
+                           background:#e67e22;color:#fff;font-family:inherit;font-weight:700;
+                           font-size:0.95rem;cursor:pointer;">
+                確認送出
+            </button>
+        </div>
     </div>
 </div>
 
