@@ -56,4 +56,6 @@ public partial class Member
     public virtual ICollection<SubscriptionPreference> SubscriptionPreferences { get; set; } = new List<SubscriptionPreference>();
 
     public virtual ICollection<UserNotification> UserNotifications { get; set; } = new List<UserNotification>();
+
+    public virtual ICollection<WalkInQueue> WalkInQueues { get; set; } = new List<WalkInQueue>();
 }

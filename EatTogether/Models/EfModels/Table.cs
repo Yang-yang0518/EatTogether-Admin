@@ -20,4 +20,6 @@ public partial class Table
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
     public virtual ICollection<PreOrder> PreOrders { get; set; } = new List<PreOrder>();
+
+    public virtual ICollection<WalkInQueue> WalkInQueues { get; set; } = new List<WalkInQueue>();
 }
