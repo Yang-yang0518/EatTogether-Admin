@@ -303,6 +303,17 @@ CREATE TABLE [dbo].[MemberFavorites](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+CREATE TABLE [dbo].[LimitedNotifications](
+    [Id]        INT IDENTITY(1,1) NOT NULL,
+    [MemberId]  INT NOT NULL,
+    [DishId]    INT NOT NULL,
+    [CreatedAt] DATETIME2(0) NOT NULL DEFAULT (GETDATE()),
+    CONSTRAINT [PK_LimitedNotifications] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_LimitedNotif_Members] FOREIGN KEY ([MemberId]) REFERENCES [Members]([Id]),
+    CONSTRAINT [FK_LimitedNotif_Dishes]  FOREIGN KEY ([DishId])  REFERENCES [Dishes]([Id]),
+    CONSTRAINT [UQ_LimitedNotif_Mem_Dish] UNIQUE ([MemberId], [DishId])
+)
+GO
 /****** Object:  Table [dbo].[MemberConfirmTokens]    Script Date: 2026/4/16 ******/
 SET ANSI_NULLS ON
 GO
