@@ -420,18 +420,21 @@ CREATE TABLE [dbo].[LimitedNotifications](
 GO
 
 CREATE TABLE [dbo].[OrderDetails](
-	[Id] [int] IDENTITY(1,1) NOT NULL,
-	[OrderId] [int] NOT NULL,
-	[ProductId] [int] NOT NULL,
-	[ProductName] [nvarchar](50) NOT NULL,
-	[UnitPrice] [int] NOT NULL,
-	[Qty] [int] NOT NULL,
-	[SubTotal] [int] NOT NULL,
-	[ParentDetailId] [int] NULL,
- CONSTRAINT [PK_OrderDetails] PRIMARY KEY CLUSTERED 
-(
-	[Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+    [Id] [int] IDENTITY(1,1) NOT NULL,
+    [OrderId] [int] NOT NULL,
+    [ProductId] [int] NOT NULL,
+    [ProductName] [nvarchar](50) NOT NULL,
+    [UnitPrice] [int] NOT NULL,
+    [Qty] [int] NOT NULL,
+    [SubTotal] [int] NOT NULL,
+    [ParentDetailId] [int] NULL,
+    [PreOrderDetailId] [int] NULL,
+    CONSTRAINT [PK_OrderDetails] PRIMARY KEY CLUSTERED 
+    (
+        [Id] ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+    CONSTRAINT [FK_OrderDetails_ParentDetail] FOREIGN KEY ([ParentDetailId])
+        REFERENCES [dbo].[OrderDetails] ([Id])
 ) ON [PRIMARY]
 GO
 /****** Object:  Table [dbo].[Orders]    Script Date: 2026/3/11 下午 10:31:03 ******/
