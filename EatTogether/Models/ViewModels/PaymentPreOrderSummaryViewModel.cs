@@ -10,5 +10,6 @@
         public DateTime OrderAt { get; set; }
         public int TotalAmount { get; set; }
         public bool HasUnserved { get; set; }
+        public string? Note { get; set; }
     }
 }

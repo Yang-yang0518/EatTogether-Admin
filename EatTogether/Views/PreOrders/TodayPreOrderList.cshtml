@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "待處理訂單";
 
-    // 解析 Note 欄位（支援 JSON 新格式與舊純文字格式）
+    // 解析 Note 欄位（支援 JSON 新格式、舊 JSON 格式、純文字格式）
     string GetNoteOrderPart(string note)
     {
         if (string.IsNullOrEmpty(note)) return "";
@@ -13,8 +13,31 @@
             try
             {
                 var doc = System.Text.Json.JsonDocument.Parse(trimmed);
-                if (doc.RootElement.TryGetProperty("order", out var prop))
+                // 新格式：order 欄位有值
+                if (doc.RootElement.TryGetProperty("order", out var prop)
+                    && prop.ValueKind != System.Text.Json.JsonValueKind.Null)
                     return prop.GetString() ?? "";
+                // 舊格式：order 為 null，從頂層欄位組合
+                var parts = new System.Collections.Generic.List<string>();
+                if (doc.RootElement.TryGetProperty("pickupTime", out var pt)
+                    && pt.ValueKind != System.Text.Json.JsonValueKind.Null)
+                {
+                    var v = pt.GetString();
+                    if (!string.IsNullOrEmpty(v)) parts.Add("取餐時間：" + v);
+                }
+                if (doc.RootElement.TryGetProperty("customerName", out var cn)
+                    && cn.ValueKind != System.Text.Json.JsonValueKind.Null)
+                {
+                    var v = cn.GetString();
+                    if (!string.IsNullOrEmpty(v)) parts.Add("取餐人：" + v);
+                }
+                if (doc.RootElement.TryGetProperty("customerPhone", out var cp)
+                    && cp.ValueKind != System.Text.Json.JsonValueKind.Null)
+                {
+                    var v = cp.GetString();
+                    if (!string.IsNullOrEmpty(v)) parts.Add("聯絡電話：" + v);
+                }
+                return string.Join("\n", parts);
             }
             catch { }
         }
