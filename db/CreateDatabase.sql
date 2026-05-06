@@ -588,7 +588,8 @@ CREATE TABLE [dbo].[Reservations](
 	[ReservedAt] [datetime2](0) NOT NULL,
 	[MemberId] [int] NULL,
 	[CancelledAt] [datetime2](0) NULL,
- CONSTRAINT [PK_Reservations] PRIMARY KEY CLUSTERED 
+	[TableId] [int] NULL,
+ CONSTRAINT [PK_Reservations] PRIMARY KEY CLUSTERED
 (
 	[Id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
@@ -1461,6 +1462,24 @@ ALTER TABLE [dbo].[Reservations]  WITH CHECK ADD CONSTRAINT [FK_Reservations_Mem
     FOREIGN KEY([MemberId]) REFERENCES [dbo].[Members] ([Id])
 GO
 ALTER TABLE [dbo].[Reservations] CHECK CONSTRAINT [FK_Reservations_Members]
+GO
+/****** Object:  ForeignKey [FK_Reservations_Tables]  ******/
+ALTER TABLE [dbo].[Reservations]  WITH CHECK ADD CONSTRAINT [FK_Reservations_Tables]
+    FOREIGN KEY([TableId]) REFERENCES [dbo].[Tables] ([Id])
+GO
+ALTER TABLE [dbo].[Reservations] CHECK CONSTRAINT [FK_Reservations_Tables]
+GO
+/****** Object:  ForeignKey [FK_LimitedNotif_Members]  ******/
+ALTER TABLE [dbo].[LimitedNotifications] WITH CHECK ADD CONSTRAINT [FK_LimitedNotif_Members]
+    FOREIGN KEY ([MemberId]) REFERENCES [dbo].[Members] ([Id])
+GO
+ALTER TABLE [dbo].[LimitedNotifications] CHECK CONSTRAINT [FK_LimitedNotif_Members]
+GO
+/****** Object:  ForeignKey [FK_LimitedNotif_Dishes]  ******/
+ALTER TABLE [dbo].[LimitedNotifications] WITH CHECK ADD CONSTRAINT [FK_LimitedNotif_Dishes]
+    FOREIGN KEY ([DishId]) REFERENCES [dbo].[Dishes] ([Id])
+GO
+ALTER TABLE [dbo].[LimitedNotifications] CHECK CONSTRAINT [FK_LimitedNotif_Dishes]
 GO
 ALTER TABLE [dbo].[SetMealItems]  WITH CHECK ADD  CONSTRAINT [CK_SetMealItems_DisplayOrder] CHECK  (([DisplayOrder]>=(0)))
 GO
