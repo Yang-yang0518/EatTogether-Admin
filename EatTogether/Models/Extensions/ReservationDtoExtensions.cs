@@ -6,21 +6,23 @@ namespace EatTogether.Models.Extensions
     public static class ReservationDtoExtensions
     {
         // EFModel → DTO
-        public static ReservationDto ToDto(this Reservation r)
+        public static ReservationDto ToDto(this Reservation r, string? tableName = null)
         {
             return new ReservationDto
             {
-                Id = r.Id,
-                BookingNumber = r.BookingNumber,
-                Name = r.Name,
-                Phone = r.Phone,
-                Email = r.Email,
+                Id              = r.Id,
+                BookingNumber   = r.BookingNumber,
+                Name            = r.Name,
+                Phone           = r.Phone,
+                Email           = r.Email,
                 ReservationDate = r.ReservationDate,
-                AdultsCount = r.AdultsCount,
-                ChildrenCount = r.ChildrenCount,
-                Status = r.Status,
-                Remark = r.Remark,
-                ReservedAt = r.ReservedAt
+                AdultsCount     = r.AdultsCount,
+                ChildrenCount   = r.ChildrenCount,
+                Status          = r.Status,
+                Remark          = r.Remark,
+                ReservedAt      = r.ReservedAt,
+                TableId         = r.TableId,
+                TableName       = tableName ?? r.Table?.TableName
             };
         }
     }

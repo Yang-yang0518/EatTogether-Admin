@@ -73,10 +73,12 @@ namespace EatTogether
 
             builder.Services.AddScoped<ITableRepository, TableRepository>();
             builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+            builder.Services.AddScoped<IWalkInQueueRepository, WalkInQueueRepository>();
             builder.Services.AddScoped<ICouponRepository, CouponRepository>();
             builder.Services.AddScoped<IMemberCouponRepository, MemberCouponRepository>();
             builder.Services.AddScoped<TableService>();
             builder.Services.AddScoped<ReservationService>();
+            builder.Services.AddScoped<WalkInQueueService>();
             builder.Services.AddScoped<CouponService>();
             builder.Services.AddScoped<ReservationEmailService>();
             builder.Services.AddScoped<BirthdayCouponService>();

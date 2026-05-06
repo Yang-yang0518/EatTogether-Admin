@@ -35,6 +35,8 @@ public partial class Member
 
     public string BlacklistReason { get; set; }
 
+    public virtual ICollection<LimitedNotification> LimitedNotifications { get; set; } = new List<LimitedNotification>();
+
     public virtual ICollection<MemberConfirmToken> MemberConfirmTokens { get; set; } = new List<MemberConfirmToken>();
 
     public virtual ICollection<MemberCoupon> MemberCoupons { get; set; } = new List<MemberCoupon>();
