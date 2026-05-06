@@ -16,12 +16,12 @@ namespace EatTogether.Models.Repositories
 		}
 
 
-		public async Task CreateAsync(ArticleCreateDto dto)
+		public async Task<int> CreateAsync(ArticleCreateDto dto)
 		{
 			var article = dto.ToEntity();
-
 			_context.Articles.Add(article);
 			await _context.SaveChangesAsync();
+			return article.Id;
 		}
 
 

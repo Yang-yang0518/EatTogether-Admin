@@ -14,7 +14,8 @@ INSERT INTO [dbo].[OrderDetails]
     [ProductName], 
     [UnitPrice], 
     [Qty], 
-    [SubTotal]
+    [SubTotal],
+    [ParentDetailId]
 )
 SELECT 
     O.[Id],            -- 指向正式 Orders 表的自增 Id
@@ -23,6 +24,7 @@ SELECT
     PD.[UnitPrice], 
     PD.[Qty], 
     PD.[SubTotal]
+    PD.[ParentDetailId],
 FROM [dbo].[PreOrderDetails] AS PD
 INNER JOIN [dbo].[Orders] AS O ON PD.[PreOrderId] = O.[PreOrderId]
 WHERE PD.[DoneOrCancel] = 1; -- 只轉入有效(完成或待作)的餐點，排除已取消(2)的餐點

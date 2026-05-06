@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace EatTogether.Models.Repositories
 {
 	public interface IArticleRepository {
-		Task CreateAsync(ArticleCreateDto dto);
+		Task<int> CreateAsync(ArticleCreateDto dto);
 		Task<List<ArticleDto>> GetAllAsync();
 		Task<ArticleEditDto> GetEditByIdAsync(int id);
 		Task<IEnumerable<SelectListItem>> GetCategorySelectListAsync();

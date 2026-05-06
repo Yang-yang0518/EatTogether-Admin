@@ -21,6 +21,8 @@ public partial class OrderDetail
 
     public int SubTotal { get; set; }
 
+    public int? ParentDetailId { get; set; }
+
     public virtual Order Order { get; set; }
 
     public virtual Product Product { get; set; }

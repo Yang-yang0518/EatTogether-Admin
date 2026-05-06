@@ -49,6 +49,20 @@
         return "";
     }
 
+    // 通用：從備註取指定前綴的值
+    string GetNoteField(string note, string prefix)
+    {
+        var orderPart = GetNoteOrderPart(note);
+        if (string.IsNullOrEmpty(orderPart)) return "";
+        foreach (var line in orderPart.Split('\n'))
+        {
+            var t = line.Trim();
+            if (t.StartsWith(prefix))
+                return t.Substring(prefix.Length).Trim();
+        }
+        return "";
+    }
+
     // 取餐時間 → DateTime?（即時/內用/空 → null 視為「現在」）
     DateTime? ParsePickupDt(string note)
     {
@@ -728,13 +742,28 @@
                     </div>
                     <div class="card-body">
                         @{
-                            var displayNote   = GetOrderNote(order.Note);
-                            var displayPickup = GetPickupTime(order.Note);
+                            var displayNote     = GetOrderNote(order.Note);
+                            var displayPickup   = GetPickupTime(order.Note);
+                            var displayCustName = GetNoteField(order.Note, "取餐人：");
+                            var displayPhone    = GetNoteField(order.Note, "聯絡電話：");
+                            var displayUtensils = GetNoteField(order.Note, "需要餐具：");
                         }
                         @if (!string.IsNullOrEmpty(displayPickup) && displayPickup != "即時取餐" && displayPickup != "即時")
                         {
                             <div class="note-box" style="background:#eaf4ff;border-left-color:#1a77c9;color:#1a5fa8;">
                                 🕐 取餐時間：@displayPickup
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(displayCustName) || !string.IsNullOrEmpty(displayPhone))
+                        {
+                            <div class="note-box" style="background:#f0fdf4;border-left-color:#27ae60;color:#1a6b3c;">
+                                👤 @displayCustName@(!string.IsNullOrEmpty(displayPhone) ? $"　📞 {displayPhone}" : "")
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(displayUtensils))
+                        {
+                            <div class="note-box" style="background:#fffbe6;border-left-color:#f39c12;color:#7d5a00;">
+                                🥢 需要餐具
                             </div>
                         }
                         @if (!string.IsNullOrEmpty(displayNote))
@@ -868,13 +897,28 @@
                         </div>
                         <div class="list-detail-area" id="list-details-@order.PreOrderId">
                             @{
-                                var displayNote2   = GetOrderNote(order.Note);
-                                var displayPickup2 = GetPickupTime(order.Note);
+                                var displayNote2     = GetOrderNote(order.Note);
+                                var displayPickup2   = GetPickupTime(order.Note);
+                                var displayCustName2 = GetNoteField(order.Note, "取餐人：");
+                                var displayPhone2    = GetNoteField(order.Note, "聯絡電話：");
+                                var displayUtensils2 = GetNoteField(order.Note, "需要餐具：");
                             }
                             @if (!string.IsNullOrEmpty(displayPickup2) && displayPickup2 != "即時取餐" && displayPickup2 != "即時")
                             {
                                 <div class="note-box" style="margin-top:10px;background:#eaf4ff;border-left-color:#1a77c9;color:#1a5fa8;">
                                     🕐 取餐時間：@displayPickup2
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(displayCustName2) || !string.IsNullOrEmpty(displayPhone2))
+                            {
+                                <div class="note-box" style="margin-top:10px;background:#f0fdf4;border-left-color:#27ae60;color:#1a6b3c;">
+                                    👤 @displayCustName2@(!string.IsNullOrEmpty(displayPhone2) ? $"　📞 {displayPhone2}" : "")
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(displayUtensils2))
+                            {
+                                <div class="note-box" style="margin-top:10px;background:#fffbe6;border-left-color:#f39c12;color:#7d5a00;">
+                                    🥢 需要餐具
                                 </div>
                             }
                             @if (!string.IsNullOrEmpty(displayNote2))
