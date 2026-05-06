@@ -117,5 +117,23 @@ namespace EatTogether.Models.Services
             await _repo.UpdateStatusAsync(id, newStatus);
             return Result.Success();
         }
+
+        /// <summary>報到並指定桌位（Status 0 → 1，同時把桌位調為用餐中）</summary>
+        public async Task<Result> CheckInAsync(int id, int tableId)
+        {
+            var r = await _repo.GetByIdAsync(id);
+            if (r == null) return Result.Fail("找不到此訂位");
+            if (r.Status != 0) return Result.Fail("僅「訂位中」的訂單才能報到");
+
+            var table = await _tableRepo.GetByIdAsync(tableId);
+            if (table == null) return Result.Fail("找不到此桌位");
+            if (table.Status == 1) return Result.Fail($"「{table.TableName}」目前用餐中，請選擇其他桌位");
+
+            // 訂位報到
+            await _repo.CheckInAsync(id, tableId);
+            // 桌位 → 用餐中
+            await _tableRepo.UpdateStatusAsync(tableId, 1);
+            return Result.Success();
+        }
     }
 }

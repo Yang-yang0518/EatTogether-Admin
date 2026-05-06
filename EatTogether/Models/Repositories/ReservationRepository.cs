@@ -18,7 +18,22 @@ namespace EatTogether.Models.Repositories
         {
             return await _context.Reservations
                 .OrderByDescending(r => r.ReservationDate)
-                .Select(r => r.ToDto())
+                .Select(r => new ReservationDto
+                {
+                    Id              = r.Id,
+                    BookingNumber   = r.BookingNumber,
+                    Name            = r.Name,
+                    Phone           = r.Phone,
+                    Email           = r.Email,
+                    ReservationDate = r.ReservationDate,
+                    AdultsCount     = r.AdultsCount,
+                    ChildrenCount   = r.ChildrenCount,
+                    Status          = r.Status,
+                    Remark          = r.Remark,
+                    ReservedAt      = r.ReservedAt,
+                    TableId         = r.TableId,
+                    TableName       = r.Table != null ? r.Table.TableName : null
+                })
                 .ToListAsync();
         }
 
@@ -27,13 +42,30 @@ namespace EatTogether.Models.Repositories
             return await _context.Reservations
                 .Where(r => r.ReservationDate.Date == date.Date)
                 .OrderBy(r => r.ReservationDate)
-                .Select(r => r.ToDto())
+                .Select(r => new ReservationDto
+                {
+                    Id              = r.Id,
+                    BookingNumber   = r.BookingNumber,
+                    Name            = r.Name,
+                    Phone           = r.Phone,
+                    Email           = r.Email,
+                    ReservationDate = r.ReservationDate,
+                    AdultsCount     = r.AdultsCount,
+                    ChildrenCount   = r.ChildrenCount,
+                    Status          = r.Status,
+                    Remark          = r.Remark,
+                    ReservedAt      = r.ReservedAt,
+                    TableId         = r.TableId,
+                    TableName       = r.Table != null ? r.Table.TableName : null
+                })
                 .ToListAsync();
         }
 
         public async Task<ReservationDto?> GetByIdAsync(int id)
         {
-            var r = await _context.Reservations.FindAsync(id);
+            var r = await _context.Reservations
+                .Include(x => x.Table)
+                .FirstOrDefaultAsync(x => x.Id == id);
             return r?.ToDto();
         }
 
@@ -122,8 +154,33 @@ namespace EatTogether.Models.Repositories
                          && r.ReservationDate >= sessionStart
                          && r.ReservationDate < sessionEnd)
                 .OrderBy(r => r.ReservationDate)
-                .Select(r => r.ToDto())
+                .Select(r => new ReservationDto
+                {
+                    Id              = r.Id,
+                    BookingNumber   = r.BookingNumber,
+                    Name            = r.Name,
+                    Phone           = r.Phone,
+                    Email           = r.Email,
+                    ReservationDate = r.ReservationDate,
+                    AdultsCount     = r.AdultsCount,
+                    ChildrenCount   = r.ChildrenCount,
+                    Status          = r.Status,
+                    Remark          = r.Remark,
+                    ReservedAt      = r.ReservedAt,
+                    TableId         = r.TableId,
+                    TableName       = r.Table != null ? r.Table.TableName : null
+                })
                 .ToListAsync();
+        }
+
+        /// <summary>報到並指定桌位（Status 0 → 1，記錄 TableId）</summary>
+        public async Task CheckInAsync(int id, int tableId)
+        {
+            var r = await _context.Reservations.FindAsync(id);
+            if (r == null) return;
+            r.Status  = 1;
+            r.TableId = tableId;
+            await _context.SaveChangesAsync();
         }
     }
 }

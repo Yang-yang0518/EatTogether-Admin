@@ -618,6 +618,10 @@ public partial class EatTogetherDBContext : DbContext
             entity.HasOne(d => d.Member).WithMany(p => p.Reservations)
                 .HasForeignKey(d => d.MemberId)
                 .HasConstraintName("FK_Reservations_Members");
+
+            entity.HasOne(d => d.Table).WithMany()
+                .HasForeignKey(d => d.TableId)
+                .HasConstraintName("FK_Reservations_Tables");
         });
 
         modelBuilder.Entity<Review>(entity =>

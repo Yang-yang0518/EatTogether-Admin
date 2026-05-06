@@ -1,0 +1,423 @@
+@model IEnumerable<EatTogether.Models.DTOs.WalkInQueueDto>
+@using EatTogether.Models.DTOs
+@{
+    ViewData["Title"] = "候位管理";
+    var tables = ViewBag.Tables as IEnumerable<EatTogether.Models.DTOs.TableDto>
+                 ?? Enumerable.Empty<EatTogether.Models.DTOs.TableDto>();
+    var today  = Model.ToList();
+    var cntWaiting = today.Count(q => q.Status == 0);
+    var cntCalled  = today.Count(q => q.Status == 1);
+    var cntSeated  = today.Count(q => q.Status == 2);
+    var cntLeft    = today.Count(q => q.Status == 3);
+    var cntNoShow  = today.Count(q => q.Status == 4);
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">候位管理</h1>
+
+    <div id="alertBox"></div>
+
+    <!-- 統計卡片 -->
+    <div class="row mb-4">
+        <div class="col-12 mb-1">
+            <small class="text-muted fw-semibold text-uppercase">
+                <i class="fas fa-calendar-day me-1"></i>今日候位統計（@DateTime.Today.ToString("yyyy/M/d")）
+            </small>
+        </div>
+        <div class="col-xl col-md-4 col-6">
+            <div class="card bg-primary text-white mb-3">
+                <div class="card-body d-flex justify-content-between align-items-center py-3">
+                    <div><div class="small">等待中</div><div class="fs-4 fw-bold">@cntWaiting</div></div>
+                    <i class="fas fa-hourglass-half fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-md-4 col-6">
+            <div class="card bg-warning text-dark mb-3">
+                <div class="card-body d-flex justify-content-between align-items-center py-3">
+                    <div><div class="small">已叫號</div><div class="fs-4 fw-bold">@cntCalled</div></div>
+                    <i class="fas fa-bell fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-md-4 col-6">
+            <div class="card bg-success text-white mb-3">
+                <div class="card-body d-flex justify-content-between align-items-center py-3">
+                    <div><div class="small">已入座</div><div class="fs-4 fw-bold">@cntSeated</div></div>
+                    <i class="fas fa-chair fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-md-6 col-6">
+            <div class="card bg-secondary text-white mb-3">
+                <div class="card-body d-flex justify-content-between align-items-center py-3">
+                    <div><div class="small">已離開</div><div class="fs-4 fw-bold">@cntLeft</div></div>
+                    <i class="fas fa-sign-out-alt fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-md-6 col-6">
+            <div class="card bg-danger text-white mb-3">
+                <div class="card-body d-flex justify-content-between align-items-center py-3">
+                    <div><div class="small">已過號</div><div class="fs-4 fw-bold">@cntNoShow</div></div>
+                    <i class="fas fa-user-times fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作列 -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div><i class="fas fa-list-ol me-1"></i>今日候位清單</div>
+            <button class="btn btn-success btn-sm" onclick="openRegisterModal()">
+                <i class="fas fa-plus me-1"></i>現場登記候位
+            </button>
+        </div>
+        <div class="card-body p-0">
+            @if (!today.Any())
+            {
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>今日尚無候位記錄
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>號碼</th>
+                                <th>姓名</th>
+                                <th>電話</th>
+                                <th>人數</th>
+                                <th>登記時間</th>
+                                <th>狀態</th>
+                                <th>桌位/備註</th>
+                                <th class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var q in today)
+                            {
+                                <tr id="row-@q.Id">
+                                    <td><span class="fw-bold text-dark">@q.QueueNumber</span></td>
+                                    <td>@q.Name</td>
+                                    <td><small class="text-muted">@q.Phone</small></td>
+                                    <td>
+                                        @q.TotalCount 人
+                                        @if (q.ChildrenCount > 0)
+                                        {
+                                            <small class="text-muted">(大@q.AdultsCount 小@q.ChildrenCount)</small>
+                                        }
+                                    </td>
+                                    <td><small>@q.RegisteredAt.ToString("HH:mm")</small></td>
+                                    <td>
+                                        <span class="badge @q.StatusBadgeClass">@q.StatusText</span>
+                                        @if (q.Status == 1 && q.CalledAt.HasValue)
+                                        {
+                                            <br /><small class="text-muted">叫號 @q.CalledAt.Value.ToString("HH:mm")</small>
+                                        }
+                                        @if (q.Status == 2 && q.SeatedAt.HasValue)
+                                        {
+                                            <br /><small class="text-muted">入座 @q.SeatedAt.Value.ToString("HH:mm")</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(q.TableName))
+                                        {
+                                            <span class="badge bg-light text-dark border">@q.TableName</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(q.Remark))
+                                        {
+                                            <div class="small text-muted text-truncate" style="max-width:120px" title="@q.Remark">
+                                                <i class="fas fa-comment-alt me-1"></i>@q.Remark
+                                            </div>
+                                        }
+                                    </td>
+                                    <td class="text-center" style="min-width:160px;">
+                                        @if (q.Status == 0)
+                                        {
+                                            <!-- 等待中：可叫號、可離開 -->
+                                            <button class="btn btn-warning btn-sm me-1"
+                                                    onclick="callQueue(@q.Id)">
+                                                <i class="fas fa-bell me-1"></i>叫號
+                                            </button>
+                                            <button class="btn btn-outline-secondary btn-sm"
+                                                    onclick="leaveQueue(@q.Id)">
+                                                <i class="fas fa-door-open me-1"></i>離開
+                                            </button>
+                                        }
+                                        else if (q.Status == 1)
+                                        {
+                                            <!-- 已叫號：可入座、過號、離開 -->
+                                            <button class="btn btn-success btn-sm me-1"
+                                                    onclick="openSeatModal(@q.Id, '@q.Name', @q.TotalCount)">
+                                                <i class="fas fa-chair me-1"></i>入座
+                                            </button>
+                                            <button class="btn btn-danger btn-sm me-1"
+                                                    onclick="noShowQueue(@q.Id)">
+                                                <i class="fas fa-user-times me-1"></i>過號
+                                            </button>
+                                            <button class="btn btn-outline-secondary btn-sm"
+                                                    onclick="leaveQueue(@q.Id)">
+                                                <i class="fas fa-door-open"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <!-- 最終狀態：無操作 -->
+                                            <span class="text-muted small">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- ═══ 現場登記 Modal ═══ -->
+<div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-walking me-2"></i>現場登記候位</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">姓名 <span class="text-danger">*</span></label>
+                    <input type="text" id="reg_name" class="form-control" placeholder="請輸入姓名" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">電話 <span class="text-danger">*</span></label>
+                    <input type="tel" id="reg_phone" class="form-control" placeholder="請輸入手機號碼" />
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label fw-semibold">大人 <span class="text-danger">*</span></label>
+                        <input type="number" id="reg_adults" class="form-control" value="2" min="1" max="20" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-semibold">小孩</label>
+                        <input type="number" id="reg_children" class="form-control" value="0" min="0" max="20" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">備註</label>
+                    <textarea id="reg_remark" class="form-control" rows="2"
+                              placeholder="如：需要兒童椅、慶生 …"></textarea>
+                </div>
+                <div id="reg_error" class="text-danger small d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success" onclick="submitRegister()">
+                    <i class="fas fa-check me-1"></i>確認登記
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ 入座桌位 Modal ═══ -->
+<div class="modal fade" id="seatModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="fas fa-chair me-2"></i>選擇桌位入座</h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small mb-2">
+                    <strong id="seat_name"></strong>（<span id="seat_count"></span> 人）
+                </p>
+                <label class="form-label fw-semibold">指定桌位 <span class="text-danger">*</span></label>
+                <select id="seat_table" class="form-select">
+                    <option value="">— 請選擇桌位 —</option>
+                    @foreach (var t in tables)
+                    {
+                        var optClass = t.Status != 0 ? "text-muted" : "";
+                        var optLabel = t.TableName + "（" + t.SeatCount + " 人桌）" +
+                                       (t.Status == 1 ? " ─ 用餐中" : t.Status == 2 ? " ─ 保留中" : "");
+                        <option value="@t.Id"
+                                class="@optClass"
+                                data-seats="@t.SeatCount"
+                                data-status="@t.Status">@optLabel</option>
+                    }
+                </select>
+                <div id="seat_error" class="text-danger small mt-1 d-none"></div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success btn-sm" onclick="submitSeat()">
+                    <i class="fas fa-check me-1"></i>確認入座
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+        const seatModal     = new bootstrap.Modal(document.getElementById('seatModal'));
+        let _seatQueueId    = null;
+
+        // ── 顯示 Alert ──────────────────────────────────────────────
+        function showAlert(type, message) {
+            document.getElementById('alertBox').innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function csrfToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+        }
+
+        // ── 現場登記 ────────────────────────────────────────────────
+        function openRegisterModal() {
+            document.getElementById('reg_name').value     = '';
+            document.getElementById('reg_phone').value    = '';
+            document.getElementById('reg_adults').value   = 2;
+            document.getElementById('reg_children').value = 0;
+            document.getElementById('reg_remark').value   = '';
+            document.getElementById('reg_error').classList.add('d-none');
+            registerModal.show();
+        }
+
+        function submitRegister() {
+            const name     = document.getElementById('reg_name').value.trim();
+            const phone    = document.getElementById('reg_phone').value.trim();
+            const adults   = parseInt(document.getElementById('reg_adults').value) || 0;
+            const children = parseInt(document.getElementById('reg_children').value) || 0;
+            const remark   = document.getElementById('reg_remark').value.trim() || null;
+            const errEl    = document.getElementById('reg_error');
+
+            if (!name)        { errEl.textContent = '請輸入姓名'; errEl.classList.remove('d-none'); return; }
+            if (!phone)       { errEl.textContent = '請輸入電話'; errEl.classList.remove('d-none'); return; }
+            if (adults < 1)   { errEl.textContent = '大人數至少 1 人'; errEl.classList.remove('d-none'); return; }
+
+            errEl.classList.add('d-none');
+
+            fetch('/WalkInQueues/Register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': csrfToken()
+                },
+                body: JSON.stringify({ name, phone, adultsCount: adults, childrenCount: children, remark })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    registerModal.hide();
+                    showAlert('success', '候位登記成功，稍後重新整理確認');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    errEl.textContent = data.message;
+                    errEl.classList.remove('d-none');
+                }
+            });
+        }
+
+        // ── 叫號 ────────────────────────────────────────────────────
+        function callQueue(id) {
+            if (!confirm('確認叫號？')) return;
+            fetch(`/WalkInQueues/Call/${id}`, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': csrfToken() }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', '叫號成功');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showAlert('danger', data.message);
+                }
+            });
+        }
+
+        // ── 入座 ────────────────────────────────────────────────────
+        function openSeatModal(id, name, count) {
+            _seatQueueId = id;
+            document.getElementById('seat_name').textContent  = name;
+            document.getElementById('seat_count').textContent = count;
+            document.getElementById('seat_table').value       = '';
+            document.getElementById('seat_error').classList.add('d-none');
+            seatModal.show();
+        }
+
+        function submitSeat() {
+            const tableId = parseInt(document.getElementById('seat_table').value);
+            const errEl   = document.getElementById('seat_error');
+            if (!tableId) { errEl.textContent = '請選擇桌位'; errEl.classList.remove('d-none'); return; }
+            errEl.classList.add('d-none');
+
+            fetch('/WalkInQueues/Seat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': csrfToken()
+                },
+                body: JSON.stringify({ id: _seatQueueId, tableId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    seatModal.hide();
+                    showAlert('success', '入座成功');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    errEl.textContent = data.message;
+                    errEl.classList.remove('d-none');
+                }
+            });
+        }
+
+        // ── 過號 ────────────────────────────────────────────────────
+        function noShowQueue(id) {
+            if (!confirm('確認標記為過號？')) return;
+            fetch(`/WalkInQueues/NoShow/${id}`, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': csrfToken() }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', '已標記為過號');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showAlert('danger', data.message);
+                }
+            });
+        }
+
+        // ── 離開 ────────────────────────────────────────────────────
+        function leaveQueue(id) {
+            if (!confirm('確認標記為已離開？')) return;
+            fetch(`/WalkInQueues/Leave/${id}`, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': csrfToken() }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', '已標記為離開');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showAlert('danger', data.message);
+                }
+            });
+        }
+    </script>
+}

@@ -1,8 +1,10 @@
 ﻿@model EatTogether.Models.ViewModels.ReservationSearchViewModel
+@using EatTogether.Models.DTOs
 @{
     ViewData["Title"] = "訂位管理";
     bool isToday = Model.SearchDate.HasValue &&
                    Model.SearchDate.Value.Date == DateTime.Today;
+    var tables = ViewBag.Tables as IEnumerable<TableDto> ?? Enumerable.Empty<TableDto>();
 }
 
 <div class="container-fluid px-4">
@@ -138,6 +140,7 @@
                         <th>預約時間</th>
                         <th>人數</th>
                         <th>狀態</th>
+                        <th>桌位</th>
                         <th>備註</th>
                         <th>操作</th>
                     </tr>
@@ -162,6 +165,18 @@
                             <td>
                                 <span class="badge @r.StatusBadgeClass">@r.StatusText</span>
                             </td>
+                            <td class="small">
+                                @if (!string.IsNullOrEmpty(r.TableName))
+                                {
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fas fa-border-all me-1"></i>@r.TableName
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
                             <td class="small text-muted">
                                 @(string.IsNullOrEmpty(r.Remark) ? "—" : r.Remark)
                             </td>
@@ -169,8 +184,9 @@
                                 @if (r.Status == 0)
                                 {
                                     <button class="btn btn-success btn-sm me-1"
-                                            onclick="updateStatus(@r.Id, 1)" title="報到">
-                                        <i class="fas fa-check"></i>
+                                            onclick="openCheckInModal(@r.Id, '@r.Name', @(r.AdultsCount + r.ChildrenCount))"
+                                            title="報到並選桌">
+                                        <i class="fas fa-chair me-1"></i>報到
                                     </button>
                                     <button class="btn btn-danger btn-sm me-1"
                                             onclick="updateStatus(@r.Id, 2)" title="取消">
@@ -184,7 +200,7 @@
                                 @if (r.Status == 1)
                                 {
                                     <span class="text-success small">
-                                        <i class="fas fa-check-circle me-1"></i>已完成報到
+                                        <i class="fas fa-check-circle me-1"></i>已報到
                                     </span>
                                 }
                             </td>
@@ -192,6 +208,41 @@
                     }
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ 報到選桌 Modal ═══ -->
+<div class="modal fade" id="checkInModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="fas fa-chair me-2"></i>報到選桌</h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small mb-2">
+                    <strong id="ci_name"></strong>（<span id="ci_count"></span> 人）
+                </p>
+                <label class="form-label fw-semibold">指定桌位 <span class="text-danger">*</span></label>
+                <select id="ci_table" class="form-select">
+                    <option value="">— 請選擇桌位 —</option>
+                    @foreach (var t in tables)
+                    {
+                        var ciClass = t.Status != 0 ? "text-muted" : "";
+                        var ciLabel = t.TableName + "（" + t.SeatCount + " 人桌）" +
+                                      (t.Status == 1 ? " ─ 用餐中" : t.Status == 2 ? " ─ 保留中" : "");
+                        <option value="@t.Id" class="@ciClass" data-seats="@t.SeatCount">@ciLabel</option>
+                    }
+                </select>
+                <div id="ci_error" class="text-danger small mt-1 d-none"></div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success btn-sm" onclick="submitCheckIn()">
+                    <i class="fas fa-check me-1"></i>確認報到
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -260,8 +311,46 @@
             }
         });
 
+        const checkInModal = new bootstrap.Modal(document.getElementById('checkInModal'));
+        let _checkInId = null;
+
+        // ── 報到選桌 ────────────────────────────────────────────────
+        function openCheckInModal(id, name, count) {
+            _checkInId = id;
+            document.getElementById('ci_name').textContent  = name;
+            document.getElementById('ci_count').textContent = count;
+            document.getElementById('ci_table').value       = '';
+            document.getElementById('ci_error').classList.add('d-none');
+            checkInModal.show();
+        }
+
+        function submitCheckIn() {
+            const tableId = parseInt(document.getElementById('ci_table').value);
+            const errEl   = document.getElementById('ci_error');
+            if (!tableId) { errEl.textContent = '請選擇桌位'; errEl.classList.remove('d-none'); return; }
+            errEl.classList.add('d-none');
+
+            fetch('/Reservations/CheckIn', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: _checkInId, tableId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    checkInModal.hide();
+                    showAlert('success', '報到成功，桌位已設為用餐中');
+                    setTimeout(() => location.reload(), 900);
+                } else {
+                    errEl.textContent = data.message;
+                    errEl.classList.remove('d-none');
+                }
+            });
+        }
+
+        // ── 其他狀態更新（取消 / NoShow）────────────────────────────
         function updateStatus(id, status) {
-            const msgs = { 1:'確認報到？', 2:'確定取消此訂位？', 3:'標記為 NoShow？' };
+            const msgs = { 2:'確定取消此訂位？', 3:'標記為 NoShow？' };
             if (!confirm(msgs[status])) return;
 
             fetch('/Reservations/UpdateStatus', {

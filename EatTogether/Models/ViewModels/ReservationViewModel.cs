@@ -50,4 +50,10 @@ namespace EatTogether.Models.ViewModels
         public int Id { get; set; }
         public int Status { get; set; }
     }
+
+    public class ReservationCheckInViewModel
+    {
+        public int Id      { get; set; }
+        public int TableId { get; set; }
+    }
 }

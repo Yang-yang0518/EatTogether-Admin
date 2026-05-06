@@ -9,10 +9,12 @@ namespace EatTogether.Controllers
 	public class ReservationsController : Controller
     {
         private readonly ReservationService _reservationService;
+        private readonly TableService       _tableService;
 
-        public ReservationsController(ReservationService reservationService)
+        public ReservationsController(ReservationService reservationService, TableService tableService)
         {
             _reservationService = reservationService;
+            _tableService       = tableService;
         }
 
         // GET: /Reservations?searchDate=yyyy-MM-dd&searchPhone=09xx&statusFilter=0
@@ -40,6 +42,8 @@ namespace EatTogether.Controllers
             vm.Results = all;
             // 今日統計：固定抓今日，不受篩選影響
             ViewBag.TodayStats = await _reservationService.GetByDateAsync(DateTime.Today);
+            // 桌位清單（供報到選桌用）
+            ViewBag.Tables = await _tableService.GetAllAsync();
             return View(vm);
         }
 
@@ -81,6 +85,14 @@ namespace EatTogether.Controllers
         public async Task<IActionResult> UpdateStatus([FromBody] ReservationUpdateStatusViewModel vm)
         {
             var result = await _reservationService.UpdateStatusAsync(vm.Id, vm.Status);
+            return Json(new { success = result.IsSuccess, message = result.ErrorMessage ?? "" });
+        }
+
+        // POST: /Reservations/CheckIn  (AJAX)
+        [HttpPost]
+        public async Task<IActionResult> CheckIn([FromBody] ReservationCheckInViewModel vm)
+        {
+            var result = await _reservationService.CheckInAsync(vm.Id, vm.TableId);
             return Json(new { success = result.IsSuccess, message = result.ErrorMessage ?? "" });
         }
     }
