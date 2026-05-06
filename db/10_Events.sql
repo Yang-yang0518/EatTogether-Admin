@@ -22,13 +22,13 @@ VALUES
 -- 【現在的活動】(進行中，Status=1)
 (8, N'午間快閃禮', N'週一至週五滿 500 送卡布奇諾', 500, '2026-03-01', '2026-03-31 23:59:59', (SELECT Id FROM dbo.Dishes WHERE DishName = N'卡布奇諾'), N'Gift', (SELECT Price FROM dbo.Dishes WHERE DishName = N'卡布奇諾'), 1, 1),
 (9, N'初夏海鮮祭', N'滿 1800 送香煎鮭魚排一份', 1800, '2026-03-10', '2026-03-17 23:59:59', (SELECT Id FROM dbo.Dishes WHERE DishName = N'香煎鮭魚排'), N'Gift', (SELECT Price FROM dbo.Dishes WHERE DishName = N'香煎鮭魚排'), 1, 1),
-(10, N'學生小確幸', N'憑學生證滿 350 送提拉米蘇', 350, '2026-03-16', '2026-04-30 23:59:59', (SELECT Id FROM dbo.Dishes WHERE DishName = N'提拉米蘇'), N'Gift', (SELECT Price FROM dbo.Dishes WHERE DishName = N'提拉米蘇'), 1, 0),
+(10, N'學生小確幸', N'憑學生證滿 350 送提拉米蘇', 350, '2026-03-16', '2026-05-20 23:59:59', (SELECT Id FROM dbo.Dishes WHERE DishName = N'提拉米蘇'), N'Gift', (SELECT Price FROM dbo.Dishes WHERE DishName = N'提拉米蘇'), 1, 0),
 (11, N'義起吃週年慶', N'3/18–4/10 全單滿 1200 現折 150', 1200, '2026-03-18', '2026-04-10 23:59:59', NULL, N'FixedAmount', 150, 1, 1),
 
 -- 【未來的活動】(預約中或草稿，Status=0)
 (12, N'復活節義式假期', N'3/29–4/06 全單享 85 折', 1000, '2026-03-29', '2026-04-06 23:59:59', NULL, N'Percent', 0.85, 0, 1),
 (13, N'春末松露慶典', N'滿 1200 送松露起司薯條', 1200, '2026-04-15', '2026-05-15 23:59:59', (SELECT Id FROM dbo.Dishes WHERE DishName = N'松露起司薯條'), N'Gift', (SELECT Price FROM dbo.Dishes WHERE DishName = N'松露起司薯條'), 0, 1),
-(14, N'五月寵愛母親節', N'全桌滿 2000 享 85 折', 2000, '2026-05-01', '2026-05-11 23:59:59', NULL, N'Percent', 0.85, 0, 1),
+(14, N'五月寵愛母親節', N'全桌滿 2000 享 85 折', 2000, '2026-05-01', '2026-05-20 23:59:59', NULL, N'Percent', 0.85, 0, 1),
 (15, N'五一連假微放鬆', N'5/1–5/4 全單滿 800 現折 80', 800, '2026-05-01', '2026-05-04 23:59:59', NULL, N'FixedAmount', 80, 0, 1),
 (16, N'春末假日饗宴', N'5/16–5/31 週六日全單享 9 折', 800, '2026-05-16', '2026-05-31 23:59:59', NULL, N'Percent', 0.90, 0, 1),
 (17, N'端午義式連假祭', N'5/28–6/01 全單滿 1000 現折 120', 1000, '2026-05-28', '2026-06-01 23:59:59', NULL, N'FixedAmount', 120, 0, 1),

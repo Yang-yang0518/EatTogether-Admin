@@ -869,7 +869,8 @@ namespace EatTogether.Models.Services
                     TableName = "外帶",
                     OrderAt = p.OrderAt,
                     TotalAmount = Math.Max(0, unbilled - discount),
-                    HasUnserved = p.PreOrderDetails.Any(d => d.DoneOrCancel == 0)
+                    HasUnserved = p.PreOrderDetails.Any(d => d.DoneOrCancel == 0),
+                    Note = p.Note
                 });
             }
 

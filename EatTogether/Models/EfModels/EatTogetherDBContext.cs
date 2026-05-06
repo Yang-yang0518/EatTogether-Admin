@@ -480,6 +480,10 @@ public partial class EatTogetherDBContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_OrderDetails_Orders");
 
+            entity.HasOne(d => d.ParentDetail).WithMany(p => p.InverseParentDetail)
+                .HasForeignKey(d => d.ParentDetailId)
+                .HasConstraintName("FK_OrderDetails_ParentDetail");
+
             entity.HasOne(d => d.Product).WithMany(p => p.OrderDetails)
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -694,6 +698,7 @@ public partial class EatTogetherDBContext : DbContext
         modelBuilder.Entity<SchedulerLog>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC07F08E49CF");
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC07C8047F58");
 
             entity.Property(e => e.ExecutedAt)
                 .HasDefaultValueSql("(getdate())")

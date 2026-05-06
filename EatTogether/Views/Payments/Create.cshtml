@@ -4,6 +4,54 @@
     ViewData["Title"] = "結帳";
     var takeOrders = Model.TakeoutOrders;
     bool canCancelOrder = true; // 暫時以店長身份模擬
+
+    // 從外帶訂單 Note 解析取餐人姓名與電話（支援新舊格式）
+    (string name, string phone) ParseTakeoutContact(string? note)
+    {
+        if (string.IsNullOrEmpty(note)) return ("", "");
+        var trimmed = note.Trim();
+        string name = "", phone = "";
+        if (trimmed.StartsWith("{"))
+        {
+            try
+            {
+                var doc = System.Text.Json.JsonDocument.Parse(trimmed);
+                // 新格式：從 order 欄位的行解析
+                if (doc.RootElement.TryGetProperty("order", out var orderProp)
+                    && orderProp.ValueKind != System.Text.Json.JsonValueKind.Null)
+                {
+                    foreach (var line in (orderProp.GetString() ?? "").Split('\n'))
+                    {
+                        var t = line.Trim();
+                        if (t.StartsWith("取餐人："))   name  = t.Substring("取餐人：".Length).Trim();
+                        if (t.StartsWith("聯絡電話：")) phone = t.Substring("聯絡電話：".Length).Trim();
+                    }
+                }
+                else
+                {
+                    // 舊格式：頂層欄位
+                    if (doc.RootElement.TryGetProperty("customerName",  out var cn)) name  = cn.GetString() ?? "";
+                    if (doc.RootElement.TryGetProperty("customerPhone", out var cp)) phone = cp.GetString() ?? "";
+                }
+            }
+            catch { }
+        }
+        return (name, phone);
+    }
+
+    // 姓名遮罩：Abc → AXX
+    string MaskName(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "";
+        return name[0] + new string('X', Math.Max(0, name.Length - 1));
+    }
+
+    // 電話遮罩：末三碼
+    string MaskPhone(string phone)
+    {
+        if (string.IsNullOrEmpty(phone)) return "";
+        return phone.Length >= 3 ? "***" + phone[^3..] : phone;
+    }
 }
 
 <style>
@@ -928,12 +976,28 @@
         <div class="takeout-list" id="takeList" style="display:block;">
             @foreach (var order in takeOrders)
             {
+                var (contactName, contactPhone) = ParseTakeoutContact(order.Note);
+                var maskedName  = MaskName(contactName);
+                var maskedPhone = MaskPhone(contactPhone);
                 <div class="takeout-item @(order.HasUnserved ? "unserved" : "")"
                      id="tbtn-@order.PreOrderId"
                      data-pre-order-id="@order.PreOrderId"
                      onclick="loadDetail(@order.PreOrderId, this)">
                     <div class="takeout-number">@order.OrderNumber</div>
                     <div class="takeout-meta">@order.OrderAt.ToString("HH:mm")</div>
+                    @if (!string.IsNullOrEmpty(maskedName) || !string.IsNullOrEmpty(maskedPhone))
+                    {
+                        <div style="font-size:0.78rem;color:#555;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;">
+                            @if (!string.IsNullOrEmpty(maskedName))
+                            {
+                                <span>👤 @maskedName</span>
+                            }
+                            @if (!string.IsNullOrEmpty(maskedPhone))
+                            {
+                                <span>📞 @maskedPhone</span>
+                            }
+                        </div>
+                    }
                     <div class="takeout-amount">NT$ @order.TotalAmount</div>
                 </div>
             }
@@ -1328,13 +1392,24 @@
                 let orderPart = data.note;
                 try {
                     const parsed = JSON.parse(data.note);
-                    orderPart = parsed.order || '';
-                } catch (e) { /* 舊格式純文字直接用 */ }
-                for (const line of orderPart.split('\n')) {
-                    const t = line.trim();
-                    if (t.startsWith('取餐時間：'))  pickupVal     = t.substring('取餐時間：'.length).trim();
-                    if (t.startsWith('取餐人：'))    customerName  = t.substring('取餐人：'.length).trim();
-                    if (t.startsWith('聯絡電話：'))  customerPhone = t.substring('聯絡電話：'.length).trim();
+                    if (parsed.order) {
+                        // 新格式：order 欄位有內容
+                        orderPart = parsed.order;
+                    } else {
+                        // 舊格式：order 為 null，從頂層欄位讀取
+                        if (parsed.pickupTime)   pickupVal     = parsed.pickupTime;
+                        if (parsed.customerName)  customerName  = parsed.customerName;
+                        if (parsed.customerPhone) customerPhone = parsed.customerPhone;
+                        orderPart = ''; // 不再從 orderPart 解析
+                    }
+                } catch (e) { /* 純文字格式直接用 */ }
+                if (orderPart) {
+                    for (const line of orderPart.split('\n')) {
+                        const t = line.trim();
+                        if (t.startsWith('取餐時間：'))  pickupVal     = t.substring('取餐時間：'.length).trim();
+                        if (t.startsWith('取餐人：'))    customerName  = t.substring('取餐人：'.length).trim();
+                        if (t.startsWith('聯絡電話：'))  customerPhone = t.substring('聯絡電話：'.length).trim();
+                    }
                 }
             }
             const showPickup = pickupVal && pickupVal !== '即時取餐' && pickupVal !== '即時';
