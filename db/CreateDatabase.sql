@@ -309,8 +309,6 @@ CREATE TABLE [dbo].[LimitedNotifications](
     [DishId]    INT NOT NULL,
     [CreatedAt] DATETIME2(0) NOT NULL DEFAULT (GETDATE()),
     CONSTRAINT [PK_LimitedNotifications] PRIMARY KEY ([Id]),
-    CONSTRAINT [FK_LimitedNotif_Members] FOREIGN KEY ([MemberId]) REFERENCES [Members]([Id]),
-    CONSTRAINT [FK_LimitedNotif_Dishes]  FOREIGN KEY ([DishId])  REFERENCES [Dishes]([Id]),
     CONSTRAINT [UQ_LimitedNotif_Mem_Dish] UNIQUE ([MemberId], [DishId])
 )
 GO
@@ -1467,6 +1465,18 @@ ALTER TABLE [dbo].[Reservations]  WITH CHECK ADD CONSTRAINT [FK_Reservations_Tab
     FOREIGN KEY([TableId]) REFERENCES [dbo].[Tables] ([Id])
 GO
 ALTER TABLE [dbo].[Reservations] CHECK CONSTRAINT [FK_Reservations_Tables]
+GO
+/****** Object:  ForeignKey [FK_LimitedNotif_Members]  ******/
+ALTER TABLE [dbo].[LimitedNotifications] WITH CHECK ADD CONSTRAINT [FK_LimitedNotif_Members]
+    FOREIGN KEY ([MemberId]) REFERENCES [dbo].[Members] ([Id])
+GO
+ALTER TABLE [dbo].[LimitedNotifications] CHECK CONSTRAINT [FK_LimitedNotif_Members]
+GO
+/****** Object:  ForeignKey [FK_LimitedNotif_Dishes]  ******/
+ALTER TABLE [dbo].[LimitedNotifications] WITH CHECK ADD CONSTRAINT [FK_LimitedNotif_Dishes]
+    FOREIGN KEY ([DishId]) REFERENCES [dbo].[Dishes] ([Id])
+GO
+ALTER TABLE [dbo].[LimitedNotifications] CHECK CONSTRAINT [FK_LimitedNotif_Dishes]
 GO
 ALTER TABLE [dbo].[SetMealItems]  WITH CHECK ADD  CONSTRAINT [CK_SetMealItems_DisplayOrder] CHECK  (([DisplayOrder]>=(0)))
 GO

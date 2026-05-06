@@ -29,6 +29,8 @@ public partial class EatTogetherDBContext : DbContext
 
     public virtual DbSet<Function> Functions { get; set; }
 
+    public virtual DbSet<LimitedNotification> LimitedNotifications { get; set; }
+
     public virtual DbSet<Member> Members { get; set; }
 
     public virtual DbSet<MemberConfirmToken> MemberConfirmTokens { get; set; }
@@ -231,6 +233,25 @@ public partial class EatTogetherDBContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.IsOwnerOnly).HasAnnotation("Relational:DefaultConstraintName", "DF_Functions_IsOwnerOnly");
+        });
+
+        modelBuilder.Entity<LimitedNotification>(entity =>
+        {
+            entity.HasIndex(e => new { e.MemberId, e.DishId }, "UQ_LimitedNotif_Mem_Dish").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.Dish).WithMany(p => p.LimitedNotifications)
+                .HasForeignKey(d => d.DishId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LimitedNotif_Dishes");
+
+            entity.HasOne(d => d.Member).WithMany(p => p.LimitedNotifications)
+                .HasForeignKey(d => d.MemberId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LimitedNotif_Members");
         });
 
         modelBuilder.Entity<Member>(entity =>
@@ -619,7 +640,7 @@ public partial class EatTogetherDBContext : DbContext
                 .HasForeignKey(d => d.MemberId)
                 .HasConstraintName("FK_Reservations_Members");
 
-            entity.HasOne(d => d.Table).WithMany()
+            entity.HasOne(d => d.Table).WithMany(p => p.Reservations)
                 .HasForeignKey(d => d.TableId)
                 .HasConstraintName("FK_Reservations_Tables");
         });
@@ -672,8 +693,7 @@ public partial class EatTogetherDBContext : DbContext
 
         modelBuilder.Entity<SchedulerLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0716A37F7C");
-            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC078C3B632F");
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC07F08E49CF");
 
             entity.Property(e => e.ExecutedAt)
                 .HasDefaultValueSql("(getdate())")
