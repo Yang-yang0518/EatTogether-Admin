@@ -16,6 +16,13 @@
         public DateTime? UsedDate { get; set; }
         public DateTime? ClaimedAt { get; set; }
 
+        // ── 使用明細（從 Orders 查詢時填入）──
+        public string? OrderNumber    { get; set; }
+        public int?    OriginalAmount { get; set; }
+        public int?    DiscountAmount { get; set; }
+        public int?    TotalAmount    { get; set; }
+        public string? PayMethod      { get; set; }
+
         public string DiscountDescription => DiscountType == 0
             ? $"折 ${DiscountValue}"
             : $"打 {100 - DiscountValue} 折";

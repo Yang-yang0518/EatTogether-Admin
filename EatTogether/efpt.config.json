@@ -51,6 +51,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[LimitedNotifications]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[MemberConfirmTokens]",
          "ObjectType": 0
       },

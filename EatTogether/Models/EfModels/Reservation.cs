@@ -33,5 +33,9 @@ public partial class Reservation
 
     public DateTime? CancelledAt { get; set; }
 
+    public int? TableId { get; set; }
+
     public virtual Member Member { get; set; }
+
+    public virtual Table Table { get; set; }
 }

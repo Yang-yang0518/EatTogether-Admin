@@ -1,10 +1,116 @@
 ﻿@model IEnumerable<EatTogether.Models.DTOs.TableDto>
+@using EatTogether.Models.DTOs
 @{
     ViewData["Title"] = "桌位管理";
+    var pendingReservations = ViewBag.PendingReservations as List<ReservationDto> ?? new List<ReservationDto>();
+    var pendingWalkIns      = ViewBag.PendingWalkIns      as List<WalkInQueueDto> ?? new List<WalkInQueueDto>();
+    int pendingTotal = pendingReservations.Count + pendingWalkIns.Count;
 }
 
 <div class="container-fluid px-4">
     <h1 class="mt-4">桌位管理</h1>
+
+    <!-- ═══ 今日待安排區塊 ═══ -->
+    <div class="card mb-4 border-warning">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-clock me-1"></i>
+                <strong>今日待安排</strong>
+                @if (pendingTotal > 0)
+                {
+                    <span class="badge bg-danger ms-2">@pendingTotal</span>
+                }
+            </div>
+            <div class="d-flex gap-2">
+                <a asp-controller="Reservations" asp-action="Index" class="btn btn-sm btn-outline-dark">
+                    <i class="fas fa-calendar-check me-1"></i>訂位管理
+                </a>
+                <a asp-controller="WalkInQueues" asp-action="Index" class="btn btn-sm btn-dark">
+                    <i class="fas fa-walking me-1"></i>候位管理
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-3">
+            @if (pendingTotal == 0)
+            {
+                <div class="text-center text-muted py-2">
+                    <i class="fas fa-check-circle me-1 text-success"></i>目前沒有待安排的訂位或候位
+                </div>
+            }
+            else
+            {
+                <div class="row g-2">
+                    @* ── 訂位 ── *@
+                    @foreach (var r in pendingReservations)
+                    {
+                        <div class="col-xl-3 col-lg-4 col-md-6">
+                            <div class="card h-100 border-start border-primary border-3">
+                                <div class="card-body py-2 px-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <span class="badge bg-primary">訂位</span>
+                                        <small class="text-muted">@r.ReservationDate.ToString("HH:mm")</small>
+                                    </div>
+                                    <div class="fw-semibold mt-1">@r.Name</div>
+                                    <div class="small text-muted">
+                                        <i class="fas fa-users me-1"></i>@(r.AdultsCount + r.ChildrenCount) 人
+                                        @if (r.ChildrenCount > 0)
+                                        {
+                                            <span class="ms-1">(大 @r.AdultsCount 小 @r.ChildrenCount)</span>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(r.Remark))
+                                    {
+                                        <div class="small text-secondary text-truncate" title="@r.Remark">
+                                            <i class="fas fa-comment-alt me-1"></i>@r.Remark
+                                        </div>
+                                    }
+                                    <div class="small text-muted mt-1">
+                                        <i class="fas fa-hashtag me-1"></i>@r.BookingNumber
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @* ── 候位 ── *@
+                    @foreach (var w in pendingWalkIns)
+                    {
+                        var cardColor = w.Status == 0 ? "success" : "warning";
+                        <div class="col-xl-3 col-lg-4 col-md-6">
+                            <div class="card h-100 border-start border-@cardColor border-3">
+                                <div class="card-body py-2 px-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <span class="badge @w.StatusBadgeClass">候位 @w.QueueNumber</span>
+                                        <small class="text-muted">登記 @w.RegisteredAt.ToString("HH:mm")</small>
+                                    </div>
+                                    <div class="fw-semibold mt-1">@w.Name</div>
+                                    <div class="small text-muted">
+                                        <i class="fas fa-users me-1"></i>@w.TotalCount 人
+                                        @if (w.ChildrenCount > 0)
+                                        {
+                                            <span class="ms-1">(大 @w.AdultsCount 小 @w.ChildrenCount)</span>
+                                        }
+                                    </div>
+                                    @if (w.Status == 1 && w.CalledAt.HasValue)
+                                    {
+                                        <div class="small text-warning fw-semibold">
+                                            <i class="fas fa-bell me-1"></i>已叫號 @w.CalledAt.Value.ToString("HH:mm")
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(w.Remark))
+                                    {
+                                        <div class="small text-secondary text-truncate" title="@w.Remark">
+                                            <i class="fas fa-comment-alt me-1"></i>@w.Remark
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
 
     <!-- 統計卡片 -->
     <div class="row mb-4">

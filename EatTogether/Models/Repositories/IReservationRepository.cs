@@ -13,5 +13,6 @@ namespace EatTogether.Models.Repositories
         Task<int> GetMaxSeqOfMonthAsync(int year, int month);
         Task<int> GetSessionBookedCountAsync(DateTime sessionStart, DateTime sessionEnd);
         Task<IEnumerable<ReservationDto>> GetBySessionAsync(DateTime sessionStart, DateTime sessionEnd);
+        Task CheckInAsync(int id, int tableId);
     }
 }

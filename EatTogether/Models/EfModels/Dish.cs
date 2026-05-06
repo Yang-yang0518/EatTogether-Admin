@@ -53,6 +53,8 @@ public partial class Dish
 
     public virtual ICollection<Event> Events { get; set; } = new List<Event>();
 
+    public virtual ICollection<LimitedNotification> LimitedNotifications { get; set; } = new List<LimitedNotification>();
+
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();

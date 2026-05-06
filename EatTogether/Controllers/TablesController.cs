@@ -9,17 +9,36 @@ namespace EatTogether.Controllers
 	[RequirePermission("Table_Manage")]
 	public class TablesController : Controller
     {
-        private readonly TableService _tableService;
+        private readonly TableService         _tableService;
+        private readonly ReservationService   _reservationService;
+        private readonly WalkInQueueService   _walkInQueueService;
 
-        public TablesController(TableService tableService)
+        public TablesController(
+            TableService       tableService,
+            ReservationService reservationService,
+            WalkInQueueService walkInQueueService)
         {
-            _tableService = tableService;
+            _tableService       = tableService;
+            _reservationService = reservationService;
+            _walkInQueueService = walkInQueueService;
         }
 
         // GET: /Tables
         public async Task<IActionResult> Index()
         {
             var dtos = await _tableService.GetAllAsync();
+
+            // 今日待安排：訂位 Status=0 (訂位中) + 候位 Status=0/1 (等待中/已叫號)
+            var today = DateTime.Today;
+            var pendingReservations = await _reservationService.GetByDateAsync(today);
+            var pendingWalkIns      = await _walkInQueueService.GetTodayPendingAsync();
+
+            ViewBag.PendingReservations = pendingReservations
+                .Where(r => r.Status == 0)
+                .OrderBy(r => r.ReservationDate)
+                .ToList();
+            ViewBag.PendingWalkIns = pendingWalkIns;
+
             return View(dtos);
         }
 
