@@ -111,45 +111,22 @@ namespace EatTogether.Models.Services
                 .Sum(i => i.Qty * i.UnitPrice);
             var discountAmount = dto.DiscountAmount;
 
-            // 加點不重複套用贈品活動
-            if (!dto.IsAddOrder)
+            // 手動選擇的 Gift 活動 → 加入贈品（一律手動，不自動套用）
+            if (!dto.IsAddOrder && dto.EventId.HasValue)
             {
-                // 自動贈品（IsAutoDiscount=1）
-                var allGiftEvents = await _eventRepo.GetApplicableEventsAsync((int)originalAmount);
-                foreach (var giftEv in allGiftEvents.Where(e => e.DiscountType == "Gift" && !string.IsNullOrEmpty(e.RewardDishName)))
+                var giftInfo = await _eventRepo.GetEventGiftInfoAsync(dto.EventId.Value);
+                if (giftInfo.HasValue && giftInfo.Value.DiscountType == "Gift"
+                    && !string.IsNullOrEmpty(giftInfo.Value.RewardDishName))
                 {
                     dto.Items.Add(new PreOrderDetailDto
                     {
                         ProductId   = 0,
-                        ProductName = $"🎁 {giftEv.RewardDishName}（活動贈品）",
+                        ProductName = $"🎁 {giftInfo.Value.RewardDishName}（活動贈品）",
                         Qty         = 1,
                         UnitPrice   = 0,
                         IsSetMeal   = false,
                         ParentIndex = null
                     });
-                }
-
-                // 手動選擇的 Gift 活動（若尚未被自動贈品涵蓋）
-                if (dto.EventId.HasValue)
-                {
-                    var alreadyAdded = allGiftEvents.Any(e => e.Id == dto.EventId.Value);
-                    if (!alreadyAdded)
-                    {
-                        var giftInfo = await _eventRepo.GetEventGiftInfoAsync(dto.EventId.Value);
-                        if (giftInfo.HasValue && giftInfo.Value.DiscountType == "Gift"
-                            && !string.IsNullOrEmpty(giftInfo.Value.RewardDishName))
-                        {
-                            dto.Items.Add(new PreOrderDetailDto
-                            {
-                                ProductId   = 0,
-                                ProductName = $"🎁 {giftInfo.Value.RewardDishName}（活動贈品）",
-                                Qty         = 1,
-                                UnitPrice   = 0,
-                                IsSetMeal   = false,
-                                ParentIndex = null
-                            });
-                        }
-                    }
                 }
             }
 
@@ -1105,7 +1082,7 @@ namespace EatTogether.Models.Services
                 if (ev != null && ev.DiscountType != "Gift" && ev.MinSpend <= originalAmount)
                     eventDiscount = ev.DiscountType == "FixedAmount"
                         ? (int)ev.DiscountValue
-                        : (int)(originalAmount * ev.DiscountValue / 100m);
+                        : (int)Math.Round(originalAmount * (1 - (double)ev.DiscountValue));
             }
             int discountAmount = Math.Min(couponDiscount + eventDiscount, originalAmount);
             int totalAmount    = originalAmount - discountAmount;
@@ -1318,7 +1295,7 @@ namespace EatTogether.Models.Services
                 {
                     eventDiscount = ev.DiscountType == "FixedAmount"
                         ? (int)ev.DiscountValue
-                        : (int)(orderAmount * ev.DiscountValue / 100m);
+                        : (int)Math.Round(orderAmount * (1 - (double)ev.DiscountValue));
                 }
             }
             int effectiveAmountForCoupon = Math.Max(0, orderAmount - eventDiscount);
@@ -1644,8 +1621,9 @@ namespace EatTogether.Models.Services
                         {
                             if (!eventApplied && ev.MinSpend <= unbilledAmount)
                             {
+                                // DiscountValue 以小數儲存（e.g. 0.85 = 85折），折扣 = amount × (1 - DiscountValue)
                                 orderDiscount += ev.DiscountType == "Percent"
-                                    ? (int)(unbilledAmount * ev.DiscountValue / 100m)
+                                    ? (int)Math.Round(unbilledAmount * (1 - (double)ev.DiscountValue))
                                     : (int)ev.DiscountValue;
                                 eventApplied = true;
                             }

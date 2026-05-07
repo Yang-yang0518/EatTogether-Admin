@@ -451,6 +451,7 @@ CREATE TABLE [dbo].[Orders](
 	[TableId] [int] NULL,
 	[UserId] [int] NULL,
 	[OrderAt] [datetime2](0) NOT NULL,
+	[EventId] [int] NULL,
 	[CouponId] [int] NULL,
 	[OriginalAmount] [int] NOT NULL,
 	[DiscountAmount] [int] NOT NULL,
@@ -1264,6 +1265,9 @@ ALTER TABLE [dbo].[OrderDetails] CHECK CONSTRAINT [FK_OrderDetails_Products]
 GO
 ALTER TABLE [dbo].[Orders]  WITH CHECK ADD  CONSTRAINT [FK_Orders_Coupons] FOREIGN KEY([CouponId])
 REFERENCES [dbo].[Coupons] ([Id])
+GO
+ALTER TABLE [dbo].[Orders]  WITH CHECK ADD  CONSTRAINT [FK_Orders_Events] FOREIGN KEY([EventId])
+REFERENCES [dbo].[Events] ([Id])
 GO
 ALTER TABLE [dbo].[Orders] CHECK CONSTRAINT [FK_Orders_Coupons]
 GO

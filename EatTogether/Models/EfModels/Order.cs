@@ -23,6 +23,8 @@ public partial class Order
 
     public DateTime OrderAt { get; set; }
 
+    public int? EventId { get; set; }
+
     public int? CouponId { get; set; }
 
     public int OriginalAmount { get; set; }
@@ -38,6 +40,8 @@ public partial class Order
     public string PayMethod { get; set; }
 
     public virtual Coupon Coupon { get; set; }
+
+    public virtual Event Event { get; set; }
 
     public virtual Member Member { get; set; }
 
