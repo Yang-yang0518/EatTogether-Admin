@@ -1,6 +1,7 @@
 ﻿using EatTogether.Models.DTOs;
 using EatTogether.Models.EfModels;
 using EatTogether.Models.ViewModels;
+using System.Linq.Expressions;
 
 namespace EatTogether.Models.Extensions
 {
@@ -21,7 +22,7 @@ namespace EatTogether.Models.Extensions
 				RewardDishName = vm.RewardDishName,
 				DiscountType = vm.DiscountType,
 				DiscountValue = vm.DiscountValue,
-				Status = CalculateStatus(vm.StartDate.Value, vm.EndDate.Value),
+				Status = vm.Status,
 				IsAutoDiscount = vm.IsAutoDiscount
 			};
 		}
@@ -39,24 +40,10 @@ namespace EatTogether.Models.Extensions
 				RewardDishId = dto.RewardDishId,
 				DiscountType = dto.DiscountType,
 				DiscountValue = dto.DiscountValue,
-				Status = CalculateStatus(dto.StartDate, dto.EndDate),
+				Status = dto.Status,
 				IsAutoDiscount = dto.IsAutoDiscount
 			};
 		}
-
-		// 自動計算狀態的方法
-		private static int CalculateStatus(DateTime startDate, DateTime endDate)
-		{
-			var today = DateTime.Today;
-
-			if (today < startDate)
-				return 0; // 未開始
-			else if (today >= startDate && today <= endDate)
-				return 1; // 進行中
-			else
-				return 2; // 已結束
-		}
-
 
 
 		//活動列表 dto -> vm
@@ -82,6 +69,26 @@ namespace EatTogether.Models.Extensions
 			};
 		}
 
+		//提供給 EF Core Select 專用的 Expression(能完美翻譯成 SQL)
+		public static Expression<Func<Event, EventDto>> ToEventDtoExpression() {
+
+			return entity => new EventDto
+			{
+				Id = entity.Id,
+				Title = entity.Title,
+				Summary = entity.Summary,
+				MinSpend = entity.MinSpend,
+				StartDate = entity.StartDate,
+				EndDate = (DateTime)entity.EndDate,
+				RewardDishId = entity.RewardDishId,
+				RewardDishName = entity.RewardDish != null ? entity.RewardDish.DishName : null,
+				DiscountType = entity.DiscountType,
+				DiscountValue = entity.DiscountValue,
+				Status = entity.Status
+			};
+		
+		}
+
 		public static EventDto ToEventDto(this Event entity)
 		{
 			return new EventDto
@@ -93,6 +100,7 @@ namespace EatTogether.Models.Extensions
 				StartDate = entity.StartDate,
 				EndDate = (DateTime)entity.EndDate,
 				RewardDishId = entity.RewardDishId,
+				RewardDishName = entity.RewardDish?.DishName,
 				DiscountType = entity.DiscountType,
 				DiscountValue = entity.DiscountValue,
 				Status = entity.Status
@@ -124,7 +132,7 @@ namespace EatTogether.Models.Extensions
 				RewardDishName = vm.RewardDishName,
 				DiscountType = vm.DiscountType,
 				DiscountValue = vm.DiscountValue.Value,
-				Status = CalculateStatus(vm.StartDate.Value, vm.EndDate.Value),
+				Status = vm.Status,
 				IsAutoDiscount = vm.IsAutoDiscount
 			};
 		}
@@ -161,7 +169,7 @@ namespace EatTogether.Models.Extensions
 				RewardDishId = dto.RewardDishId,
 				DiscountType = dto.DiscountType,
 				DiscountValue = dto.DiscountValue,
-				Status = CalculateStatus(dto.StartDate, dto.EndDate),
+				Status = dto.Status,
 				IsAutoDiscount = dto.IsAutoDiscount
 			};
 		}

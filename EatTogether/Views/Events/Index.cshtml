@@ -15,7 +15,7 @@
 
 @section Styles {
 
-    <style>        
+    <style>       
 
         /* 讓篩選按鈕不要跟文字擠在一起 */
         #filter-container {
@@ -51,169 +51,113 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary filter-btn" data-status="未開始">未開始</button> |
                 <button type="button" class="btn btn-sm btn-outline-danger filter-btn" data-status="已結束">已結束</button>
             </div>
-            <table class="table w-100" id="indexList">
+            <table id="eventTable" class="table w-100">
                 <thead class="bg-light">
                     <tr>
-                        @* <th>
-                    @Html.DisplayNameFor(model => model.Id)
-                </th> *@
-                        <th>
-                            @Html.DisplayNameFor(model => model.Title)
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.Summary)
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.MinSpend)
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.StartDate)
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.EndDate)
-                        </th>
-                        <th>
-                            贈品
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.DiscountType)
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.DiscountValue)
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.Status)
-                        </th>
+                        <th>標題</th>
+                        <th>摘要</th>
+                        <th>門檻</th>
+                        <th>開始日期</th>
+                        <th>結束日期</th>
+                        <th>贈品</th>
+                        <th>折扣類別</th>
+                        <th>折扣金額</th>
+                        <th>狀態</th>
                         <th></th>
                     </tr>
                 </thead>
-                <tbody>
-                    @foreach (var item in Model)
-                    {
-                        <tr>
-                            @* <td>
-                    @Html.DisplayFor(modelItem => item.Id)
-                </td> *@
-                            <td>
-                                @Html.DisplayFor(modelItem => item.Title)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(modelItem => item.Summary)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(modelItem => item.MinSpend)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(modelItem => item.StartDate)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(modelItem => item.EndDate)
-                            </td>
-                            <td>
-                                @(item.RewardDishName ?? "-")
-                            </td>
-                            <td>
-                                @{
-                                    string discountTypeDisplay = item.DiscountType switch
-                                    {
-                                        "FixedAmount" => "折抵金額",
-                                        "Percent" => "打折",
-                                        "Gift" => "贈品"
-                                    };
-                                    @discountTypeDisplay
-                                }
-                            </td>
-                            <td>
-
-                                @{
-                                    string discountDisplay = "";
-                                    if (item.DiscountType == "Percent")
-                                    {
-                                        double val = (double)(item.DiscountValue * 100);
-
-                                        if (val % 10 == 0)
-                                        {
-                                            // 如果是 90, 80，顯示為 9 折, 8 折
-                                            discountDisplay = (val / 10).ToString("0") + " 折";
-                                        }
-                                        else
-                                        {
-                                            discountDisplay = val.ToString("0") + " 折";
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        discountDisplay = item.DiscountValue.ToString("0");
-                                    }
-                                }
-                                @discountDisplay
-
-                            </td>
-                            <td>
-                                @{
-                                    string statusName = item.Status switch
-                                    {
-                                        0 => "未開始",
-                                        1 => "進行中",
-                                        2 => "已結束"
-                                    };
-                                    string badgeClass = item.Status switch
-                                    {
-                                        0 => "bg-secondary",
-                                        1 => "bg-success",
-                                        2 => "bg-danger"
-                                    };
-                                }
-                                <span class="badge @badgeClass">@statusName</span>
-                            </td>
-
-                            <td>
-                                @if (item.Status == 2)
-                                {
-                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-secondary btn-light btn-sm">
-                                        <i class="bi bi-eye"></i> 詳情
-                                    </a>
-                                }
-                                else
-                                {
-                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary btn-sm">
-                                        <i class="bi bi-pencil"></i> 編輯
-                                    </a>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
             </table>
             
         </div>  
-</div>
+    </div>
 </div>
 
 
 
 @section Scripts {
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
 
-        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
-        <script>
-
+    <script>
         $(document).ready(function () {
-            var table = $('#indexList').DataTable({
-                "language": {
-                    "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/zh-HANT.json" // 中文化
-                },
-                "pageLength": 10, 
-                "order": [[ 0, "desc" ]], 
-                //將篩選狀態標籤移進dataTables格式裡
-                "retrieve": true,
-                "dom": '<"d-flex justify-content-between align-items-center mb-3"<"filter-left"><"filter-right"f>>t<"d-flex justify-content-between mt-3"ip>',
-                "initComplete": function(settings, json) {
-                    $("#filter-container").appendTo($(".filter-left"));
-                }
-            });
+            var table = $('#eventTable').DataTable({
+                    ajax: {
+                        type: "GET",
+                        url: `/Events/Index`,
+                        dataSrc: ""
+                    },
+                    dom: '<"d-flex justify-content-between align-items-center mb-3"<"filter-left"><"filter-right"f>>t<"d-flex justify-content-between mt-3"ip>',
+                    initComplete: function() {
+                        $("#filter-container").appendTo($(".filter-left"));
+                    },
+                    columns: [
+                        { data: "title"},
+                        { data: "summary"},
+                        { data: "minSpend"},
+                        { data: "startDate", render: d => d?.substring(0,10).replace(/-/g,'/') },
+                        { data: "endDate", render: d => d?.substring(0,10).replace(/-/g,'/') },
+                        { data: "rewardDishName", render: d => d ?? '-' },
+                        { 
+                            data: "discountType",
+                            render: function(data){
+                                const map = {FixedAmount:'折抵金額', Percent:'打折', Gift: '贈品' };
+                                return map[data] ?? data;
+                            }
+                        },
+                        { 
+                            data: "discountValue",
+                            render: function(data, type, row){
+                                if(row.discountType === 'Percent'){
+                                    const val = data *100;
+                                    return val % 10 === 0 ? (val/10) + '折' : val + '折';
+                                }
+                                return data;
+                            }
+                        },
+                        { 
+                            data: "status",
+                            render: function(data, type){
+                                if(type === 'filter' || type === 'sort'){
+                                    return['未開始', '進行中', '已結束'][data] ?? data;
+                                }
+                                const labels = ['未開始', '進行中', '已結束'];
+                                const classes = ['bg-secondary', 'bg-success', 'bg-danger'];
+                                return `<span class="badge ${classes[data]}">${labels[data]}</span>`;
+                            }
+                        },
+                        {
+                            data: "id",
+                            orderable: false, //這一欄不需要排序功能
+                                render: function(data, type, row) {
+                                    if (row.status === 2) {
+                                        return `
+                                            <button type="button" class="btn-edit btn btn-outline-secondary btn-light btn-sm" data-id="${data}">
+                                                <i class="bi bi-eye"></i> 詳情
+                                            </button>
+                                        `;
+                                    }
+                                    return `
+                                        <button type="button" class="btn-edit btn btn-primary btn-sm" data-id="${data}">
+                                            <i class="bi bi-pencil-square"></i> 編輯
+                                        </button>
+                                    `;
+                                }
+                        }
+                    ],
+                    fixedHeader:{
+                        header:true
+                    },
+                    paging: true,
+                    pageLength: 10,
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.13.1/i18n/zh-HANT.json',
+                    }
+            })
+
+
+
+
 
 
             // 監聽篩選按鈕點擊事件
@@ -228,11 +172,15 @@
                 $(this).addClass('active btn-dark').removeClass('btn-outline-dark');
             });
 
-
-
+            // 查看按鈕（用事件委派，因為是動態產生的）
+            $('#eventTable').on('click', '.btn-edit', function() {
+                var id = $(this).data('id');
+                window.location.href = `/Events/Edit/${id}`;
             });
 
+    });
 
 
-        </script>
+
+    </script>
 }

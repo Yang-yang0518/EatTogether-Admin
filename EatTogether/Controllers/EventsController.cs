@@ -20,6 +20,7 @@ namespace EatTogether.Controllers
 			_service = service;
 		}
 
+		/// <summary>活動新增</summary>
 		// GET: Event/Create
 		[HttpGet]
 		public async Task<IActionResult> Create()
@@ -48,17 +49,23 @@ namespace EatTogether.Controllers
 			return RedirectToAction("Index");
 		}
 
-
-		[HttpGet]
+		/// <summary>活動列表</summary>
 		// GET: Event/Index
+		[HttpGet]
 		public async Task<IActionResult> Index()
 		{
-			var events = (await _service.GetAllForIndexAsync())
-				.Select(x => x.ToEventVm())
-				.ToList();
-			return View(events);
+			var data = await _service.GetAllForIndexAsync();
+			var vm = data.Select(dto => dto.ToEventVm());
+
+			// 判斷是否為 Ajax 請求 (或是檢查 Accept Header)
+			if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+			{
+				return Json(vm); //回傳 JSON 格式
+			}
+			return View(vm);
 		}
 
+		/// <summary>活動編輯</summary>
 		// GET: Event/Edit/5
 		[HttpGet]
 		public async Task<IActionResult> Edit(int id)

@@ -34,7 +34,7 @@ namespace EatTogether.Models.Services
 		///
 		/// ──────────────────────────────────────────────────────
 		///
-		/// 2. 個人通知（訂位、外帶、優惠券等）
+		/// 2. 個人通知（訂位、外帶、優惠券等）                  //此部分接在前台api
 		///    呼叫 SendToMemberAsync()，只建立該會員的通知。
 		///
 		///    範例：
@@ -53,13 +53,6 @@ namespace EatTogether.Models.Services
 		///  類型字串                    說明                  觸發位置
 		///  ─────────────────────────────────────────────────────────
 		///  NEWS                       文章 / 最新消息        ArticleService
-		///  RESERVATION_CONFIRM        訂位確認               ReservationService（待接）
-		///  RESERVATION_REMIND         訂位到店提醒           排程背景服務（待接）
-		///  RESERVATION_CANCEL         訂位取消               ReservationService（待接）
-		///  TAKEOUT_CREATED            外帶訂單成立           OrderService（待接）
-		///  TAKEOUT_READY              外帶備餐完成           OrderService（待接）
-		///  COUPON_RECEIVED            優惠券領取             CouponService（待接）
-		///  COUPON_EXPIRING            優惠券即將到期         排程背景服務（待接）
 		///
 		/// ══════════════════════════════════════════════════════
 		///  前台顯示規則（Vue BellNotification）
