@@ -17,7 +17,7 @@ namespace EatTogether.Models.Services
         Task<string> CreatePreOrderAsync(CreatePreOrderDto dto);
         Task<List<SelectListItem>> GetTableOptionsAsync(int? includeTableId = null);
         Task<List<CreatePreOrderItemViewModel>> GetMenuItemsAsync();
-        Task<CouponValidateDto> ValidateCouponAsync(string code, int originalAmount);
+        Task<CouponValidateDto> ValidateCouponAsync(string code, int originalAmount, int? memberId = null);
         Task CancelAllByTableAsync(int tableId);
         Task<List<SetMealItemGroupDto>> GetSetMealItemsAsync(int setMealId);
 
@@ -45,7 +45,7 @@ namespace EatTogether.Models.Services
         Task<bool> HasActiveOrderForTableAsync(int tableId);
 
         // 拆單折扣查詢（依金額直接查，不依賴訂單 context）
-        Task<List<EventApplicableDto>> GetEventsForSplitAsync(int amount);
+        Task<List<EventApplicableDto>> GetEventsForSplitAsync(int amount, int? memberId = null);
         Task<List<CouponDto>> GetCouponsForSplitAsync(int amount, int? memberId = null);
 
         // Checkout discount selection
@@ -321,7 +321,7 @@ namespace EatTogether.Models.Services
             return result;
         }
 
-        public async Task<CouponValidateDto> ValidateCouponAsync(string code, int originalAmount)
+        public async Task<CouponValidateDto> ValidateCouponAsync(string code, int originalAmount, int? memberId = null)
         {
             var coupon = await _couponRepo.GetByCodeAsync(code);
 
@@ -334,6 +334,18 @@ namespace EatTogether.Models.Services
                     IsValid = false,
                     Message = $"未達最低消費 NT$ {coupon.MinSpend}"
                 };
+
+            // 防呆：若有會員，檢查優惠券是否已套用在當日製作中訂單
+            if (memberId.HasValue)
+            {
+                var inUseIds = await _preOrderRepo.GetTodayUsedCouponIdsByMemberAsync(memberId.Value);
+                if (inUseIds.Contains(coupon.Id))
+                    return new CouponValidateDto
+                    {
+                        IsValid = false,
+                        Message = "此優惠券已套用在進行中的訂單，無法重複使用"
+                    };
+            }
 
             int discount = coupon.DiscountType == 0
                 ? (int)coupon.DiscountValue
@@ -1200,11 +1212,39 @@ namespace EatTogether.Models.Services
             return new List<PreOrder>();
         }
 
-        public async Task<List<EventApplicableDto>> GetEventsForSplitAsync(int amount)
-            => await _eventRepo.GetManualEventsAsync(amount);
+        public async Task<List<EventApplicableDto>> GetEventsForSplitAsync(int amount, int? memberId = null)
+        {
+            var events = await _eventRepo.GetManualEventsAsync(amount);
+
+            // 防呆：同一會員當日已使用（製作中或已完成）的活動不再顯示
+            if (memberId.HasValue && events.Count > 0)
+            {
+                var usedIds = await _preOrderRepo.GetTodayUsedEventIdsByMemberAsync(memberId.Value);
+                if (usedIds.Count > 0)
+                    events = events.Where(e => !usedIds.Contains(e.Id)).ToList();
+            }
+
+            return events;
+        }
 
         public async Task<List<CouponDto>> GetCouponsForSplitAsync(int amount, int? memberId = null)
-            => await _couponRepo.GetApplicableCouponsAsync(amount, memberId);
+        {
+            var coupons = await _couponRepo.GetApplicableCouponsAsync(amount, memberId);
+
+            // 防呆：當日製作中訂單已套用的優惠券標記為不可用
+            if (memberId.HasValue && coupons.Count > 0)
+            {
+                var inUseIds = await _preOrderRepo.GetTodayUsedCouponIdsByMemberAsync(memberId.Value);
+                if (inUseIds.Count > 0)
+                    foreach (var c in coupons.Where(c => inUseIds.Contains(c.Id)))
+                    {
+                        c.IsUsedByMember = true;   // 前端以此欄位判斷不可選
+                        c.IsEligible     = false;
+                    }
+            }
+
+            return coupons;
+        }
 
         public async Task<List<EventApplicableDto>> GetManualEventsForOrderAsync(int? tableId, int? preOrderId)
         {

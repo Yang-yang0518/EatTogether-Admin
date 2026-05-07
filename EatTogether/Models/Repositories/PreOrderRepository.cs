@@ -28,6 +28,10 @@ namespace EatTogether.Models.Repositories
         Task<bool> HasUnbilledDetailsForTableAsync(int tableId);
         Task<bool> AllNonCancelledDetailsBilledAsync(int preOrderId);
         Task UpdateTableAsync(int preOrderId, int? tableId, bool inOrOut);
+        /// <summary>當日該會員所有未取消訂單中已套用的 EventId 集合</summary>
+        Task<HashSet<int>> GetTodayUsedEventIdsByMemberAsync(int memberId);
+        /// <summary>當日該會員所有未取消訂單中已套用的 CouponId 集合</summary>
+        Task<HashSet<int>> GetTodayUsedCouponIdsByMemberAsync(int memberId);
     }
 
     public class PreOrderRepository : IPreOrderRepository
@@ -199,6 +203,48 @@ namespace EatTogether.Models.Repositories
             order.TableId = tableId;
             order.InOrOut = inOrOut;
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<HashSet<int>> GetTodayUsedEventIdsByMemberAsync(int memberId)
+        {
+            var today = DateTime.Today;
+            // PreOrders（製作中 + 已完成）當日 + 該會員 + 未取消 + 有套活動
+            var fromPreOrders = await _context.PreOrders
+                .AsNoTracking()
+                .Where(p => p.MemberId == memberId
+                         && p.DoneOrCancel != 2          // 2 = 已取消
+                         && p.OrderAt.Date == today
+                         && p.EventId != null)
+                .Select(p => p.EventId!.Value)
+                .ToListAsync();
+
+            // Orders（已結帳）當日 + 該會員 + 有套活動
+            var fromOrders = await _context.Orders
+                .AsNoTracking()
+                .Where(o => o.MemberId == memberId
+                         && o.OrderAt.Date == today
+                         && o.EventId != null)
+                .Select(o => o.EventId!.Value)
+                .ToListAsync();
+
+            return fromPreOrders.Concat(fromOrders).ToHashSet();
+        }
+
+        public async Task<HashSet<int>> GetTodayUsedCouponIdsByMemberAsync(int memberId)
+        {
+            var today = DateTime.Today;
+            // 製作中的 PreOrders（DoneOrCancel == 0）當日 + 該會員 + 有套優惠券
+            // （已結帳的 Orders 透過 MemberCoupon.IsUsed == true 已攔截）
+            var fromPreOrders = await _context.PreOrders
+                .AsNoTracking()
+                .Where(p => p.MemberId == memberId
+                         && p.DoneOrCancel == 0          // 0 = 製作中
+                         && p.OrderAt.Date == today
+                         && p.CouponId != null)
+                .Select(p => p.CouponId!.Value)
+                .ToListAsync();
+
+            return fromPreOrders.ToHashSet();
         }
     }
 }
