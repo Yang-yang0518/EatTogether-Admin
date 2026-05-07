@@ -2122,7 +2122,8 @@
     // ── 活動按鈕獨立更新（永遠執行） ──────────────────────
     async function refreshEventBtn() {
         try {
-            const res    = await fetch(`/PreOrders/GetCartEvents?amount=${rawCartTotal}`);
+            const memberParam = cartMemberId ? `&memberId=${cartMemberId}` : '';
+            const res    = await fetch(`/PreOrders/GetCartEvents?amount=${rawCartTotal}${memberParam}`);
             const data   = await res.json();
             const events = Array.isArray(data) ? data : [];
             _cartEventsCache = events;
@@ -2251,7 +2252,8 @@
         document.getElementById('cartEventClearModalBtn').style.display = cartSelectedEvent ? '' : 'none';
         document.getElementById('cartEventModal').classList.add('show');
         try {
-            const res    = await fetch(`/PreOrders/GetCartEvents?amount=${rawCartTotal}`);
+            const memberParam = cartMemberId ? `&memberId=${cartMemberId}` : '';
+            const res    = await fetch(`/PreOrders/GetCartEvents?amount=${rawCartTotal}${memberParam}`);
             const events = await res.json();
                 if (events?.error) {
         listArea.innerHTML = `<div style="text-align:center;color:#c0392b;padding:24px;">錯誤：${events.error}</div>`;

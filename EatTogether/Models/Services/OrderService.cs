@@ -17,7 +17,7 @@ namespace EatTogether.Models.Services
         Task<string> CreatePreOrderAsync(CreatePreOrderDto dto);
         Task<List<SelectListItem>> GetTableOptionsAsync(int? includeTableId = null);
         Task<List<CreatePreOrderItemViewModel>> GetMenuItemsAsync();
-        Task<CouponValidateDto> ValidateCouponAsync(string code, int originalAmount);
+        Task<CouponValidateDto> ValidateCouponAsync(string code, int originalAmount, int? memberId = null);
         Task CancelAllByTableAsync(int tableId);
         Task<List<SetMealItemGroupDto>> GetSetMealItemsAsync(int setMealId);
 
@@ -45,7 +45,7 @@ namespace EatTogether.Models.Services
         Task<bool> HasActiveOrderForTableAsync(int tableId);
 
         // 拆單折扣查詢（依金額直接查，不依賴訂單 context）
-        Task<List<EventApplicableDto>> GetEventsForSplitAsync(int amount);
+        Task<List<EventApplicableDto>> GetEventsForSplitAsync(int amount, int? memberId = null);
         Task<List<CouponDto>> GetCouponsForSplitAsync(int amount, int? memberId = null);
 
         // Checkout discount selection
@@ -111,45 +111,22 @@ namespace EatTogether.Models.Services
                 .Sum(i => i.Qty * i.UnitPrice);
             var discountAmount = dto.DiscountAmount;
 
-            // 加點不重複套用贈品活動
-            if (!dto.IsAddOrder)
+            // 手動選擇的 Gift 活動 → 加入贈品（一律手動，不自動套用）
+            if (!dto.IsAddOrder && dto.EventId.HasValue)
             {
-                // 自動贈品（IsAutoDiscount=1）
-                var allGiftEvents = await _eventRepo.GetApplicableEventsAsync((int)originalAmount);
-                foreach (var giftEv in allGiftEvents.Where(e => e.DiscountType == "Gift" && !string.IsNullOrEmpty(e.RewardDishName)))
+                var giftInfo = await _eventRepo.GetEventGiftInfoAsync(dto.EventId.Value);
+                if (giftInfo.HasValue && giftInfo.Value.DiscountType == "Gift"
+                    && !string.IsNullOrEmpty(giftInfo.Value.RewardDishName))
                 {
                     dto.Items.Add(new PreOrderDetailDto
                     {
                         ProductId   = 0,
-                        ProductName = $"🎁 {giftEv.RewardDishName}（活動贈品）",
+                        ProductName = $"🎁 {giftInfo.Value.RewardDishName}（活動贈品）",
                         Qty         = 1,
                         UnitPrice   = 0,
                         IsSetMeal   = false,
                         ParentIndex = null
                     });
-                }
-
-                // 手動選擇的 Gift 活動（若尚未被自動贈品涵蓋）
-                if (dto.EventId.HasValue)
-                {
-                    var alreadyAdded = allGiftEvents.Any(e => e.Id == dto.EventId.Value);
-                    if (!alreadyAdded)
-                    {
-                        var giftInfo = await _eventRepo.GetEventGiftInfoAsync(dto.EventId.Value);
-                        if (giftInfo.HasValue && giftInfo.Value.DiscountType == "Gift"
-                            && !string.IsNullOrEmpty(giftInfo.Value.RewardDishName))
-                        {
-                            dto.Items.Add(new PreOrderDetailDto
-                            {
-                                ProductId   = 0,
-                                ProductName = $"🎁 {giftInfo.Value.RewardDishName}（活動贈品）",
-                                Qty         = 1,
-                                UnitPrice   = 0,
-                                IsSetMeal   = false,
-                                ParentIndex = null
-                            });
-                        }
-                    }
                 }
             }
 
@@ -321,7 +298,7 @@ namespace EatTogether.Models.Services
             return result;
         }
 
-        public async Task<CouponValidateDto> ValidateCouponAsync(string code, int originalAmount)
+        public async Task<CouponValidateDto> ValidateCouponAsync(string code, int originalAmount, int? memberId = null)
         {
             var coupon = await _couponRepo.GetByCodeAsync(code);
 
@@ -334,6 +311,18 @@ namespace EatTogether.Models.Services
                     IsValid = false,
                     Message = $"未達最低消費 NT$ {coupon.MinSpend}"
                 };
+
+            // 防呆：若有會員，檢查優惠券是否已套用在當日製作中訂單
+            if (memberId.HasValue)
+            {
+                var inUseIds = await _preOrderRepo.GetTodayUsedCouponIdsByMemberAsync(memberId.Value);
+                if (inUseIds.Contains(coupon.Id))
+                    return new CouponValidateDto
+                    {
+                        IsValid = false,
+                        Message = "此優惠券已套用在進行中的訂單，無法重複使用"
+                    };
+            }
 
             int discount = coupon.DiscountType == 0
                 ? (int)coupon.DiscountValue
@@ -1093,7 +1082,7 @@ namespace EatTogether.Models.Services
                 if (ev != null && ev.DiscountType != "Gift" && ev.MinSpend <= originalAmount)
                     eventDiscount = ev.DiscountType == "FixedAmount"
                         ? (int)ev.DiscountValue
-                        : (int)(originalAmount * ev.DiscountValue / 100m);
+                        : (int)Math.Round(originalAmount * (1 - (double)ev.DiscountValue));
             }
             int discountAmount = Math.Min(couponDiscount + eventDiscount, originalAmount);
             int totalAmount    = originalAmount - discountAmount;
@@ -1200,11 +1189,39 @@ namespace EatTogether.Models.Services
             return new List<PreOrder>();
         }
 
-        public async Task<List<EventApplicableDto>> GetEventsForSplitAsync(int amount)
-            => await _eventRepo.GetManualEventsAsync(amount);
+        public async Task<List<EventApplicableDto>> GetEventsForSplitAsync(int amount, int? memberId = null)
+        {
+            var events = await _eventRepo.GetManualEventsAsync(amount);
+
+            // 防呆：同一會員當日已使用（製作中或已完成）的活動不再顯示
+            if (memberId.HasValue && events.Count > 0)
+            {
+                var usedIds = await _preOrderRepo.GetTodayUsedEventIdsByMemberAsync(memberId.Value);
+                if (usedIds.Count > 0)
+                    events = events.Where(e => !usedIds.Contains(e.Id)).ToList();
+            }
+
+            return events;
+        }
 
         public async Task<List<CouponDto>> GetCouponsForSplitAsync(int amount, int? memberId = null)
-            => await _couponRepo.GetApplicableCouponsAsync(amount, memberId);
+        {
+            var coupons = await _couponRepo.GetApplicableCouponsAsync(amount, memberId);
+
+            // 防呆：當日製作中訂單已套用的優惠券標記為不可用
+            if (memberId.HasValue && coupons.Count > 0)
+            {
+                var inUseIds = await _preOrderRepo.GetTodayUsedCouponIdsByMemberAsync(memberId.Value);
+                if (inUseIds.Count > 0)
+                    foreach (var c in coupons.Where(c => inUseIds.Contains(c.Id)))
+                    {
+                        c.IsUsedByMember = true;   // 前端以此欄位判斷不可選
+                        c.IsEligible     = false;
+                    }
+            }
+
+            return coupons;
+        }
 
         public async Task<List<EventApplicableDto>> GetManualEventsForOrderAsync(int? tableId, int? preOrderId)
         {
@@ -1278,7 +1295,7 @@ namespace EatTogether.Models.Services
                 {
                     eventDiscount = ev.DiscountType == "FixedAmount"
                         ? (int)ev.DiscountValue
-                        : (int)(orderAmount * ev.DiscountValue / 100m);
+                        : (int)Math.Round(orderAmount * (1 - (double)ev.DiscountValue));
                 }
             }
             int effectiveAmountForCoupon = Math.Max(0, orderAmount - eventDiscount);
@@ -1604,8 +1621,9 @@ namespace EatTogether.Models.Services
                         {
                             if (!eventApplied && ev.MinSpend <= unbilledAmount)
                             {
+                                // DiscountValue 以小數儲存（e.g. 0.85 = 85折），折扣 = amount × (1 - DiscountValue)
                                 orderDiscount += ev.DiscountType == "Percent"
-                                    ? (int)(unbilledAmount * ev.DiscountValue / 100m)
+                                    ? (int)Math.Round(unbilledAmount * (1 - (double)ev.DiscountValue))
                                     : (int)ev.DiscountValue;
                                 eventApplied = true;
                             }

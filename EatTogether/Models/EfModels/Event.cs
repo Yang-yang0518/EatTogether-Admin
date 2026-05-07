@@ -31,6 +31,8 @@ public partial class Event
 
     public virtual ICollection<Article> Articles { get; set; } = new List<Article>();
 
+    public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
+
     public virtual ICollection<PreOrder> PreOrders { get; set; } = new List<PreOrder>();
 
     public virtual Dish RewardDish { get; set; }

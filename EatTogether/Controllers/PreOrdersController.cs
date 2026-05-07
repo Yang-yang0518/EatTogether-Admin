@@ -118,9 +118,9 @@ namespace EatTogether.Controllers
 
 		[RequirePermission("Order_StatusUpdate")]
 		[HttpGet]
-        public async Task<IActionResult> ValidateCoupon(string code, int originalAmount)
+        public async Task<IActionResult> ValidateCoupon(string code, int originalAmount, int? memberId = null)
         {
-            var result = await _service.ValidateCouponAsync(code, originalAmount);
+            var result = await _service.ValidateCouponAsync(code, originalAmount, memberId);
             return Json(result);
         }
 
@@ -185,11 +185,11 @@ namespace EatTogether.Controllers
         // ── 點餐頁購物車：活動清單（含未達門檻） ─────────────────
         [RequirePermission("Order_StatusUpdate")]
         [HttpGet]
-        public async Task<IActionResult> GetCartEvents(int amount)
+        public async Task<IActionResult> GetCartEvents(int amount, int? memberId = null)
         {
             try
             {
-                var events = await _service.GetEventsForSplitAsync(amount);
+                var events = await _service.GetEventsForSplitAsync(amount, memberId);
                 return Json(events);
             }
             catch (Exception ex)

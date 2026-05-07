@@ -445,6 +445,10 @@ public partial class EatTogetherDBContext : DbContext
                 .HasForeignKey(d => d.CouponId)
                 .HasConstraintName("FK_Orders_Coupons");
 
+            entity.HasOne(d => d.Event).WithMany(p => p.Orders)
+                .HasForeignKey(d => d.EventId)
+                .HasConstraintName("FK_Orders_Events");
+
             entity.HasOne(d => d.Member).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.MemberId)
                 .HasConstraintName("FK_Orders_Members");
@@ -697,8 +701,7 @@ public partial class EatTogetherDBContext : DbContext
 
         modelBuilder.Entity<SchedulerLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC07F08E49CF");
-            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC07C8047F58");
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC072C4D057A");
 
             entity.Property(e => e.ExecutedAt)
                 .HasDefaultValueSql("(getdate())")
