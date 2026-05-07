@@ -107,7 +107,7 @@
                         </div>
                         <div class="form-group mb-3">
                             <label asp-for="DiscountType" class="control-label"></label><span class="text-danger">*</span>
-                            <select asp-for="DiscountType" class="form-control">
+                            <select asp-for="DiscountType" class="form-control" id="DiscountType">
                                 <option value=""></option>
                                 <option value="FixedAmount">折抵金額</option>
                                 <option value="Percent">打折</option>
@@ -170,12 +170,24 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
+        //監聽贈品選項，如果有選會自動填入類別及價格
         $('#rewardDishSelect').on('change', function () {
             var price = $(this).find(':selected').data('price');
             if (price !== undefined && price !== '') {
-                $('#DiscountValue').val(price);  // 自動填入價格
+                $('#DiscountValue').val(price);  
+                $('#DiscountType').val('Gift');  
             } else {
-                $('#DiscountValue').val('');     // 選「無贈品」時清空
+                $('#DiscountValue').val('');     
+                $('#DiscountType').val('');  
+            }
+        });
+
+        //監聽折扣類別選項，如果先前贈品欄位有值會直接清空
+        $('#DiscountType').on('change', function () {
+            var type = $(this).val();
+            if (type == 'FixedAmount' || type == 'Percent' || type == '') {
+                $('#rewardDishSelect').val('');
+                $('#DiscountValue').val('');
             }
         });
 

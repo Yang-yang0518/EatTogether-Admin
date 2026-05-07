@@ -30,21 +30,7 @@ namespace EatTogether.Models.Repositories
 		{
 			var data = await _context.Events
 				.AsNoTracking()
-				.Select(e => new EventDto
-				{
-					Id = e.Id,
-					Title = e.Title,
-					Summary = e.Summary,
-					MinSpend = e.MinSpend,
-					StartDate = e.StartDate,
-					EndDate = (DateTime)e.EndDate,
-					RewardDishId = e.RewardDishId,
-					RewardDishName = e.RewardDish != null ? e.RewardDish.DishName : null,
-					DiscountType = e.DiscountType,
-					DiscountValue = e.DiscountValue,
-					Status = e.Status,
-					IsAutoDiscount = e.IsAutoDiscount
-				})
+                .Select(EventsMappingExtension.ToEventDtoExpression())
 				.ToListAsync();
 
 			return data;

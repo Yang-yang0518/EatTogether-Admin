@@ -24,6 +24,7 @@ namespace EatTogether.Models.Services
 		{
 			try
 			{
+				dto.Status = CalculateStatus(dto.StartDate, dto.EndDate);
 				await _repo.CreateAsync(dto);
 				return Event_Article_ServiceResult<bool>.Ok(true);
 			}
@@ -78,6 +79,7 @@ namespace EatTogether.Models.Services
 		{
 			try
 			{
+				dto.Status = CalculateStatus(dto.StartDate, dto.EndDate);
 				await _repo.EditAsync(dto);
 
 				return Event_Article_ServiceResult<bool>.Ok(true);
@@ -120,6 +122,17 @@ namespace EatTogether.Models.Services
 				IsAutoDiscount = source.IsAutoDiscount
 				//,Status = 0
 			};
+		}
+
+
+		//自動計算活動狀態
+		public static int CalculateStatus(DateTime startDate, DateTime endDate)
+		{
+			var today = DateTime.Today;
+
+			if (today < startDate)	return 0; // 未開始
+			else if (today >= startDate && today <= endDate) return 1; // 進行中
+			else return 2; // 已結束
 		}
 
 
