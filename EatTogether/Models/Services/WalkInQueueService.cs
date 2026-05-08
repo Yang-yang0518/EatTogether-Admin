@@ -24,9 +24,19 @@ namespace EatTogether.Models.Services
         public async Task<IEnumerable<WalkInQueueDto>> GetTodayPendingAsync()
             => await _repo.GetTodayPendingAsync();
 
+        // 營業時間：11:00 開店，候位開放時間 = 開店前 30 分鐘（10:30）
+        private static readonly TimeSpan OpenTime        = new TimeSpan(11, 0, 0);
+        private static readonly TimeSpan QueueOpenOffset = TimeSpan.FromMinutes(30);
+
         /// <summary>現場登記候位</summary>
         public async Task<Result<int>> RegisterAsync(WalkInQueueDto dto)
         {
+            // 候位時間限制：開店前 30 分鐘才開放
+            var now          = DateTime.Now.TimeOfDay;
+            var queueOpenAt  = OpenTime - QueueOpenOffset;   // 10:30
+            if (now < queueOpenAt)
+                return Result<int>.Fail($"候位於 {queueOpenAt:hh\\:mm} 開放（營業前 30 分鐘），目前尚未開放");
+
             if (string.IsNullOrWhiteSpace(dto.Name))
                 return Result<int>.Fail("姓名不可為空");
             if (string.IsNullOrWhiteSpace(dto.Phone))
