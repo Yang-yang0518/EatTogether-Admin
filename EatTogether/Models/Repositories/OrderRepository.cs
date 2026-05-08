@@ -2,14 +2,16 @@
 
 namespace EatTogether.Models.Repositories
 {
-    public interface IOrderRepository 
+    public interface IOrderRepository
     {
         Task AddWithPaymentAsync(Order order, Payment payment);
+        Task SaveChangesAsync();
     }
-    public class OrderRepository : IOrderRepository 
+    public class OrderRepository : IOrderRepository
     {
         private readonly EatTogetherDBContext _context;
         public OrderRepository(EatTogetherDBContext db) => _context = db;
+        public async Task SaveChangesAsync() => await _context.SaveChangesAsync();
         public async Task AddWithPaymentAsync(Order order, Payment payment)
         {
             // 先存 Payment 取得 Id

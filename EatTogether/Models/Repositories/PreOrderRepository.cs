@@ -81,7 +81,6 @@ namespace EatTogether.Models.Repositories
             {
                 order.DoneOrCancel = 2;
                 order.CancelledAt = DateTime.Now;
-                order.Note = string.IsNullOrEmpty(order.Note) ? "取消" : order.Note + "／取消";
                 foreach (var detail in order.PreOrderDetails)
                     detail.DoneOrCancel = 2;
             }
@@ -158,7 +157,6 @@ namespace EatTogether.Models.Repositories
 
             order.DoneOrCancel = 2; // Cancelled
             order.CancelledAt = DateTime.Now;
-            order.Note = string.IsNullOrEmpty(order.Note) ? "取消" : order.Note + "／取消";
 
             foreach (var detail in order.PreOrderDetails)
             {
@@ -208,26 +206,16 @@ namespace EatTogether.Models.Repositories
         public async Task<HashSet<int>> GetTodayUsedEventIdsByMemberAsync(int memberId)
         {
             var today = DateTime.Today;
-            // PreOrders（製作中 + 已完成）當日 + 該會員 + 未取消 + 有套活動
-            var fromPreOrders = await _context.PreOrders
+            // PreOrders（製作中 DoneOrCancel=0 + 已完成 DoneOrCancel=1）當日 + 該會員 + 有套活動
+            // Order 沒有 EventId，活動資訊存於 PreOrder，直接查 PreOrders 即可涵蓋所有情況
+            return (await _context.PreOrders
                 .AsNoTracking()
                 .Where(p => p.MemberId == memberId
-                         && p.DoneOrCancel != 2          // 2 = 已取消
+                         && p.DoneOrCancel != 2          // 排除已取消
                          && p.OrderAt.Date == today
                          && p.EventId != null)
                 .Select(p => p.EventId!.Value)
-                .ToListAsync();
-
-            // Orders（已結帳）當日 + 該會員 + 有套活動
-            var fromOrders = await _context.Orders
-                .AsNoTracking()
-                .Where(o => o.MemberId == memberId
-                         && o.OrderAt.Date == today
-                         && o.EventId != null)
-                .Select(o => o.EventId!.Value)
-                .ToListAsync();
-
-            return fromPreOrders.Concat(fromOrders).ToHashSet();
+                .ToListAsync()).ToHashSet();
         }
 
         public async Task<HashSet<int>> GetTodayUsedCouponIdsByMemberAsync(int memberId)

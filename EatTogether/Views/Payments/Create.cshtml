@@ -6,37 +6,38 @@
     bool canCancelOrder = true; // 暫時以店長身份模擬
 
     // 從外帶訂單 Note 解析取餐人姓名與電話（支援新舊格式）
-    (string name, string phone) ParseTakeoutContact(string? note)
+    (string name, string phone, string pickup) ParseTakeoutContact(string? note)
     {
-        if (string.IsNullOrEmpty(note)) return ("", "");
+        if (string.IsNullOrEmpty(note)) return ("", "", "");
         var trimmed = note.Trim();
-        string name = "", phone = "";
+        string name = "", phone = "", pickup = "";
         if (trimmed.StartsWith("{"))
         {
             try
             {
                 var doc = System.Text.Json.JsonDocument.Parse(trimmed);
-                // 新格式：從 order 欄位的行解析
                 if (doc.RootElement.TryGetProperty("order", out var orderProp)
                     && orderProp.ValueKind != System.Text.Json.JsonValueKind.Null)
                 {
                     foreach (var line in (orderProp.GetString() ?? "").Split('\n'))
                     {
                         var t = line.Trim();
-                        if (t.StartsWith("取餐人："))   name  = t.Substring("取餐人：".Length).Trim();
-                        if (t.StartsWith("聯絡電話：")) phone = t.Substring("聯絡電話：".Length).Trim();
+                        if (t.StartsWith("取餐人："))    name   = t.Substring("取餐人：".Length).Trim();
+                        if (t.StartsWith("聯絡電話：")) phone  = t.Substring("聯絡電話：".Length).Trim();
+                        if (t.StartsWith("電話："))     phone  = t.Substring("電話：".Length).Trim();
+                        if (t.StartsWith("取餐時間：")) pickup = t.Substring("取餐時間：".Length).Trim();
                     }
                 }
                 else
                 {
-                    // 舊格式：頂層欄位
-                    if (doc.RootElement.TryGetProperty("customerName",  out var cn)) name  = cn.GetString() ?? "";
-                    if (doc.RootElement.TryGetProperty("customerPhone", out var cp)) phone = cp.GetString() ?? "";
+                    if (doc.RootElement.TryGetProperty("customerName",  out var cn)) name   = cn.GetString() ?? "";
+                    if (doc.RootElement.TryGetProperty("customerPhone", out var cp)) phone  = cp.GetString() ?? "";
+                    if (doc.RootElement.TryGetProperty("pickupTime",    out var pt)) pickup = pt.GetString() ?? "";
                 }
             }
             catch { }
         }
-        return (name, phone);
+        return (name, phone, pickup);
     }
 
     // 姓名遮罩：Abc → AXX
@@ -936,7 +937,19 @@
     <!-- ── 左側 ── -->
     <div class="left-panel">
         <div class="left-header">
-            <div class="left-title">💳 結帳</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">
+                <div class="left-title" style="margin-bottom:0;">💳 結帳</div>
+                <div id="phoneSearchWrap" style="display:flex;align-items:center;gap:6px;">
+                    <input id="phoneSearchInput" type="text" maxlength="3" inputmode="numeric"
+                           placeholder="輸入末3碼查詢訂單"
+                           oninput="filterByPhone(this.value)"
+                           style="width:150px;padding:4px 8px;border:1.5px solid #ddd;border-radius:8px;
+                                  font-family:inherit;font-size:0.9rem;text-align:center;outline:none;
+                                  transition:border-color 0.15s;"
+                           onfocus="this.style.borderColor='#1a77c9'"
+                           onblur="this.style.borderColor='#ddd'">
+                </div>
+            </div>
             <div class="tab-wrap">
                 <button class="tab-btn" onclick="switchTab('dine')">🪑 內用</button>
                 <button class="tab-btn active" onclick="switchTab('take')">🥡 外帶</button>
@@ -976,28 +989,39 @@
         <div class="takeout-list" id="takeList" style="display:block;">
             @foreach (var order in takeOrders)
             {
-                var (contactName, contactPhone) = ParseTakeoutContact(order.Note);
-                var maskedName  = MaskName(contactName);
-                var maskedPhone = MaskPhone(contactPhone);
+                var (contactName, contactPhone, contactPickup) = ParseTakeoutContact(order.Note);
+                var maskedName   = MaskName(contactName);
+                var maskedPhone  = MaskPhone(contactPhone);
+                var showPickup   = !string.IsNullOrEmpty(contactPickup) && contactPickup != "即時取餐" && contactPickup != "即時";
+                var hasContact   = !string.IsNullOrEmpty(maskedName) || !string.IsNullOrEmpty(maskedPhone);
                 <div class="takeout-item @(order.HasUnserved ? "unserved" : "")"
                      id="tbtn-@order.PreOrderId"
                      data-pre-order-id="@order.PreOrderId"
+                     data-phone="@(contactPhone.Length >= 3 ? contactPhone[^3..] : contactPhone)"
                      onclick="loadDetail(@order.PreOrderId, this)">
-                    <div class="takeout-number">@order.OrderNumber</div>
-                    <div class="takeout-meta">@order.OrderAt.ToString("HH:mm")</div>
-                    @if (!string.IsNullOrEmpty(maskedName) || !string.IsNullOrEmpty(maskedPhone))
-                    {
-                        <div style="font-size:0.78rem;color:#555;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;">
-                            @if (!string.IsNullOrEmpty(maskedName))
-                            {
-                                <span>👤 @maskedName</span>
-                            }
-                            @if (!string.IsNullOrEmpty(maskedPhone))
-                            {
-                                <span>📞 @maskedPhone</span>
-                            }
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
+                        <div>
+                            <div class="takeout-number">@order.OrderNumber</div>
+                            <div class="takeout-meta">@order.OrderAt.ToString("HH:mm")</div>
                         </div>
-                    }
+                        @if (showPickup || hasContact)
+                        {
+                            <div style="text-align:right;font-size:0.9rem;line-height:1.6;flex-shrink:0;">
+                                @if (hasContact)
+                                {
+                                    <div style="color:#555;display:flex;gap:10px;align-items:center;justify-content:flex-end;">
+                                        @if (!string.IsNullOrEmpty(maskedName))  { <span>👤 @maskedName</span> }
+                                        @if (!string.IsNullOrEmpty(maskedPhone)) { <span>📞 @maskedPhone</span> }
+                                        @if (showPickup) { <span style="color:#1a5fa8;font-weight:700;">🕐 @contactPickup</span> }
+                                    </div>
+                                }
+                                else if (showPickup)
+                                {
+                                    <div style="color:#1a5fa8;font-weight:700;">🕐 @contactPickup</div>
+                                }
+                            </div>
+                        }
+                    </div>
                     <div class="takeout-amount">NT$ @order.TotalAmount</div>
                 </div>
             }
@@ -1319,6 +1343,14 @@
         document.getElementById('dineGrid').style.display = isDine ? 'grid' : 'none';
         document.getElementById('takeList').style.display = isDine ? 'none' : 'block';
 
+        // 外帶時顯示末3碼搜尋欄，內用時隱藏並清空
+        const phoneWrap = document.getElementById('phoneSearchWrap');
+        if (phoneWrap) phoneWrap.style.display = isDine ? 'none' : 'flex';
+        if (isDine) {
+            const inp = document.getElementById('phoneSearchInput');
+            if (inp) { inp.value = ''; filterByPhone(''); }
+        }
+
         if (isDine) {
             // 切回內用 → 右側顯示「請選擇桌號」
             closeDetail();
@@ -1334,6 +1366,30 @@
                 closeDetail();
                 document.getElementById('emptyRightIcon').textContent = '🥡';
                 document.getElementById('emptyRightText').textContent = '目前沒有外帶訂單';
+            }
+        }
+    }
+
+    function filterByPhone(val) {
+        const q = val.trim();
+        document.querySelectorAll('#takeList .takeout-item').forEach(item => {
+            if (!q) {
+                item.style.display = '';
+                item.style.outline = '';
+                return;
+            }
+            const phone = (item.dataset.phone || '').toLowerCase();
+            const match = phone.endsWith(q);
+            item.style.display = match ? '' : 'none';
+            item.style.outline = match ? '2px solid #1a77c9' : '';
+        });
+        // 若只剩一筆匹配，自動載入
+        if (q.length === 3) {
+            const visible = [...document.querySelectorAll('#takeList .takeout-item')]
+                .filter(el => el.style.display !== 'none');
+            if (visible.length === 1) {
+                const pid = parseInt(visible[0].dataset.preOrderId);
+                if (pid) loadDetail(pid, visible[0]);
             }
         }
     }
@@ -1409,6 +1465,7 @@
                         if (t.startsWith('取餐時間：'))  pickupVal     = t.substring('取餐時間：'.length).trim();
                         if (t.startsWith('取餐人：'))    customerName  = t.substring('取餐人：'.length).trim();
                         if (t.startsWith('聯絡電話：'))  customerPhone = t.substring('聯絡電話：'.length).trim();
+                        if (t.startsWith('電話：'))      customerPhone = t.substring('電話：'.length).trim();
                     }
                 }
             }
