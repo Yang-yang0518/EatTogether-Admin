@@ -2725,8 +2725,8 @@
             const cPhone = document.getElementById('hiddenCustomerPhone').value.trim();
             const utensils = document.getElementById('hiddenNeedsUtensils').value;
             if (cName)     noteParts.push('取餐人：' + cName);
-            if (cPhone)    noteParts.push('聯絡電話：' + cPhone);
-            if (utensils)  noteParts.push('需要餐具：是');
+            if (cPhone)    noteParts.push('電話：' + cPhone);
+            if (utensils)  noteParts.push('餐具：需要');
         }
         document.getElementById('hiddenNoteField').value = noteParts.join('\n');
 

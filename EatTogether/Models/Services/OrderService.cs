@@ -767,17 +767,41 @@ namespace EatTogether.Models.Services
                 TotalAmount    = originalAmount - discountAmount,
                 Note           = preOrder.Note,
                 PayMethod      = payMethod,
-                OrderDetails   = servedDetails.Select(d => new OrderDetail
+                // Step 1：建立 OrderDetails，PreOrderDetailId = 原始 PreOrderDetail.Id
+                //         ParentDetailId 暫存 PreOrderDetail 的父項 Id（稍後換算）
+                OrderDetails = servedDetails.Select(d => new OrderDetail
                 {
-                    ProductId   = d.ProductId,
-                    ProductName = d.ProductName,
-                    Qty         = d.Qty,
-                    UnitPrice   = d.UnitPrice,
-                    SubTotal    = d.SubTotal
+                    ProductId        = d.ProductId,
+                    ProductName      = d.ProductName,
+                    Qty              = d.Qty,
+                    UnitPrice        = d.UnitPrice,
+                    SubTotal         = d.SubTotal,
+                    PreOrderDetailId = d.Id,
+                    ParentDetailId   = d.ParentDetailId   // 暫存 PreOrderDetail 父項 Id
                 }).ToList()
             };
 
+            // 建立對應表：PreOrderDetail.Id → OrderDetail（用於 Step 2）
+            var preToOrder = servedDetails
+                .Zip(order.OrderDetails, (pre, od) => (pre.Id, od))
+                .ToDictionary(x => x.Id, x => x.od);
+
             await _orderRepo.AddWithPaymentAsync(order, payment);
+
+            // Step 2：SaveChanges 後 OrderDetail.Id 已回填，換算 ParentDetailId
+            bool needsParentFix = false;
+            foreach (var od in order.OrderDetails)
+            {
+                if (od.ParentDetailId.HasValue
+                    && preToOrder.TryGetValue(od.ParentDetailId.Value, out var parentOd))
+                {
+                    od.ParentDetailId = parentOd.Id;
+                    needsParentFix = true;
+                }
+            }
+            if (needsParentFix)
+                await _orderRepo.SaveChangesAsync();
+
             preOrder.PayMethod = payMethod;  // 同步回寫，讓 AllOrders 顯示正確付款方式
             await _preOrderRepo.UpdateStatusAsync(preOrderId, PreOrderStatus.Done);
 
@@ -1109,17 +1133,40 @@ namespace EatTogether.Models.Services
                 TotalAmount = totalAmount,
                 Note = preOrder.Note,
                 PayMethod = payMethod,
+                // Step 1：建立 OrderDetails，PreOrderDetailId = 原始 PreOrderDetail.Id
+                //         ParentDetailId 暫存 PreOrderDetail 的父項 Id（稍後換算）
                 OrderDetails = selected.Select(d => new OrderDetail
                 {
-                    ProductId = d.ProductId,
-                    ProductName = d.ProductName,
-                    Qty = d.Qty,
-                    UnitPrice = d.UnitPrice,
-                    SubTotal = d.SubTotal
+                    ProductId        = d.ProductId,
+                    ProductName      = d.ProductName,
+                    Qty              = d.Qty,
+                    UnitPrice        = d.UnitPrice,
+                    SubTotal         = d.SubTotal,
+                    PreOrderDetailId = d.Id,
+                    ParentDetailId   = d.ParentDetailId   // 暫存 PreOrderDetail 父項 Id
                 }).ToList()
             };
 
+            // 建立對應表：PreOrderDetail.Id → OrderDetail（用於 Step 2）
+            var splitPreToOrder = selected
+                .Zip(order.OrderDetails, (pre, od) => (pre.Id, od))
+                .ToDictionary(x => x.Id, x => x.od);
+
             await _orderRepo.AddWithPaymentAsync(order, payment);
+
+            // Step 2：SaveChanges 後 OrderDetail.Id 已回填，換算 ParentDetailId
+            bool splitNeedsParentFix = false;
+            foreach (var od in order.OrderDetails)
+            {
+                if (od.ParentDetailId.HasValue
+                    && splitPreToOrder.TryGetValue(od.ParentDetailId.Value, out var parentOd))
+                {
+                    od.ParentDetailId = parentOd.Id;
+                    splitNeedsParentFix = true;
+                }
+            }
+            if (splitNeedsParentFix)
+                await _orderRepo.SaveChangesAsync();
 
             // 拆單結帳成功後，將該會員的優惠券標記為已使用
             var effectiveMemberId = memberId ?? preOrder.MemberId;

@@ -44,19 +44,9 @@
         return trimmed;
     }
 
-    // 從組合備註中只取「整單備註：」後的內容
+    // 從組合備註中只取備註內容（相容「整單備註：」新格式與「備註：」舊格式）
     string GetOrderNote(string note)
-    {
-        var orderPart = GetNoteOrderPart(note);
-        if (string.IsNullOrEmpty(orderPart)) return "";
-        foreach (var line in orderPart.Split('\n'))
-        {
-            var t = line.Trim();
-            if (t.StartsWith("整單備註："))
-                return t.Substring("整單備註：".Length).Trim();
-        }
-        return "";
-    }
+        => GetNoteField(note, "整單備註：", "備註：");
 
     // 從備註中取出取餐時間字串（e.g. "18:00" / "即時取餐" / ""）
     string GetPickupTime(string note)
@@ -72,18 +62,27 @@
         return "";
     }
 
-    // 通用：從備註取指定前綴的值
-    string GetNoteField(string note, string prefix)
+    // 通用：從備註取指定前綴的值（支援多個候選前綴，相容新舊格式）
+    string GetNoteField(string note, params string[] prefixes)
     {
         var orderPart = GetNoteOrderPart(note);
         if (string.IsNullOrEmpty(orderPart)) return "";
         foreach (var line in orderPart.Split('\n'))
         {
             var t = line.Trim();
-            if (t.StartsWith(prefix))
-                return t.Substring(prefix.Length).Trim();
+            foreach (var prefix in prefixes)
+                if (t.StartsWith(prefix))
+                    return t.Substring(prefix.Length).Trim();
         }
         return "";
+    }
+
+    // 餐具：DB 存 "餐具：需要" (新) 或 "需要餐具：是" (舊)，有值就顯示
+    bool GetNeedsUtensils(string note)
+    {
+        var v1 = GetNoteField(note, "餐具：");          // 新格式 → "需要"
+        var v2 = GetNoteField(note, "需要餐具：");      // 舊格式 → "是"
+        return !string.IsNullOrEmpty(v1) || !string.IsNullOrEmpty(v2);
     }
 
     // 取餐時間 → DateTime?（即時/內用/空 → null 視為「現在」）
@@ -214,8 +213,41 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
-        flex: 1;
         min-width: 0;
+        flex-shrink: 0;
+    }
+
+    .card-header-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 3px;
+        padding: 0 8px;
+        min-width: 0;
+        font-size: 0.78rem;
+        color: #555;
+        line-height: 1.4;
+    }
+
+    .card-info-row {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    .card-info-pickup {
+        color: #1a5fa8;
+        font-weight: 700;
+    }
+
+    .card-info-contact {
+        color: #1a6b3c;
     }
 
     .card-order-number {
@@ -666,8 +698,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        flex-wrap: wrap;
-        flex: 1;
+        flex-shrink: 0;
         min-width: 0;
     }
 
@@ -741,6 +772,14 @@
                 int pendingCount = order.Items.Count(x => x.Status == 0 && !x.ParentDetailId.HasValue);
 
                 <div class="exp-card" id="card-@order.PreOrderId" data-preorder-id="@order.PreOrderId" data-pending="@pendingCount">
+                    @{
+                        var hdrNote     = GetOrderNote(order.Note);
+                        var hdrPickup   = GetPickupTime(order.Note);
+                        var hdrCustName = GetNoteField(order.Note, "取餐人：");
+                        var hdrPhone    = GetNoteField(order.Note, "電話：", "聯絡電話：");
+                        var hdrUtensils = GetNeedsUtensils(order.Note);
+                        var hdrIsPreorder = !order.InOrOut && (!string.IsNullOrEmpty(hdrCustName) || !string.IsNullOrEmpty(hdrPhone) || (!string.IsNullOrEmpty(hdrPickup) && hdrPickup != "即時取餐"));
+                    }
                     <div class="card-header" style="cursor:pointer;" onclick="toggleCardSelected(@order.PreOrderId, event)">
                         <div class="card-header-left">
                             <span class="card-order-number">@order.OrderNumber</span>
@@ -756,6 +795,21 @@
                                 <span class="order-time">@order.OrderAt.ToString("HH:mm")</span>
                             </div>
                         </div>
+                        @if (hdrIsPreorder)
+                        {
+                            <div class="card-header-info">
+                                @if (!string.IsNullOrEmpty(hdrPickup) && hdrPickup != "即時取餐" && hdrPickup != "即時")
+                                {
+                                    <div class="card-info-row card-info-pickup">🕐 @hdrPickup</div>
+                                }
+                                @if (!string.IsNullOrEmpty(hdrCustName) || !string.IsNullOrEmpty(hdrPhone))
+                                {
+                                    <div class="card-info-row card-info-contact">
+                                        @if (!string.IsNullOrEmpty(hdrCustName)) { <span>👤 @hdrCustName</span> }
+                                    </div>
+                                }
+                            </div>
+                        }
                         @{
                             var badgeCls = pendingCount == 0 ? "pending-badge done" : "pending-badge";
                         }
@@ -765,25 +819,9 @@
                     </div>
                     <div class="card-body">
                         @{
-                            var displayNote     = GetOrderNote(order.Note);
-                            var displayPickup   = GetPickupTime(order.Note);
-                            var displayCustName = GetNoteField(order.Note, "取餐人：");
-                            var displayPhone    = GetNoteField(order.Note, "聯絡電話：");
-                            var displayUtensils = GetNoteField(order.Note, "需要餐具：");
+                            var displayNote = hdrNote;
                         }
-                        @if (!string.IsNullOrEmpty(displayPickup) && displayPickup != "即時取餐" && displayPickup != "即時")
-                        {
-                            <div class="note-box" style="background:#eaf4ff;border-left-color:#1a77c9;color:#1a5fa8;">
-                                🕐 取餐時間：@displayPickup
-                            </div>
-                        }
-                        @if (!string.IsNullOrEmpty(displayCustName) || !string.IsNullOrEmpty(displayPhone))
-                        {
-                            <div class="note-box" style="background:#f0fdf4;border-left-color:#27ae60;color:#1a6b3c;">
-                                👤 @displayCustName@(!string.IsNullOrEmpty(displayPhone) ? $"　📞 {displayPhone}" : "")
-                            </div>
-                        }
-                        @if (!string.IsNullOrEmpty(displayUtensils))
+                        @if (hdrUtensils)
                         {
                             <div class="note-box" style="background:#fffbe6;border-left-color:#f39c12;color:#7d5a00;">
                                 🥢 需要餐具
@@ -894,6 +932,12 @@
                     var order = listed[i];
                     int pendingCount = order.Items.Count(x => x.Status == 0 && !x.ParentDetailId.HasValue);
 
+                    var lNote       = GetOrderNote(order.Note);
+                    var lPickup     = GetPickupTime(order.Note);
+                    var lCustName   = GetNoteField(order.Note, "取餐人：");
+                    var lPhone      = GetNoteField(order.Note, "電話：", "聯絡電話：");
+                    var lUtensils   = GetNeedsUtensils(order.Note);
+                    var lIsPreorder = !order.InOrOut && (!string.IsNullOrEmpty(lCustName) || !string.IsNullOrEmpty(lPhone) || (!string.IsNullOrEmpty(lPickup) && lPickup != "即時取餐"));
                     <div class="list-card" id="lcard-@order.PreOrderId" data-preorder-id="@order.PreOrderId" data-pending="@pendingCount">
                         <div class="list-header" onclick="toggleListCard(@order.PreOrderId)">
                             <div class="list-header-left">
@@ -908,6 +952,22 @@
                                 }
                                 <span class="order-time">@order.OrderAt.ToString("HH:mm")</span>
                             </div>
+                            @if (lIsPreorder)
+                            {
+                                <div class="card-header-info" style="font-size:0.74rem;">
+                                    @if (!string.IsNullOrEmpty(lPickup) && lPickup != "即時取餐" && lPickup != "即時")
+                                    {
+                                        <div class="card-info-row card-info-pickup">🕐 @lPickup</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(lCustName) || !string.IsNullOrEmpty(lPhone))
+                                    {
+                                        <div class="card-info-row card-info-contact">
+                                            @if (!string.IsNullOrEmpty(lCustName)) { <span>👤 @lCustName</span> }
+                                            @if (!string.IsNullOrEmpty(lPhone))    { <span>📞 @lPhone</span> }
+                                        </div>
+                                    }
+                                </div>
+                            }
                             <div class="list-header-right">
                                 @{
                                     var badgeCls2 = pendingCount == 0 ? "pending-badge done" : "pending-badge";
@@ -920,25 +980,9 @@
                         </div>
                         <div class="list-detail-area" id="list-details-@order.PreOrderId">
                             @{
-                                var displayNote2     = GetOrderNote(order.Note);
-                                var displayPickup2   = GetPickupTime(order.Note);
-                                var displayCustName2 = GetNoteField(order.Note, "取餐人：");
-                                var displayPhone2    = GetNoteField(order.Note, "聯絡電話：");
-                                var displayUtensils2 = GetNoteField(order.Note, "需要餐具：");
+                                var displayNote2 = lNote;
                             }
-                            @if (!string.IsNullOrEmpty(displayPickup2) && displayPickup2 != "即時取餐" && displayPickup2 != "即時")
-                            {
-                                <div class="note-box" style="margin-top:10px;background:#eaf4ff;border-left-color:#1a77c9;color:#1a5fa8;">
-                                    🕐 取餐時間：@displayPickup2
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(displayCustName2) || !string.IsNullOrEmpty(displayPhone2))
-                            {
-                                <div class="note-box" style="margin-top:10px;background:#f0fdf4;border-left-color:#27ae60;color:#1a6b3c;">
-                                    👤 @displayCustName2@(!string.IsNullOrEmpty(displayPhone2) ? $"　📞 {displayPhone2}" : "")
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(displayUtensils2))
+                            @if (lUtensils)
                             {
                                 <div class="note-box" style="margin-top:10px;background:#fffbe6;border-left-color:#f39c12;color:#7d5a00;">
                                     🥢 需要餐具
