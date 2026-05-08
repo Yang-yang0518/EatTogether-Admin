@@ -4,7 +4,7 @@
 -- ==================== 1. 復原：原有基礎套餐 ====================
 IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'全家分享餐')
     INSERT INTO dbo.SetMeals (SetMealName, DiscountType, DiscountValue, IsActive, CreatedAt, SetPrice, Description, StartDate, EndDate, StartTime, EndTime)
-    VALUES (N'全家分享餐', N'percent', 15.00, 1, GETDATE(), 899.00, N'適合4-6人共享的豐盛套餐', '2026-03-01', '2026-12-31', '11:00:00', '21:00:00');
+    VALUES (N'全家分享餐', N'percent', 15.00, 1, GETDATE(), 899.00, N'適合4-6人共享的豐盛套餐', '2026-03-01', '2026-12-31', '10:00:00', '21:00:00');
 
 IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'情人節限定套餐')
     INSERT INTO dbo.SetMeals (SetMealName, DiscountType, DiscountValue, IsActive, CreatedAt, SetPrice, Description, StartDate, EndDate, StartTime, EndTime)
@@ -20,7 +20,7 @@ IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'商務午餐套�
 
 IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'歡樂雙人套餐')
     INSERT INTO dbo.SetMeals (SetMealName, DiscountType, DiscountValue, IsActive, CreatedAt, SetPrice, Description, StartTime, EndTime)
-    VALUES (N'歡樂雙人套餐', N'percent', 15.00, 1, GETDATE(), 580.00, N'兩人共享主餐、飲料與甜點的超值組合', '11:00:00', '21:00:00');
+    VALUES (N'歡樂雙人套餐', N'percent', 15.00, 1, GETDATE(), 580.00, N'兩人共享主餐、飲料與甜點的超值組合', '10:00:00', '21:00:00');
 
 IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'下午茶甜蜜套餐')
     INSERT INTO dbo.SetMeals (SetMealName, DiscountType, DiscountValue, IsActive, CreatedAt, SetPrice, Description, StartTime, EndTime)
@@ -29,11 +29,11 @@ IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'下午茶甜蜜�
 -- ==================== 2. 新增：諧音梗特色套餐 ====================
 IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'「單」點不孤單')
     INSERT INTO dbo.SetMeals (SetMealName, DiscountType, DiscountValue, IsActive, CreatedAt, SetPrice, Description, StartTime, EndTime)
-    VALUES (N'「單」點不孤單', N'fixed', 0.00, 1, GETDATE(), 388.00, N'單人獨享：主餐(4選1) + 湯品(2選1) + 飲品(3選1)', '11:00:00', '21:00:00');
+    VALUES (N'「單」點不孤單', N'fixed', 0.00, 1, GETDATE(), 388.00, N'單人獨享：主餐(4選1) + 湯品(2選1) + 飲品(3選1)', '10:00:00', '21:00:00');
 
 IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'「身」邊沒人餐')
     INSERT INTO dbo.SetMeals (SetMealName, DiscountType, DiscountValue, IsActive, CreatedAt, SetPrice, Description, StartTime, EndTime)
-    VALUES (N'「身」邊沒人餐', N'fixed', 0.00, 1, GETDATE(), 499.00, N'飽足個人：主餐(4選1) + 湯(2選1) + 附餐(2選1) + 飲品(3選1)', '11:00:00', '21:00:00');
+    VALUES (N'「身」邊沒人餐', N'fixed', 0.00, 1, GETDATE(), 499.00, N'飽足個人：主餐(4選1) + 湯(2選1) + 附餐(2選1) + 飲品(3選1)', '10:00:00', '21:00:00');
 
 IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'「狗」延殘喘餐')
     INSERT INTO dbo.SetMeals (SetMealName, DiscountType, DiscountValue, IsActive, CreatedAt, SetPrice, Description, StartTime, EndTime)
@@ -41,7 +41,7 @@ IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'「狗」延殘�
 
 IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'「諧」老終身餐')
     INSERT INTO dbo.SetMeals (SetMealName, DiscountType, DiscountValue, IsActive, CreatedAt, SetPrice, Description, StartTime, EndTime)
-    VALUES (N'「諧」老終身餐', N'fixed', 0.00, 1, GETDATE(), 999.00, N'雙人同樂：主餐(4選2) + 湯品(2選2) + 飲品(3選2) + 甜點(2選1)', '11:00:00', '21:00:00');
+    VALUES (N'「諧」老終身餐', N'fixed', 0.00, 1, GETDATE(), 999.00, N'雙人同樂：主餐(4選2) + 湯品(2選2) + 飲品(3選2) + 甜點(2選1)', '10:00:00', '21:00:00');
 
 IF NOT EXISTS (SELECT 1 FROM dbo.SetMeals WHERE SetMealName = N'「梗」在喉頭餐')
     INSERT INTO dbo.SetMeals (SetMealName, DiscountType, DiscountValue, IsActive, CreatedAt, SetPrice, Description, StartTime, EndTime)
