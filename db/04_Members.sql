@@ -40,7 +40,7 @@ INSERT INTO [dbo].[Members]
 VALUES
 
 -- ── 一般正常會員（有填生日）──────────────────────────────
-( 1, 'amy_chen',    N'陳怡伶', 'amy.chenyiling@gmail.com',           '$2a$11$EjFvuboWOwIV7YW08wx6m.MoIvQnTaHLrNJ.vD6uTGzQ2XuU0DHPW', '0912111001', '1988-04-15', 0, '2023-01-08 15:09:37', 0, NULL, 1, NULL, NULL),
+( 1, 'amy_chen',    N'陳怡伶', 'amy.chenyiling@gmail.com',           '$2a$11$EjFvuboWOwIV7YW08wx6m.MoIvQnTaHLrNJ.vD6uTGzQ2XuU0DHPW', '0912111001', NULL, 0, '2023-01-08 15:09:37', 0, NULL, 1, NULL, NULL),
 ( 2, 'brian_lin',     N'鄭婷方', 'una06021209@gmail.com',             '$2a$11$EjFvuboWOwIV7YW08wx6m.MoIvQnTaHLrNJ.vD6uTGzQ2XuU0DHPW', '0923222002', '1995-07-22', 0, '2023-02-14 17:56:37', 0, NULL, 1, NULL, NULL),
 ( 3, 'cindy_wu99',    N'楊晴淳', 'Yang0005111@gmail.com',         '$2a$11$EjFvuboWOwIV7YW08wx6m.MoIvQnTaHLrNJ.vD6uTGzQ2XuU0DHPW', '0934333003', '1999-12-03', 0, '2023-03-05 12:41:22', 0, NULL, 1, NULL, NULL),
 ( 4, 'david_huang',   N'吳欣柔', 'rrr20118@gmail.com',         '$2a$11$EjFvuboWOwIV7YW08wx6m.MoIvQnTaHLrNJ.vD6uTGzQ2XuU0DHPW', '0945444004', '1990-02-28', 0, '2023-03-20 09:38:55', 0, NULL, 1, NULL, NULL),
