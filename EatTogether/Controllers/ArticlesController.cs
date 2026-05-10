@@ -170,20 +170,21 @@ namespace EatTogether.Controllers
 
 					string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "articles");
 					if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-					//string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(vm.CoverImageFile.FileName);
 					string uniqueFileName = Guid.NewGuid().ToString("N")[..12] + fileExt;
 					string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 					using (var fileStream = new FileStream(filePath, FileMode.Create))
 					{
 						await vm.CoverImageFile.CopyToAsync(fileStream);
 					}
-					//vm.CoverImageUrl = "/images/articles/" + uniqueFileName;
 					vm.CoverImageUrl = uniqueFileName;
 				}
 				else
 				{
-					// 沒有上傳新圖片，保留原本的
-					vm.CoverImageUrl = vm.ExistingCoverImageUrl;
+					// 去掉前綴，只存檔名
+					var existing = vm.ExistingCoverImageUrl ?? "";
+					vm.CoverImageUrl = existing.StartsWith("/images/articles/")
+						? existing.Replace("/images/articles/", "")
+						: existing;
 				}
 
 				try
@@ -265,8 +266,7 @@ namespace EatTogether.Controllers
 		[HttpGet]
 		public async Task<IActionResult> GetPinnedCount(int? excludeId = null, int currentStatus = 0)
 		{
-			// 草稿(status=0)不佔名額，不需要排除自己
-			// 已發佈(status=1)才需要排除自己避免誤判
+			// 草稿(status=0)不佔名額，不需要排除自己，已發佈(status=1)才需要排除自己避免誤判
 			var effectiveExcludeId = (currentStatus == 1) ? excludeId : null;
 
 			var count = await _service.GetPublishedPinnedCountAsync(effectiveExcludeId);
