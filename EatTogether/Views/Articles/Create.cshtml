@@ -60,6 +60,7 @@
                         <div class="form-check form-switch pt-2">
                             <input class="form-check-input" type="checkbox" role="switch" asp-for="IsPinned">
                             <label class="form-check-label" asp-for="IsPinned">置頂文章</label>
+                            <span asp-validation-for="IsPinned" class="text-danger"></span>
                         </div>
                     </div>
                 </div>
@@ -144,6 +145,24 @@
                     <div class="modal-body text-center py-4">
                         <i class="bi bi-exclamation-circle-fill text-warning fs-1 d-block mb-3"></i>
                         <p class="fs-5 mb-0">下架日期不能早於上架日期</p>
+                    </div>
+                    <div class="modal-footer border-0 justify-content-center pt-0">
+                        <button type="button" class="btn btn-warning px-4" data-bs-dismiss="modal">確定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 置頂上限提示 Modal -->
+        <div class="modal fade" id="pinnedErrorModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="bi bi-pin-angle-fill text-warning fs-1 d-block mb-3"></i>
+                        <p class="fs-5 mb-0" id="pinnedErrorMessage"></p>
                     </div>
                     <div class="modal-footer border-0 justify-content-center pt-0">
                         <button type="button" class="btn btn-warning px-4" data-bs-dismiss="modal">確定</button>
@@ -242,7 +261,23 @@
             // 監聽圖片上傳變更
             $('input[name="CoverImageFile"]').on('change', function() {
                 previewImage(this);
-            });                    
+            });
+
+
+            // 置頂數量偵測
+            $('input[name="IsPinned"]').on('change', async function () {
+            if (!this.checked) return;
+
+            const res = await fetch('@Url.Action("GetPinnedCount", "Articles")');
+            const data = await res.json();
+
+            if (!data.available) {
+                this.checked = false;
+                document.getElementById('pinnedErrorMessage').textContent =
+                    `目前已有 ${data.count} 篇文章置頂（上限 3 篇），請先取消其他文章的置頂。`;
+                new bootstrap.Modal(document.getElementById('pinnedErrorModal')).show();
+                    }
+            });
 
         })
 
