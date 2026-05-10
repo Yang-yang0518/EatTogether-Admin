@@ -157,15 +157,14 @@
                     <div class="col-md-6">
                         <div class="form-group mb-3">
                             <label asp-for="StartDate" class="control-label"></label>
-                            @* <input type="date" asp-for="StartDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" readonly="@(isEnded || isRunning ? "readonly" : null)" /> *@
                             <input type="date" asp-for="StartDate" class="form-control"
-                                   min="@(!isRunning ? DateTime.Today.ToString("yyyy-MM-dd") : null)"
+                                   min="@(!isRunning ? DateTime.Today.ToString("yyyy/MM/dd") : null)"
                                    readonly="@(isEnded || isRunning ? "readonly" : null)" />
                             <span asp-validation-for="StartDate" class="text-danger"></span>                            
                         </div>
                         <div class="form-group mb-3">
                             <label asp-for="EndDate" class="control-label"></label>
-                            <input type="date" asp-for="EndDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" readonly="@(isEnded ? "readonly" : null)" />
+                            <input type="date" asp-for="EndDate" class="form-control" min="@DateTime.Today.ToString("yyyy/MM/dd")" readonly="@(isEnded ? "readonly" : null)" />
                             <span asp-validation-for="EndDate" class="text-danger"></span>
                         </div>
                         <div class="form-group mb-3">

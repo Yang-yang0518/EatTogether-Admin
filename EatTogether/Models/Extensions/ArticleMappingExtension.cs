@@ -216,7 +216,6 @@ namespace EatTogether.Models.Extensions
 							: entity.Status == 1 ? "已發佈"
 							: entity.Status == 0 ? "草稿"
 							: "已下架",
-				//PublishDate = entity.PublishDate.ToString("yyyy/MM/dd"),
 				PublishDate = entity.PublishDate.HasValue
 							? entity.PublishDate.Value.ToString("yyyy/MM/dd")
 							: "",
