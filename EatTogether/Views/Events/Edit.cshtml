@@ -157,7 +157,6 @@
                     <div class="col-md-6">
                         <div class="form-group mb-3">
                             <label asp-for="StartDate" class="control-label"></label>
-                            @* <input type="date" asp-for="StartDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" readonly="@(isEnded || isRunning ? "readonly" : null)" /> *@
                             <input type="date" asp-for="StartDate" class="form-control"
                                    min="@(!isRunning ? DateTime.Today.ToString("yyyy-MM-dd") : null)"
                                    readonly="@(isEnded || isRunning ? "readonly" : null)" />

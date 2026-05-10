@@ -114,6 +114,7 @@
                             <div class="form-check form-switch pt-2">
                                 <input class="form-check-input" type="checkbox" role="switch" asp-for="IsPinned">
                                 <label class="form-check-label" asp-for="IsPinned">置頂文章</label>
+                                <span asp-validation-for="IsPinned" class="text-danger"></span>
                             </div>
                         </div>
                     </div>
@@ -167,7 +168,7 @@
                             @if (isPublished)
                             {
                                 <div class="readonly-field">
-                                    @Model.PublishDate?.ToString("yyyy/MM/dd")
+                                    @Model.PublishDate?.ToString("yyyy-MM-dd")
                                 </div>
                                 <input type="hidden" asp-for="PublishDate" />
                             }
@@ -280,13 +281,31 @@
             </div>
         </div>
 
+        <!-- 置頂上限提示 Modal -->
+        <div class="modal fade" id="pinnedErrorModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="bi bi-pin-angle-fill text-warning fs-1 d-block mb-3"></i>
+                        <p class="fs-5 mb-0" id="pinnedErrorMessage"></p>
+                    </div>
+                    <div class="modal-footer border-0 justify-content-center pt-0">
+                        <button type="button" class="btn btn-warning px-4" data-bs-dismiss="modal">確定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </form>
 </div>
 
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.13/jquery.validate.unobtrusive.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
@@ -331,14 +350,17 @@
 
             // 統一送出函式（狀態值由外部傳入）
             function handleFormSubmit(statusValue) {
+                var publishVal = $('input[name="PublishDate"]').val();
+                var expiryVal = $('input[name="ExpiryDate"]').val();
 
-                // 日期驗證（下架日期選填，但若有填則不能早於上架日期）
-                var publishDate = $('input[name="PublishDate"]').val();
-                var expiryDate = $('input[name="ExpiryDate"]').val();
+                if (publishVal && expiryVal) {
+                    var publishDate = new Date(publishVal.replace(/\//g, '-'));
+                    var expiryDate = new Date(expiryVal.replace(/\//g, '-'));
 
-                if (publishDate && expiryDate && expiryDate < publishDate) {
-                    new bootstrap.Modal(document.getElementById('dateErrorModal')).show();
-                    return; // 阻止送出
+                    if (expiryDate < publishDate) {
+                        new bootstrap.Modal(document.getElementById('dateErrorModal')).show();
+                        return;
+                    }
                 }
 
                 $('#Status').val(statusValue);
@@ -364,6 +386,30 @@
             $('#btnSavePublished').on('click', function () {
                 handleFormSubmit(1);
             });
+
+            // 置頂數量偵測 ──草稿狀態不偵測，如按下發佈即會去做提示
+            @if (!isDraft)
+            {
+                    <text>
+                    $('input[name="IsPinned"]').on('change', async function () {
+                        if (!this.checked) return;
+
+                        var articleId = $('input[name="Id"]').val() || 0;
+                        var currentStatus = parseInt($('#Status').val());
+
+                        const res = await fetch('@Url.Action("GetPinnedCount", "Articles")?excludeId=' + articleId + '&currentStatus=' + currentStatus);
+                        const data = await res.json();
+
+                        if (!data.available) {
+                            this.checked = false;
+                            document.getElementById('pinnedErrorMessage').textContent =
+                                `目前已有 ${data.count} 篇文章置頂（上限 3 篇），請先取消其他文章的置頂。`;
+                            new bootstrap.Modal(document.getElementById('pinnedErrorModal')).show();
+                        }
+                    });
+                    </text>
+            }
+
 
             // 圖片預覽
             function previewImage(input) {
