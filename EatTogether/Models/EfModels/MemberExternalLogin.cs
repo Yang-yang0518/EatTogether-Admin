@@ -17,6 +17,8 @@ public partial class MemberExternalLogin
 
     public string AvatarUrl { get; set; }
 
+    public string ProviderEmail { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public virtual Member Member { get; set; }

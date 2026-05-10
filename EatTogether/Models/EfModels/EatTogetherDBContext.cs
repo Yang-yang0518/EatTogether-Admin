@@ -353,6 +353,9 @@ public partial class EatTogetherDBContext : DbContext
                 .IsRequired()
                 .HasMaxLength(20)
                 .IsUnicode(false);
+            entity.Property(e => e.ProviderEmail)
+                .HasMaxLength(100)
+                .IsUnicode(false);
             entity.Property(e => e.ProviderUserId)
                 .IsRequired()
                 .HasMaxLength(100)
@@ -701,7 +704,7 @@ public partial class EatTogetherDBContext : DbContext
 
         modelBuilder.Entity<SchedulerLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC07A845DDE2");
+            entity.HasKey(e => e.Id).HasName("PK__Schedule__3214EC0706C880FF");
 
             entity.Property(e => e.ExecutedAt)
                 .HasDefaultValueSql("(getdate())")
