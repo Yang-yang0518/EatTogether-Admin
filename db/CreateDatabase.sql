@@ -333,6 +333,7 @@ CREATE TABLE [dbo].[MemberExternalLogins](
 	[Provider] [varchar](20) NOT NULL,
 	[ProviderUserId] [varchar](100) NOT NULL,
 	[AvatarUrl] [nvarchar](500) NULL,
+	[ProviderEmail] [varchar](100) NULL,
 	[CreatedAt] [datetime2](0) NOT NULL DEFAULT GETDATE(),
  CONSTRAINT [PK_MemberExternalLogins] PRIMARY KEY CLUSTERED 
 (
