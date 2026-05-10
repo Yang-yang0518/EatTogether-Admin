@@ -217,7 +217,7 @@ namespace EatTogether.Models.Extensions
 							: entity.Status == 0 ? "草稿"
 							: "已下架",
 				PublishDate = entity.PublishDate.HasValue
-							? entity.PublishDate.Value.ToString("yyyy/MM/dd")
+							? entity.PublishDate.Value.ToString("yyyy-MM-dd")
 							: "",
 				ViewCount = entity.ViewCount
 			};

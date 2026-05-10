@@ -167,14 +167,14 @@
                             @if (isPublished)
                             {
                                 <div class="readonly-field">
-                                    @Model.PublishDate?.ToString("yyyy/MM/dd")
+                                    @Model.PublishDate?.ToString("yyyy-MM-dd")
                                 </div>
                                 <input type="hidden" asp-for="PublishDate" />
                             }
                             else
                             {
                                 <input asp-for="PublishDate" class="form-control"
-                                       min="@DateTime.Today.ToString("yyyy/MM/dd")" />
+                                       min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                                 <span asp-validation-for="PublishDate" class="text-danger"></span>
                             }
                         </div>
@@ -182,7 +182,7 @@
                         <div class="col-md-3">
                             <label asp-for="ExpiryDate" class="form-label">下架日期</label>
                             <input asp-for="ExpiryDate" class="form-control"
-                                   min="@DateTime.Today.ToString("yyyy/MM/dd")" />
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                         </div>
                     </div>
 
@@ -331,14 +331,17 @@
 
             // 統一送出函式（狀態值由外部傳入）
             function handleFormSubmit(statusValue) {
+                var publishVal = $('input[name="PublishDate"]').val();
+                var expiryVal = $('input[name="ExpiryDate"]').val();
 
-                // 日期驗證（下架日期選填，但若有填則不能早於上架日期）
-                var publishDate = new Date($('input[name="PublishDate"]').val());
-                var expiryDate = new Date($('input[name="ExpiryDate"]').val());
+                if (publishVal && expiryVal) {
+                    var publishDate = new Date(publishVal.replace(/\//g, '-'));
+                    var expiryDate = new Date(expiryVal.replace(/\//g, '-'));
 
-                if (publishDate && expiryDate && expiryDate < publishDate) {
-                    new bootstrap.Modal(document.getElementById('dateErrorModal')).show();
-                    return; // 阻止送出
+                    if (expiryDate < publishDate) {
+                        new bootstrap.Modal(document.getElementById('dateErrorModal')).show();
+                        return;
+                    }
                 }
 
                 $('#Status').val(statusValue);
