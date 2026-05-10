@@ -16,6 +16,7 @@ namespace EatTogether.Models.Services
 		private readonly EatTogetherDBContext _context;
 		private readonly NotificationService _notifyService;
 		private readonly HtmlSanitizer _sanitizer;
+		private const int MaxPinnedCount = 3;
 
 		public ArticleService(IArticleRepository repo, EatTogetherDBContext context, NotificationService notifyService)
 		{
@@ -64,11 +65,18 @@ namespace EatTogether.Models.Services
 
 
 
-		/// <summary>
-		/// 新增文章，若狀態為「發佈」，則同時發送通知給所有會員
-		/// </summary>
+		/// <summary>新增文章，若狀態為「發佈」，則同時發送通知給所有會員</summary>
 		public async Task CreateAsync(ArticleCreateDto dto)
 		{
+
+			// 若是發佈狀態且置頂，檢查置頂名額
+			if (dto.Status == 1 && dto.IsPinned)
+			{
+				var count = await GetPublishedPinnedCountAsync();
+				if (count >= MaxPinnedCount)
+					throw new InvalidOperationException("置頂文章已達上限（最多3篇），請先取消其他文章的置頂。");
+			}
+
 			dto.Description = _sanitizer.Sanitize(dto.Description); // 過濾後再存
 			var articleId = await _repo.CreateAsync(dto);
 
@@ -89,34 +97,26 @@ namespace EatTogether.Models.Services
 		}
 
 
-		/// <summary>
-		/// 取得文章類別選單
-		/// </summary>
+		/// <summary>取得文章類別選單</summary>
 		public async Task<IEnumerable<SelectListItem>> GetCategorySelectListAsync()
 		{
 			return await _repo.GetCategorySelectListAsync();
 		}
 
-		/// <summary>
-		/// 取得活動選單
-		/// </summary>
+		/// <summary>取得活動選單</summary>
 		public async Task<IEnumerable<SelectListItem>> GetEventSelectListAsync()
 		{
 			return await _repo.GetEventSelectListAsync();
 		}
 
-		/// <summary>
-		/// 取得首頁列表
-		/// </summary>
+		/// <summary>取得首頁列表</summary>
 		public async Task<List<ArticleDto>> GetAllForIndexAsync()
 		{
 			return await _repo.GetAllAsync();
 
 		}
 
-		/// <summary>
-		/// 取得文章資料
-		/// </summary>
+		/// <summary>取得文章資料</summary>
 		public async Task<ArticleEditDto> GetByIdAsync(int id)
 		{
 			var result = await _repo.GetEditByIdAsync(id);
@@ -128,11 +128,21 @@ namespace EatTogether.Models.Services
 			return result;
 		}
 
-		/// <summary>
-		/// 文章編輯
-		/// </summary>
+		/// <summary>文章編輯</summary>
 		public async Task EditAsync(ArticleEditDto dto)
 		{
+			// 若是發佈狀態且置頂，檢查名額（排除草稿時的置頂名額）
+			if (dto.Status == 1 && dto.IsPinned)
+			{
+				var count = await GetPublishedPinnedCountAsync(excludeId: dto.Id);
+				if (count >= MaxPinnedCount)
+					throw new InvalidOperationException("置頂文章已達上限（最多3篇），請先取消其他文章的置頂。");
+			}
+
+			// 下架時自動取消置頂
+			if (dto.Status == 2)
+				dto.IsPinned = false;
+
 			dto.Description = _sanitizer.Sanitize(dto.Description); // 過濾後再存
 
 			var original = await _repo.GetEditByIdAsync(dto.Id);
@@ -154,31 +164,26 @@ namespace EatTogether.Models.Services
 					scheduledAt: dto.PublishDate
 				);
 			}
-		}
+		}	
 
 
-		/// <summary>
-		/// 將發佈且上架狀態的文章強制下架
-		/// </summary>
+		/// <summary>將發佈且上架狀態的文章強制下架</summary>
 		public async Task UnpublishAsync(int id)
 		{
 			var dto = await _repo.GetEditByIdAsync(id);
 			if (dto == null) return;
-			dto.Status = 2; // 2 = 已結束/已下架
+			dto.Status = 2;
+			dto.IsPinned = false; // 下架自動取消置頂
 			await _repo.EditAsync(dto);
 		}
 
-		/// <summary>
-		/// 刪除草稿
-		/// </summary>
+		/// <summary>刪除草稿</summary>
 		public async Task DeleteDraftAsync(int id)
 		{
 			await _repo.DeleteAsync(id);
 		}
 
-		/// <summary>
-		/// 取得文章點閱數字
-		/// </summary>
+		/// <summary>取得文章點閱數字</summary>
 		public async Task<ArticleViewStatsViewModel> GetViewStatsAsync()
 		{
 			//計算統計數字（Sum、Max、Average）				
@@ -205,6 +210,18 @@ namespace EatTogether.Models.Services
 		{
 			var entity = await _repo.GetAllForStatsAsync();
 			return entity.Select(a => a.ToViewStatsJsonDto());
+		}
+
+		/// <summary>檢查目前已發佈的置頂文章數量是否已達上限</summary>
+		public async Task<int> GetPublishedPinnedCountAsync(int? excludeId = null)
+		{
+			var query = _context.Articles
+				.Where(a => a.Status == 1 && a.IsPinned == true);
+
+			if (excludeId.HasValue)
+				query = query.Where(a => a.Id != excludeId.Value);
+
+			return await query.CountAsync();
 		}
 
 	}

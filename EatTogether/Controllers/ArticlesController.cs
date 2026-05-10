@@ -4,6 +4,7 @@ using EatTogether.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EatTogether.Controllers
 {
@@ -88,7 +89,6 @@ namespace EatTogether.Controllers
 					}
 
 					// 將檔案路徑存入 VM (稍後轉給 DTO 存入資料庫)
-					//vm.CoverImageUrl = "/images/articles/" + uniqueFileName;
 					vm.CoverImageUrl = uniqueFileName;
 
 				}
@@ -104,8 +104,16 @@ namespace EatTogether.Controllers
 				}
 				catch (Exception ex)
 				{
-					// 處理資料庫儲存失敗的情境
-					ModelState.AddModelError("", "存檔失敗：" + ex.Message);
+					// 置頂超過限制，顯示在 IsPinned 欄位旁
+					if (ex is InvalidOperationException)
+					{
+						ModelState.AddModelError("IsPinned", ex.Message);
+					}
+					else {
+						// 處理資料庫儲存失敗的情境
+						ModelState.AddModelError("", "存檔失敗：" + ex.Message);
+					}
+						
 					await PopulateSelectListsAsync(vm);
 					return View(vm);
 				}
@@ -162,20 +170,21 @@ namespace EatTogether.Controllers
 
 					string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "articles");
 					if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-					//string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(vm.CoverImageFile.FileName);
 					string uniqueFileName = Guid.NewGuid().ToString("N")[..12] + fileExt;
 					string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 					using (var fileStream = new FileStream(filePath, FileMode.Create))
 					{
 						await vm.CoverImageFile.CopyToAsync(fileStream);
 					}
-					//vm.CoverImageUrl = "/images/articles/" + uniqueFileName;
 					vm.CoverImageUrl = uniqueFileName;
 				}
 				else
 				{
-					// 沒有上傳新圖片，保留原本的
-					vm.CoverImageUrl = vm.ExistingCoverImageUrl;
+					// 去掉前綴，只存檔名
+					var existing = vm.ExistingCoverImageUrl ?? "";
+					vm.CoverImageUrl = existing.StartsWith("/images/articles/")
+						? existing.Replace("/images/articles/", "")
+						: existing;
 				}
 
 				try
@@ -188,7 +197,16 @@ namespace EatTogether.Controllers
 				}
 				catch (Exception ex)
 				{
-					ModelState.AddModelError("", "存檔失敗：" + ex.Message);
+					// 置頂超過限制，顯示在 IsPinned 欄位旁
+					if (ex is InvalidOperationException)
+					{
+						ModelState.AddModelError("IsPinned", ex.Message);
+					}
+					else
+					{
+						ModelState.AddModelError("", "存檔失敗：" + ex.Message);
+					}
+					
 					await PopulateEditSelectListsAsync(vm);
 					return View(vm);
 				}
@@ -227,7 +245,6 @@ namespace EatTogether.Controllers
 			return RedirectToAction(nameof(Index));
 		}
 
-
 		//GET: Articles/ViewStats
 		[HttpGet]
 		public async Task<IActionResult> ViewStats()
@@ -244,6 +261,17 @@ namespace EatTogether.Controllers
 			return Json(result);
 		}
 
+		//GET: Articles/GetPinnedCount
+		/// <summary>取得目前置頂狀態</summary>
+		[HttpGet]
+		public async Task<IActionResult> GetPinnedCount(int? excludeId = null, int currentStatus = 0)
+		{
+			// 草稿(status=0)不佔名額，不需要排除自己，已發佈(status=1)才需要排除自己避免誤判
+			var effectiveExcludeId = (currentStatus == 1) ? excludeId : null;
+
+			var count = await _service.GetPublishedPinnedCountAsync(effectiveExcludeId);
+			return Json(new { count, max = 3, available = count < 3 });
+		}
 
 	}
 }
