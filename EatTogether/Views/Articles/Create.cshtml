@@ -279,6 +279,27 @@
                     }
             });
 
+
+
+            // 展示資料按鈕
+            var $demoBtn = $('<button type="button" class="btn btn-outline-secondary btn-sm ms-auto">📋 填入示範資料</button>');
+            $('.card-footer').append($demoBtn);
+
+            $demoBtn.on('click', function () {
+                // 選第一個類別選項（跳過空白）
+                $('#CategoryId option:not([value=""])').first().prop('selected', true);
+
+                // 標題
+                $('input[name="Title"]').val('2026夏季義式饗宴活動開跑！');
+
+                // 內文（用 Quill API 寫入）
+                quill.setText('歡迎來到義起吃！本次夏季活動推出限定優惠，歡迎蒞臨品嚐道地義式料理。活動期間消費滿額即享好禮，名額有限，把握機會！');
+
+                // 日期
+                $('input[name="PublishDate"]').val('2026-05-11');
+                $('input[name="ExpiryDate"]').val('2026-05-15');
+            });
+
         })
 
     </script>

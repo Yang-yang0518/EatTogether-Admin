@@ -49,4 +49,14 @@ CROSS JOIN (
     UNION ALL SELECT 23, N'義起吃 5/20 員工旅遊暫停營業一日',                      '2026-05-10'
 ) AS a
 ORDER BY a.PublishDate, m.Id;
+
+
+-- 外帶訂單通知（示範資料，MemberId=1 的兩筆外帶單）
+INSERT INTO [dbo].[UserNotifications]
+    ([MemberId], [Type], [ReferenceType], [ReferenceId], [Title], [Message], [IsRead], [CreatedAt])
+VALUES
+    (1, 'TAKEOUT_CREATED', 'Order', 1,  N'外帶訂單已成立｜20260301-0001', NULL, 1, '2026-03-01 11:30:00'),
+    (1, 'TAKEOUT_CREATED', 'Order', 25, N'外帶訂單已成立｜20260304-0001', NULL, 1, '2026-03-04 11:30:00');
+
+
 GO
