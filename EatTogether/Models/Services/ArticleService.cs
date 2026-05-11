@@ -85,12 +85,17 @@ namespace EatTogether.Models.Services
 
 			if (dto.Status == 1 && notifyCategories.Contains(dto.CategoryId))
 			{
+				// PublishDate 是今天 → 用現在時間，否則用排定的發布日期
+				var scheduledAt = dto.PublishDate == DateTime.Today
+					? DateTime.Now
+					: dto.PublishDate;
+
 				await _notifyService.SendToAllMembersAsync(
 					type: "NEWS",
 					referenceType: "Article",
 					referenceId: articleId,
 					title: $"親愛的會員，{dto.Title}",
-					scheduledAt: dto.PublishDate
+					scheduledAt: scheduledAt
 				);
 			}
 
@@ -156,12 +161,16 @@ namespace EatTogether.Models.Services
 			// 原本不是發佈狀態，現在才改成發佈 → 才發通知
 			if (!wasPublished && dto.Status == 1 && dto.CategoryId.HasValue && notifyCategories.Contains(dto.CategoryId.Value))
 			{
+				var scheduledAt = dto.PublishDate == DateTime.Today
+					? DateTime.Now
+					: dto.PublishDate;
+
 				await _notifyService.SendToAllMembersAsync(
 					type: "NEWS",
 					referenceType: "Article",
 					referenceId: dto.Id,
 					title: $"親愛的會員，{dto.Title}",
-					scheduledAt: dto.PublishDate
+					scheduledAt: scheduledAt
 				);
 			}
 		}	
