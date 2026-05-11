@@ -170,6 +170,20 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
+
+        // 展示資料按鈕
+        var $demoBtn = $('<button type="button" class="btn btn-outline-secondary btn-sm ms-auto">📋 填入示範資料</button>');
+        $('.form-group.mt-3').append($demoBtn);
+
+        $demoBtn.on('click', function () {
+            $('input[name="Title"]').val('夏日滿額贈活動');
+            $('input[name="Summary"]').val('消費滿500元即贈精選甜點一份');
+            $('input[name="MinSpend"]').val('500');
+            $('input[name="StartDate"]').val('2026-05-11');
+            $('input[name="EndDate"]').val('2026-05-15');
+            $('#DiscountType').val('Gift').trigger('change');
+        });
+
         //監聽贈品選項，如果有選會自動填入類別及價格
         $('#rewardDishSelect').on('change', function () {
             var price = $(this).find(':selected').data('price');
