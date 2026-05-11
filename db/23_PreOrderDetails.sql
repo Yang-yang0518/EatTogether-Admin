@@ -55227,6 +55227,17 @@ INSERT INTO [dbo].[PreOrderDetails] ([PreOrderId], [ProductId], [ProductName], [
 (5389, 2, N'奶油培根燉飯', 200, 1, 200, 1, 0, NULL);
 GO
 
+INSERT INTO [dbo].[PreOrderDetails] ([PreOrderId], [ProductId], [ProductName], [UnitPrice], [Qty], [SubTotal], [DoneOrCancel], [IsSetMeal], [ParentDetailId]) VALUES
+(5409, 7, N'香煎鮭魚排', 280, 1, 2800, 0, 0, NULL),
+(5409, 31, N'招牌鮮奶茶', 70, 1, 70, 0, 0, NULL),
+(5409, 1, N'🎁 提拉米蘇（活動贈品）', 0, 1, 0, 0, 0, NULL),
+(5410, 3, N'青醬海鮮義大利麵', 220, 1, 220, 0, 0, NULL),
+(5411, 9, N'牛肉漢堡排', 290, 1, 290, 0, 0, NULL),
+(5412, 5, N'香烤雞腿排', 260, 1, 260, 0, 0, NULL),
+(5412, 4, N'松露野菇燉飯', 250, 1, 250, 0, 0, NULL);
+GO
+
+
 -- 把同一訂單內，所有餐點都是取消(2)的 PreOrder，狀態改成 2
 UPDATE PreOrders
 SET DoneOrCancel = 2
