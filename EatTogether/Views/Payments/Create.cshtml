@@ -2114,29 +2114,32 @@
 
         const defaultTableId = @(ViewBag.DefaultTableId ?? 0);
 
-            if (defaultTableId > 0) {
-        const tables = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                Model.Tables.Select(t => new { t.TableId, t.TableName, t.PreOrderId, t.HasOrder })
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ));
+        if (defaultTableId > 0) {
+            // 從桌位管理跳來：先切到內用 tab（預設顯示外帶）
+            switchTab('dine');
+
+            const tables = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Model.Tables.Select(t => new { t.TableId, t.TableName, t.PreOrderId, t.HasOrder })
+            ));
             const target = tables.find(t => t.TableId === defaultTableId);
-    if (target) {
-        const anyEl = document.getElementById('tbtn-' + target.PreOrderId)
-                   || document.querySelector(`[data-tableid="${defaultTableId}"]`);
-        if (anyEl) {
-            anyEl.classList.add('active-selected');
-            anyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        if (target.HasOrder && target.PreOrderId) {
-            const el = document.getElementById('tbtn-' + target.PreOrderId);
-            if (el) loadDetail(target.PreOrderId, el);
+            if (target) {
+                const anyEl = document.getElementById('tbtn-' + target.PreOrderId)
+                           || document.querySelector(`[data-tableid="${defaultTableId}"]`);
+                if (anyEl) {
+                    anyEl.classList.add('active-selected');
+                    anyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                if (target.HasOrder && target.PreOrderId) {
+                    const el = document.getElementById('tbtn-' + target.PreOrderId);
+                    if (el) loadDetail(target.PreOrderId, el);
+                } else {
+                    document.getElementById('emptyRight').style.display = 'flex';
+                    document.getElementById('checkoutContent').style.display = 'none';
+                    document.getElementById('emptyRightIcon').textContent = '🛎️';
+                    document.getElementById('emptyRightText').textContent = '點餐中...';
+                }
+            }
         } else {
-            document.getElementById('emptyRight').style.display = 'flex';
-            document.getElementById('checkoutContent').style.display = 'none';
-            document.getElementById('emptyRightIcon').textContent = '🛎️';
-            document.getElementById('emptyRightText').textContent = '點餐中...';
-        }
-    }
-    } else {
         switchTab('take');
         // 自動載入第一筆外帶訂單
         const firstTakeoutId = @(takeOrders.Any() ? takeOrders.First().PreOrderId.ToString() : "0");
@@ -2257,6 +2260,14 @@
             splitModeBtn.style.display = '';
 
         renderItemsTable(currentData ? currentData.items : []);
+
+        // 重算並更新正常結帳區金額
+        if (currentData) {
+            const hasFullData = currentData.originalAmount !== undefined
+                             && currentData.discountAmount !== undefined;
+            renderAmounts(currentData.items, hasFullData ? currentData : null);
+            currentTotal = currentData.totalAmount || 0;
+        }
     }
 
     // ── 拆單項目勾選 ─────────────────────────────────────────────────────
@@ -2294,7 +2305,7 @@
             else if (e.discountType === 'Percentage') disc += Math.floor(orig * e.discountValue / 100);
         }
         disc = Math.min(disc, orig);
-        const total = Math.max(1, orig - disc);
+        const total = orig > 0 ? Math.max(1, orig - disc) : 0;
         document.getElementById('splitAmtOriginal').textContent = orig.toLocaleString();
         document.getElementById('splitAmtDiscount').textContent = disc.toLocaleString();
         document.getElementById('splitAmtTotal').textContent    = total.toLocaleString();
