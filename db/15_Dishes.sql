@@ -266,7 +266,6 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Dishes WHERE DishName = N'分享拼盤')
 UPDATE dbo.Dishes SET IsLimited = 0, StartDate = NULL, EndDate = NULL;
 
 -- 主餐：供應中（倒數計時）
-UPDATE dbo.Dishes SET IsLimited=1, StartDate=CAST(GETDATE() AS DATE),                       EndDate=CAST(DATEADD(DAY,30,GETDATE()) AS DATE) WHERE DishName=N'季節限定主廚套餐';
 UPDATE dbo.Dishes SET IsLimited=1, StartDate=CAST(GETDATE() AS DATE),                       EndDate=CAST(DATEADD(DAY, 7,GETDATE()) AS DATE) WHERE DishName=N'龍蝦奶油義大利麵';
 -- 主餐：即將開始（明天才開始，< 24 小時）
 UPDATE dbo.Dishes SET IsLimited=1, StartDate=CAST(DATEADD(DAY,1,GETDATE()) AS DATE),        EndDate=CAST(DATEADD(DAY, 8,GETDATE()) AS DATE) WHERE DishName=N'法式洋蔥湯牛排';
