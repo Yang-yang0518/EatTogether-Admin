@@ -7,7 +7,8 @@ namespace EatTogether.Models.ViewModels
     public class CategoryWithDishesViewModel
     {
         public int CategoryId { get; set; }
-        public string CategoryName { get; set; }
+        public string CategoryName { get; set; } = null!;
+
 
         public List<SelectListItem> DishesInThisCategory { get; set; } = new();
 
