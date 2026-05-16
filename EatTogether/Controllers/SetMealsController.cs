@@ -36,32 +36,7 @@ namespace EatTogether.Controllers
             var vms = dtos.Select(d =>
             {
                 var vm = d.ToViewModel();
-                if (string.IsNullOrEmpty(vm.ImageUrl))
-                {
-                    string safeName = vm.SetMealName;
-                    foreach (char c in Path.GetInvalidFileNameChars())
-                    {
-                        safeName = safeName.Replace(c, '_');
-                    }
-
-                    var baseImagesFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
-
-                    string jpgFileName = $"{safeName}.jpg";
-                    string jpgPath = Path.Combine(baseImagesFolderPath, jpgFileName);
-                    if (System.IO.File.Exists(jpgPath))
-                    {
-                        vm.ImageUrl = "/images/" + jpgFileName;
-                    }
-                    else
-                    {
-                        string pngFileName = $"{safeName}.png";
-                        string pngPath = Path.Combine(baseImagesFolderPath, pngFileName);
-                        if (System.IO.File.Exists(pngPath))
-                        {
-                            vm.ImageUrl = "/images/" + pngFileName;
-                        }
-                    }
-                }
+                vm.ImageUrl = ResolveImageUrl(vm.ImageUrl, vm.SetMealName);
                 return vm;
             }).ToList();
 
@@ -124,9 +99,6 @@ namespace EatTogether.Controllers
             if (!string.IsNullOrEmpty(vm.CroppedImageData))
                 vm.ImageUrl = await SaveBase64ImageAsync(vm.CroppedImageData, vm.SetMealName);
 
-            // New logic to set DisplayOrder: Max + 1 (stable logic)
-            var allSetMeals = await _setMealService.GetAllAsync();
-            vm.DisplayOrder = allSetMeals.Any() ? allSetMeals.Max(s => s.DisplayOrder) + 1 : 1;
 
             await _setMealService.CreateAsync(vm.ToDto());
             return RedirectToAction(nameof(Index));
@@ -164,17 +136,7 @@ namespace EatTogether.Controllers
                 })
             );
 
-			if (string.IsNullOrEmpty(vm.ImageUrl))
-			{
-				string safeName = vm.SetMealName;
-				foreach (char c in Path.GetInvalidFileNameChars())
-					safeName = safeName.Replace(c, '_');
-				var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
-				if (System.IO.File.Exists(Path.Combine(folder, safeName + ".jpg")))
-					vm.ImageUrl = "/images/" + safeName + ".jpg";
-				else if (System.IO.File.Exists(Path.Combine(folder, safeName + ".png")))
-					vm.ImageUrl = "/images/" + safeName + ".png";
-			}
+			vm.ImageUrl = ResolveImageUrl(vm.ImageUrl, vm.SetMealName);
 
 			return View(vm);
         }
@@ -312,6 +274,23 @@ namespace EatTogether.Controllers
             return Ok(new { newId });
         }
 
+        private string ResolveImageUrl(string storedUrl, string name)
+        {
+            if (!string.IsNullOrEmpty(storedUrl)) return storedUrl;
+
+            string safeName = name;
+            foreach (char c in Path.GetInvalidFileNameChars())
+                safeName = safeName.Replace(c, '_');
+
+            var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+            if (System.IO.File.Exists(Path.Combine(folder, safeName + ".jpg")))
+                return "/images/" + safeName + ".jpg";
+            if (System.IO.File.Exists(Path.Combine(folder, safeName + ".png")))
+                return "/images/" + safeName + ".png";
+
+            return storedUrl;
+        }
+
         private async Task<string> SaveBase64ImageAsync(string base64Data, string fileNamePrefix)
         {
             if (string.IsNullOrEmpty(base64Data)) return null;
@@ -375,20 +354,9 @@ namespace EatTogether.Controllers
         public async Task<IActionResult> GetActiveJson()
         {
             var dtos = await _setMealService.GetAllActiveAsync();
-            var baseFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
 
             return Json(dtos.Select(d => {
-                string imageUrl = d.ImageUrl;
-                if (string.IsNullOrEmpty(imageUrl))
-                {
-                    string safeName = d.SetMealName;
-                    foreach (char c in Path.GetInvalidFileNameChars())
-                        safeName = safeName.Replace(c, '_');
-                    if (System.IO.File.Exists(Path.Combine(baseFolder, safeName + ".jpg")))
-                        imageUrl = "/images/" + safeName + ".jpg";
-                    else if (System.IO.File.Exists(Path.Combine(baseFolder, safeName + ".png")))
-                        imageUrl = "/images/" + safeName + ".png";
-                }
+                string imageUrl = ResolveImageUrl(d.ImageUrl, d.SetMealName);
                 return new {
                     id = d.Id,
                     setMealName = d.SetMealName,

@@ -12,26 +12,26 @@ namespace EatTogether.Models.Services
 			_repo = repo;
 		}
 
-		public async Task <IEnumerable<Setmealdto>> GetAllAsync()
+		public async Task <IEnumerable<SetMealDto>> GetAllAsync()
 		{
 			return await _repo.GetAllAsync();
 		}
 
-		public async Task <IEnumerable<Setmealdto>> GetAllActiveAsync()
+		public async Task <IEnumerable<SetMealDto>> GetAllActiveAsync()
 		{
 			return await _repo.GetAllActiveAsync();
 		}
 
-		public async Task<Setmealdto?> GetByIdAsync(int id)
+		public async Task<SetMealDto?> GetByIdAsync(int id)
 		{
 			return await _repo.GetByIdAsync(id);
 		}
 
-		public async Task CreateAsync(Setmealdto dto)
+		public async Task CreateAsync(SetMealDto dto)
 		{
 			await _repo.CreateAsync(dto);
 		}
-		public async Task UpdateAsync(Setmealdto dto)
+		public async Task UpdateAsync(SetMealDto dto)
 		{
 			await _repo.UpdateAsync(dto);
 			if (dto.Items != null)
@@ -70,7 +70,7 @@ namespace EatTogether.Models.Services
 			await _repo.BatchDeleteAsync(ids);
 		}
 
-		public async Task AddItemAsync(SetmealItemDto itemDto)
+		public async Task AddItemAsync(SetMealItemDto itemDto)
 		{
 			// 驗證互斥邏輯：IsOptional=true 時 OptionGroupNo 和 PickLimit 必填
 			if (itemDto.IsOptional &&
@@ -94,7 +94,7 @@ namespace EatTogether.Models.Services
 			await _repo.RemoveItemAsync(itemId);
 		}
 
-		public async Task UpdateItemsAsync(int setMealId, IEnumerable<SetmealItemDto> itemDtos)
+		public async Task UpdateItemsAsync(int setMealId, IEnumerable<SetMealItemDto> itemDtos)
 		{
 			// 在這裡可以加入服務層的驗證邏輯，例如檢查總價等，此處暫略
 			await _repo.UpdateItemsAsync(setMealId, itemDtos);

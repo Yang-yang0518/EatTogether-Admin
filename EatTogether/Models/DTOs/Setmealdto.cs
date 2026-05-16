@@ -1,6 +1,6 @@
 ﻿namespace EatTogether.Models.DTOs
 {
-	public class Setmealdto
+	public class SetMealDto
 	{
 		// Id SetMealName DiscountType DiscountValue IsActive CreatedAt SetPrice Description ImageUrl UpdatedAt
 
@@ -29,7 +29,6 @@
 		public bool IsPopular { get; set; }
 		public bool IsRecommended { get; set; }
 
-		public List<SetmealItemDto> Items { get; set; } = new ();
-		public object SetMealItems { get; set; }
+		public List<SetMealItemDto> Items { get; set; } = new ();
 	}
 }

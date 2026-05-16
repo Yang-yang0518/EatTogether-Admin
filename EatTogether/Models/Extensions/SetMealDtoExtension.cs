@@ -3,11 +3,11 @@ using EatTogether.Models.EfModels;
 
 namespace EatTogether.Models.Extensions
 {
-	public static class SetmealdtoExtension
+	public static class SetMealDtoExtension
 	{
-		public static Setmealdto ToDo(this SetMeal setMeal)
+		public static SetMealDto ToDto(this SetMeal setMeal)
 		{
-			return new Setmealdto
+			return new SetMealDto
 			{
 				Id = setMeal.Id,
 				SetMealName = setMeal.SetMealName,
@@ -30,9 +30,9 @@ namespace EatTogether.Models.Extensions
 			};
 		}
 			
-			public static SetmealItemDto ToItemDto(this SetMealItem item)
+			public static SetMealItemDto ToItemDto(this SetMealItem item)
 		{
-			return new SetmealItemDto
+			return new SetMealItemDto
 			{
 				Id = item.Id,
 				SetMealId = item.SetMealId,

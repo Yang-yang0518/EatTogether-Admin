@@ -17,7 +17,7 @@ namespace EatTogether.Models.Repositories
                 {
                         _context = context;
                 }
-                public async Task AddItemAsync(SetmealItemDto itemDto)
+                public async Task AddItemAsync(SetMealItemDto itemDto)
                 {
                         var item = new SetMealItem
                         {
@@ -34,7 +34,7 @@ namespace EatTogether.Models.Repositories
                         await _context.SaveChangesAsync();
                 }
 
-                public async Task CreateAsync(Setmealdto dto)
+                public async Task CreateAsync(SetMealDto dto)
                 {
                         var setMeal = new SetMeal
                         {
@@ -59,17 +59,17 @@ namespace EatTogether.Models.Repositories
                         await _context.SaveChangesAsync();
                 }
 
-                public async Task<IEnumerable<Setmealdto>> GetAllAsync()
+                public async Task<IEnumerable<SetMealDto>> GetAllAsync()
                 {
                         return await _context.SetMeals
                                 .Include(s => s.SetMealItems)
                                 .ThenInclude(i => i.Dish)
                                 .ThenInclude(d => d.Category)
-                                .Select(s => s.ToDo())
+                                .Select(s => s.ToDto())
                                 .ToListAsync();
                 }
 
-                public async Task<IEnumerable<Setmealdto>> GetAllActiveAsync()
+                public async Task<IEnumerable<SetMealDto>> GetAllActiveAsync()
                 {
                         return await _context.SetMeals
                                 .Where(s => s.IsActive)
@@ -77,11 +77,11 @@ namespace EatTogether.Models.Repositories
                                 .Include(s => s.SetMealItems)
                                 .ThenInclude(i => i.Dish)
                                 .ThenInclude(d => d.Category)
-                                .Select(s => s.ToDo())
+                                .Select(s => s.ToDto())
                                 .ToListAsync();
                 }
 
-                public async Task<Setmealdto?> GetByIdAsync(int id)
+                public async Task<SetMealDto?> GetByIdAsync(int id)
                 {
                     var setMeal = await _context.SetMeals
                                     .Where(s => s.Id == id)
@@ -90,7 +90,7 @@ namespace EatTogether.Models.Repositories
                                     .ThenInclude(d => d.Category)
                                     .FirstOrDefaultAsync();
 
-                    return setMeal?.ToDo();
+                    return setMeal?.ToDto();
                 }
 
                 public async Task RemoveItemAsync(int itemId)
@@ -194,7 +194,7 @@ namespace EatTogether.Models.Repositories
                         await _context.SaveChangesAsync();
                 }
 
-                public async Task UpdateAsync(Setmealdto dto)
+                public async Task UpdateAsync(SetMealDto dto)
                 {
                         var setMeal = await _context.SetMeals.FindAsync(dto.Id);
                         if (setMeal == null) return;
@@ -217,7 +217,7 @@ namespace EatTogether.Models.Repositories
                         await _context.SaveChangesAsync();
                 }
 
-                public async Task UpdateItemsAsync(int setMealId, IEnumerable<SetmealItemDto> itemDtos)
+                public async Task UpdateItemsAsync(int setMealId, IEnumerable<SetMealItemDto> itemDtos)
                 {
                     using var transaction = await _context.Database.BeginTransactionAsync();
                     try

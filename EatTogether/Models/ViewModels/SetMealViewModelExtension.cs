@@ -6,7 +6,7 @@ namespace EatTogether.Models.ViewModels
     public static class SetMealViewModelExtension
     {
         // Dto → ViewModel
-        public static SetMealViewModel ToViewModel(this Setmealdto dto)
+        public static SetMealViewModel ToViewModel(this SetMealDto dto)
         {
             return new SetMealViewModel
             {
@@ -32,9 +32,9 @@ namespace EatTogether.Models.ViewModels
         }
 
         // ViewModel → Dto
-        public static Setmealdto ToDto(this SetMealViewModel vm)
+        public static SetMealDto ToDto(this SetMealViewModel vm)
         {
-            return new Setmealdto
+            return new SetMealDto
             {
                 Id            = vm.Id,
                 SetMealName   = vm.SetMealName,
@@ -56,7 +56,7 @@ namespace EatTogether.Models.ViewModels
         }
 
         // ItemDto → ItemViewModel
-        public static SetMealItemViewModel ToItemViewModel(this SetmealItemDto dto)
+        public static SetMealItemViewModel ToItemViewModel(this SetMealItemDto dto)
         {
             return new SetMealItemViewModel
             {
@@ -75,9 +75,9 @@ namespace EatTogether.Models.ViewModels
         }
 
         // ItemViewModel → ItemDto
-        public static SetmealItemDto ToItemDto(this SetMealItemViewModel vm)
+        public static SetMealItemDto ToItemDto(this SetMealItemViewModel vm)
         {
-            return new SetmealItemDto
+            return new SetMealItemDto
             {
                 Id            = vm.Id,
                 SetMealId     = vm.SetMealId,
