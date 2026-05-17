@@ -37,11 +37,6 @@ namespace EatTogether.Models.Services
 			await _repo.UpdateAsync(dto);
 		}
 
-		public async Task SoftDeleteAsync(int id)
-		{
-			await _repo.SoftDeleteAsync(id);
-		}
-
 		public async Task DisableAsync(int id)
 		{
 			await _repo.SoftDeleteAsync(id);

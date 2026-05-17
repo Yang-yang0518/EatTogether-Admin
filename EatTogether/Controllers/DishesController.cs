@@ -31,36 +31,7 @@ namespace EatTogether.Controllers
             var dtos = await _dishService.GetAllAsync();
             var vms = dtos.Select(d => {
                 var vm = d.ToViewModel();
-                if (string.IsNullOrEmpty(vm.ImageUrl))
-                {
-                    // Sanitize dish name for filename comparison
-                    string safeDishName = vm.DishName;
-                    foreach (char c in Path.GetInvalidFileNameChars())
-                    {
-                        safeDishName = safeDishName.Replace(c, '_');
-                    }
-
-                    // Determine the base path for wwwroot/images
-                    var baseImagesFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
-
-                    // Check for .jpg file
-                    string jpgFileName = $"{safeDishName}.jpg";
-                    string jpgPath = Path.Combine(baseImagesFolderPath, jpgFileName);
-                    if (System.IO.File.Exists(jpgPath))
-                    {
-                        vm.ImageUrl = "/images/" + jpgFileName;
-                    }
-                    else
-                    {
-                        // Check for .png file if .jpg is not found
-                        string pngFileName = $"{safeDishName}.png";
-                        string pngPath = Path.Combine(baseImagesFolderPath, pngFileName);
-                        if (System.IO.File.Exists(pngPath))
-                        {
-                            vm.ImageUrl = "/images/" + pngFileName;
-                        }
-                    }
-                }
+                vm.ImageUrl = ResolveImageUrl(vm.ImageUrl, vm.DishName);
                 return vm;
             }).ToList();
             return View(vms);
@@ -104,18 +75,7 @@ namespace EatTogether.Controllers
             var vm = dto.ToViewModel();
             vm.CategoryOptions = await GetCategoryOptionsAsync();
 
-			// 若資料庫沒有圖片路徑，自動用餐點名稱去找本地檔案
-			if (string.IsNullOrEmpty(vm.ImageUrl))
-			{
-				string safeName = vm.DishName;
-				foreach (char c in Path.GetInvalidFileNameChars())
-					safeName = safeName.Replace(c, '_');
-				var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
-				if (System.IO.File.Exists(Path.Combine(folder, safeName + ".jpg")))
-					vm.ImageUrl = "/images/" + safeName + ".jpg";
-				else if (System.IO.File.Exists(Path.Combine(folder, safeName + ".png")))
-					vm.ImageUrl = "/images/" + safeName + ".png";
-			}
+			vm.ImageUrl = ResolveImageUrl(vm.ImageUrl, vm.DishName);
 			return View(vm);
         }
 
@@ -217,23 +177,9 @@ namespace EatTogether.Controllers
 		public async Task<IActionResult> GetActiveJson()
 		{
 			var dtos = await _dishService.GetAllActiveAsync();
-			var baseFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
 
 			return Json(dtos.Select(d => {
-				string imageUrl = d.ImageUrl;
-
-				// 若資料庫沒有圖片，用餐點名稱去找本地檔案
-				if (string.IsNullOrEmpty(imageUrl))
-				{
-					string safeName = d.DishName;
-					foreach (char c in Path.GetInvalidFileNameChars())
-						safeName = safeName.Replace(c, '_');
-
-					if (System.IO.File.Exists(Path.Combine(baseFolder, safeName + ".jpg")))
-						imageUrl = "/images/" + safeName + ".jpg";
-					else if (System.IO.File.Exists(Path.Combine(baseFolder, safeName + ".png")))
-						imageUrl = "/images/" + safeName + ".png";
-				}
+				string imageUrl = ResolveImageUrl(d.ImageUrl, d.DishName);
 
 				return new
 				{
@@ -282,21 +228,21 @@ namespace EatTogether.Controllers
 		}
 
 
-		[HttpPost("{id}/Rate")]
-		[AllowAnonymous]
-		public async Task<IActionResult> Rate(int id, [FromBody] RateRequest request)
+		private string ResolveImageUrl(string storedUrl, string name)
 		{
-			if (request.Score < 1 || request.Score > 5)
-				return BadRequest("score 必須介於 1 到 5 之間");
+			if (!string.IsNullOrEmpty(storedUrl)) return storedUrl;
 
-			var result = await _dishService.RateAsync(id, request.Score);
-			if (result == null) return NotFound();
+			string safeName = name;
+			foreach (char c in Path.GetInvalidFileNameChars())
+				safeName = safeName.Replace(c, '_');
 
-			return Json(new
-			{
-				averageScore = result.Value.averageScore,
-				ratingCount  = result.Value.ratingCount
-			});
+			var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+			if (System.IO.File.Exists(Path.Combine(folder, safeName + ".jpg")))
+				return "/images/" + safeName + ".jpg";
+			if (System.IO.File.Exists(Path.Combine(folder, safeName + ".png")))
+				return "/images/" + safeName + ".png";
+
+			return storedUrl;
 		}
 
 		private async Task<List<SelectListItem>> GetCategoryOptionsAsync()

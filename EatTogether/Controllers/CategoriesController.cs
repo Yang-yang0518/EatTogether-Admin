@@ -1,5 +1,4 @@
 using EatTogether.Models.DTOs;
-using EatTogether.Models.DTOs;
 using EatTogether.Models.Infra;
 using EatTogether.Models.Services;
 using EatTogether.Models.ViewModels;

@@ -1,6 +1,7 @@
 using EatTogether.Models.EfModels;
 using EatTogether.Models.Infra;
 using EatTogether.Models.Services;
+using EatTogether.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -54,22 +55,5 @@ namespace EatTogether.Controllers
             await _scheduler.RunAsync("手動");
             return RedirectToAction("Index");
         }
-    }
-
-    public class SchedulerDetailViewModel
-    {
-        public SchedulerLog Log { get; set; }
-        public List<string> DishesEnabled { get; set; }
-        public List<string> DishesDisabled { get; set; }
-        public List<string> MealsEnabled { get; set; }
-        public List<string> MealsDisabled { get; set; }
-    }
-
-    public class SchedulerDetailJson
-    {
-        public List<string> enabledDishes { get; set; }
-        public List<string> disabledDishes { get; set; }
-        public List<string> enabledMeals { get; set; }
-        public List<string> disabledMeals { get; set; }
     }
 }
