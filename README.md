@@ -12,7 +12,7 @@
 - [資料庫建置說明](#資料庫建置說明)
 - [權限控管](#權限控管)
 - [開發注意事項](#開發注意事項)
-
+- [畫面截圖](#畫面截圖)
 ---
 
 ## 專案簡介
@@ -157,3 +157,23 @@ sqlcmd -S .\SQLEXPRESS -d EatTogetherDB -i DB/29_Reviews.sql
 - **圖片命名**：圖片以餐點 / 套餐名稱命名，存入 `wwwroot/images/`。若名稱含非法字元（`/`、`:` 等），會自動替換為底線。
 - **前後台同步**：前台 Vue 3 透過 Polling 定期呼叫 `GetActiveJson`，後台異動後無需額外操作即可同步至顧客端。
 - **軟刪除**：目前餐點 / 套餐採停用（`IsActive = false`）而非實體刪除，保留歷史資料完整性。
+
+## 畫面截圖
+
+### 餐點管理總覽
+<img width="1601" height="817" alt="餐點管理" src="https://github.com/user-attachments/assets/081c43ce-491c-4281-9213-43d8de71b7ed" />
+
+### 餐點編輯
+<img width="1583" height="835" alt="餐點-編輯" src="https://github.com/user-attachments/assets/b5368d54-3bf8-4e0a-8158-144bb602914f" />
+
+### 批次上下架
+<img width="1476" height="222" alt="支援批次上下架" src="https://github.com/user-attachments/assets/33dca423-a412-4907-8f0c-54458d68fce7" />
+
+### 供應排程記錄
+<img width="1642" height="637" alt="餐點自動排程上下架" src="https://github.com/user-attachments/assets/1b1b65e7-20cf-4639-aa05-98fa4bcee767" />
+
+### 套餐內容編輯
+<img width="1577" height="717" alt="套餐內容編輯" src="https://github.com/user-attachments/assets/024f6d1c-1036-40e8-98e6-9a2d94fa9463" />
+
+### 留言管理
+<img width="1601" height="793" alt="餐點留言管理" src="https://github.com/user-attachments/assets/53d94aa9-c632-4d56-aead-abce66df83e6" />
